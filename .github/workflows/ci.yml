@@ -65,7 +65,7 @@ jobs:
           go mod download
           go build -o ./statetwin ./cmd/statetwin
       - name: Test with only loopback networking
-        run: sudo unshare --net env HOME="$HOME" GOPATH="$(go env GOPATH)" GOMODCACHE="$(go env GOMODCACHE)" GOCACHE="$(go env GOCACHE)" bash scripts/run-hermetic-tests.sh ./statetwin
+        run: sudo unshare --net env HOME="$HOME" PATH="$PATH" GOPATH="$(go env GOPATH)" GOMODCACHE="$(go env GOMODCACHE)" GOCACHE="$(go env GOCACHE)" bash scripts/run-hermetic-tests.sh ./statetwin
 
   mcp-conformance:
     runs-on: ubuntu-latest
