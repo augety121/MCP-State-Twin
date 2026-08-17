@@ -73,8 +73,9 @@ Exit criteria:
 ## Phase 3 — MCP data plane
 
 Progress: the official Go SDK serves the TwinSpec tool surface over stateless
-Streamable HTTP, and an official-SDK client integration test passes. The
-official conformance suite and broader negotiated-version matrix have not run.
+Streamable HTTP, and an official-SDK client integration test passes. Official
+conformance `v0.1.16` initialize, ping, tools-list, and JSON Schema 2020-12
+scenarios pass on Linux CI. Broader negotiated-version coverage remains open.
 
 Build:
 

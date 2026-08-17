@@ -26,6 +26,7 @@ design target.
 | Deterministic replay | 1,000-call corpus replayed on two branches with equal digest at every step |
 | Concurrent branch isolation | 100 forks mutated concurrently without sibling/base leakage |
 | MCP data plane | official Go SDK, stateless Streamable HTTP integration test |
+| MCP conformance subset | official framework `v0.1.16`; initialize, ping, tools-list, JSON Schema 2020-12 pass on Linux CI |
 | Control-plane isolation | MCP `tools/list` test rejects all control functions |
 | Control authentication | independent bearer-token HTTP test |
 | Control auth grammar | missing scheme and raw-token negative tests; constant-time token comparison |
@@ -41,7 +42,7 @@ design target.
 | Surface binding | metadata models `current/drifted/unknown/unbound`; upstream inspection and automatic drift calculation are not implemented |
 | Hermeticity | there is no upstream connector or passthrough code; an automated egress-deny release test is not implemented |
 | Snapshot storage | immutable logical snapshots work; copy-on-write/delta optimization and GC are not implemented |
-| MCP conformance | official `v0.1.16` initialize/ping/tools-list/JSON-Schema checks pass locally; pinned Linux CI execution is pending |
+| MCP protocol coverage | tested conformance scenarios cover versions through `2025-11-25`; the complete `2026-07-28` design baseline is not covered by that framework |
 | HTTP resource bounds | 1 MiB bodies/headers and read/write/idle timeouts are configured; oversize/config tests pass, direct slow-client test remains incomplete |
 
 ## Not implemented

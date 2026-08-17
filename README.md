@@ -49,6 +49,8 @@ Implemented and exercised locally:
 - six-tool issue-tracker reference twin with synthetic state;
 - unit, deterministic replay, MCP HTTP, authorization, output-rollback,
   migration-refusal, and 100-fork isolation tests;
+- pinned official MCP conformance checks for initialize, ping, tools-list, and
+  JSON Schema 2020-12 on Linux CI;
 - a tested CLI loop: initialize → snapshot → fork twice → mutate each fork →
   diff terminal state.
 
@@ -56,7 +58,6 @@ Not yet implemented or verified:
 
 - recorder, cassette replay, trace redaction, or upstream surface inspection;
 - deterministic fault injection or virtual-clock advancement;
-- official MCP conformance-suite results;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
 - differential validation or an L2 fidelity promotion workflow;
 - data-plane authentication, TLS, remote multi-tenancy, or a security audit.
@@ -374,8 +375,14 @@ The core integrates with MCP, not with model-provider SDKs. This is deliberate:
 the project can provide one tool surface without claiming different models will
 select the same tools or follow the same trajectory.
 
-The current automated integration test covers the official Go SDK as both
-server and client over stateless Streamable HTTP. OpenAI documents remote MCP
+The automated integration test covers the official Go SDK as both server and
+client over stateless Streamable HTTP. Linux CI also runs the official MCP
+conformance framework `v0.1.16` for initialize, ping, tools-list, and JSON
+Schema 2020-12. That framework currently exercises protocol versions through
+`2025-11-25`; it does not prove every feature of the design baseline
+`2026-07-28`.
+
+OpenAI documents remote MCP
 servers and ChatGPT Developer mode read/write tools; Anthropic documents remote
 MCP tool calls and currently limits its Messages API connector to the tool-call
 subset. Those external capabilities motivated the tools-first design, but this
