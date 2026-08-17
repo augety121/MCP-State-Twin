@@ -2,7 +2,7 @@
 set -euo pipefail
 
 binary="${1:-./statetwin}"
-interfaces="$(find /sys/class/net -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)"
+interfaces="$(ip -o link show | awk -F': ' '{name=$2; sub(/@.*/, "", name); print name}' | sort)"
 if [[ "$interfaces" != "lo" ]]; then
   echo "hermetic test requires a network namespace containing only loopback; found: $interfaces" >&2
   exit 1
