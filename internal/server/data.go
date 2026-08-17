@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/augety121/mcp-state-twin/internal/engine"
+	"github.com/augety121/mcp-state-twin/internal/spec"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -62,22 +63,16 @@ func (d *DataPlane) buildHandler() http.Handler {
 	closedWorld := false
 	for _, toolSpec := range d.runtime.Spec().Tools {
 		tool := toolSpec
-		readOnly := len(tool.Effects) == 0
-		destructive := false
-		for _, effect := range tool.Effects {
-			if effect.Op == "update" || effect.Op == "delete" {
-				destructive = true
-			}
-		}
+		annotations := spec.ToolAnnotations(tool)
 		server.AddTool(&mcp.Tool{
 			Name:         tool.Name,
 			Description:  tool.Description,
 			InputSchema:  tool.InputSchema,
 			OutputSchema: tool.OutputSchema,
 			Annotations: &mcp.ToolAnnotations{
-				ReadOnlyHint:    readOnly,
+				ReadOnlyHint:    annotations.ReadOnly,
 				OpenWorldHint:   &closedWorld,
-				DestructiveHint: &destructive,
+				DestructiveHint: &annotations.Destructive,
 			},
 		}, func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			branch, ok := ctx.Value(branchContextKey{}).(string)

@@ -37,8 +37,10 @@ Implemented and exercised locally:
 
 - strict TwinSpec `v1alpha1` YAML decoding, structural validation, and
   hermetic JSON Schema 2020-12 input/output compilation;
-- canonical SHA-256 digests for specs and world state;
-- bounded CEL expressions for preconditions, effects, queries,
+- canonical SHA-256 digests for specs, MCP tool surfaces, and world state;
+- upstream binding admission that fails closed for mismatched `current`,
+  `drifted`, or `unknown` surfaces;
+- 4,096-byte, cost-limited CEL expressions for preconditions, effects, queries,
   postconditions, and global invariants;
 - SQLite-backed atomic transitions, versioned database identity, tool-call
   audit, and transactional control-operation audit;
@@ -51,12 +53,15 @@ Implemented and exercised locally:
   migration-refusal, and 100-fork isolation tests;
 - pinned official MCP conformance checks for initialize, ping, tools-list, and
   JSON Schema 2020-12 on Linux CI;
+- bounded TwinSpec/CEL fuzz targets plus pinned secret-policy and loopback-only
+  hermetic CI gates (the new gates still require a passing main-branch run);
 - a tested CLI loop: initialize → snapshot → fork twice → mutate each fork →
   diff terminal state.
 
 Not yet implemented or verified:
 
-- recorder, cassette replay, trace redaction, or upstream surface inspection;
+- recorder, cassette replay, trace redaction, or automatic upstream surface
+  inspection/refresh;
 - deterministic fault injection or virtual-clock advancement;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
 - differential validation or an L2 fidelity promotion workflow;
@@ -268,8 +273,9 @@ The complete file is
 
 ### Expression boundary
 
-TwinSpec expressions use `cel-go`. They are compiled at load time with a cost
-limit of 10,000 and receive only JSON-shaped variables:
+TwinSpec expressions use `cel-go`. Source text is limited to 4,096 UTF-8 bytes,
+compiled at load time, and evaluated with a cost limit of 10,000. Expressions
+receive only JSON-shaped variables:
 
 - `input`
 - `state`
@@ -460,6 +466,7 @@ Prompt instructions are not an authorization boundary.
 | [ADR-0005](docs/ADR-0005-CANONICAL-JSON.md) | Alpha canonical digest contract |
 | [ADR-0006](docs/ADR-0006-JSON-SCHEMA-VALIDATION.md) | Hermetic JSON Schema 2020-12 validation |
 | [ADR-0007](docs/ADR-0007-STORAGE-IDENTITY-AND-CONTROL-AUDIT.md) | SQLite identity/version and privileged-operation audit |
+| [ADR-0008](docs/ADR-0008-MCP-TOOL-SURFACE-DIGEST.md) | Canonical model-facing MCP surface and fail-closed binding |
 | [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md) | 100 design risks and required responses—not a test-completion report |
 | [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md) | P0-by-P0 evidence, exclusions, and stable-release blockers |
 | [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) | Dated prior-art screen and rejected directions |
@@ -474,11 +481,12 @@ The next release-critical work is:
 
 1. virtual-time advancement and deterministic scheduled faults;
 2. crash kill-point and tagged-database migration fixtures;
-3. upstream surface inspector, canonical fingerprint, and drift enforcement;
-4. egress-deny hermetic integration test;
+3. upstream surface inspector and automated refresh (canonical local binding is implemented);
+4. prove the new egress-deny hermetic integration gate on Linux CI;
 5. pinned official MCP conformance scenarios for the tools-first subset;
 6. live OpenAI/ChatGPT and Anthropic/Claude smoke-test matrix;
-7. recorder redaction and secret-scanning tests, if recorder enters v0.1 scope;
+7. recorder redaction tests if recorder enters v0.1 scope; repository secret
+   scanning is configured separately;
 8. differential validation and an honest L2 coverage report;
 9. a second independent stateful reference domain;
 10. complete P0/P1 failure-mode traceability.

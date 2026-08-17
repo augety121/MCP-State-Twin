@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"sort"
@@ -14,11 +15,15 @@ import (
 )
 
 const (
-	APIVersion = "statetwin.dev/v1alpha1"
-	Kind       = "Twin"
+	APIVersion       = "statetwin.dev/v1alpha1"
+	Kind             = "Twin"
+	MaxTwinSpecBytes = 1 << 20
 )
 
-var namePattern = regexp.MustCompile(`^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$`)
+var (
+	namePattern   = regexp.MustCompile(`^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$`)
+	digestPattern = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
+)
 
 type TwinSpec struct {
 	APIVersion string          `json:"apiVersion" yaml:"apiVersion"`
@@ -102,16 +107,52 @@ type Query struct {
 	As     string `json:"as" yaml:"as"`
 }
 
+// ToolSurface is the canonical, model-facing MCP tool descriptor subset used
+// for upstream drift detection. Runtime-only transition behavior is excluded.
+type ToolSurface struct {
+	Name         string             `json:"name"`
+	Description  string             `json:"description"`
+	InputSchema  map[string]any     `json:"inputSchema"`
+	OutputSchema map[string]any     `json:"outputSchema,omitempty"`
+	Annotations  SurfaceAnnotations `json:"annotations"`
+}
+
+type SurfaceAnnotations struct {
+	ReadOnly    bool `json:"readOnly"`
+	Destructive bool `json:"destructive"`
+	OpenWorld   bool `json:"openWorld"`
+}
+
+type MCPToolSurface struct {
+	Format string        `json:"format"`
+	Tools  []ToolSurface `json:"tools"`
+}
+
 func Load(path string) (*TwinSpec, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read TwinSpec: %w", err)
+	}
+	return Decode(data)
+}
+
+// Decode strictly decodes exactly one TwinSpec YAML document.
+func Decode(data []byte) (*TwinSpec, error) {
+	if len(data) > MaxTwinSpecBytes {
+		return nil, fmt.Errorf("decode TwinSpec: document exceeds %d bytes", MaxTwinSpecBytes)
 	}
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	decoder.KnownFields(true)
 	var result TwinSpec
 	if err := decoder.Decode(&result); err != nil {
 		return nil, fmt.Errorf("decode TwinSpec: %w", err)
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err == nil {
+			return nil, errors.New("decode TwinSpec: multiple YAML documents are not allowed")
+		}
+		return nil, fmt.Errorf("decode TwinSpec trailing document: %w", err)
 	}
 	if err := result.Validate(); err != nil {
 		return nil, err
@@ -121,6 +162,36 @@ func Load(path string) (*TwinSpec, error) {
 
 func (s *TwinSpec) Digest() (string, error) {
 	return canonical.Digest(s)
+}
+
+func ToolAnnotations(tool ToolSpec) SurfaceAnnotations {
+	annotations := SurfaceAnnotations{ReadOnly: len(tool.Effects) == 0}
+	for _, effect := range tool.Effects {
+		if effect.Op == "update" || effect.Op == "delete" {
+			annotations.Destructive = true
+		}
+	}
+	return annotations
+}
+
+// Surface returns a stable MCP tool surface independent of TwinSpec tool order.
+func (s *TwinSpec) Surface() MCPToolSurface {
+	tools := make([]ToolSurface, 0, len(s.Tools))
+	for _, tool := range s.Tools {
+		tools = append(tools, ToolSurface{
+			Name:         tool.Name,
+			Description:  tool.Description,
+			InputSchema:  tool.InputSchema,
+			OutputSchema: tool.OutputSchema,
+			Annotations:  ToolAnnotations(tool),
+		})
+	}
+	sort.Slice(tools, func(i, j int) bool { return tools[i].Name < tools[j].Name })
+	return MCPToolSurface{Format: "statetwin.dev/mcp-tool-surface/v1alpha1", Tools: tools}
+}
+
+func (s *TwinSpec) SurfaceDigest() (string, error) {
+	return canonical.Digest(s.Surface())
 }
 
 func (s *TwinSpec) Validate() error {
@@ -141,6 +212,8 @@ func (s *TwinSpec) Validate() error {
 	case "current", "drifted", "unknown":
 		if strings.TrimSpace(s.Metadata.Upstream.SurfaceDigest) == "" {
 			problems = append(problems, "metadata.upstream.surfaceDigest is required unless status is unbound")
+		} else if !digestPattern.MatchString(s.Metadata.Upstream.SurfaceDigest) {
+			problems = append(problems, "metadata.upstream.surfaceDigest must be a lowercase sha256 digest")
 		}
 	case "unbound":
 		if strings.TrimSpace(s.Metadata.Upstream.SurfaceDigest) != "" {

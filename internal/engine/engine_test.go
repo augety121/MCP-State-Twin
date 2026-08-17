@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/augety121/mcp-state-twin/internal/spec"
@@ -18,7 +19,7 @@ func testSpec() *spec.TwinSpec {
 		Kind:       spec.Kind,
 		Metadata: spec.Metadata{
 			Name:     "items",
-			Upstream: spec.UpstreamMetadata{Protocol: "mcp", Status: "current", SurfaceDigest: "sha256:surface"},
+			Upstream: spec.UpstreamMetadata{Protocol: "mcp", Status: "unbound"},
 			Fidelity: spec.FidelityMetadata{Level: "L1", Status: "unverified"},
 		},
 		Clock:      spec.ClockSpec{Mode: "virtual", Initial: "2026-08-01T00:00:00Z"},
@@ -39,6 +40,37 @@ func testSpec() *spec.TwinSpec {
 				Result: "{'item': vars.created}",
 			},
 		},
+	}
+}
+
+func TestSurfaceBindingFailsClosedOnDrift(t *testing.T) {
+	twin := testSpec()
+	digest, err := twin.SurfaceDigest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	twin.Metadata.Upstream = spec.UpstreamMetadata{Protocol: "mcp", Status: "current", SurfaceDigest: digest}
+	if _, err := New(twin, nil); err != nil {
+		t.Fatalf("matching current surface was rejected: %v", err)
+	}
+
+	twin.Tools[0].Description = "Upstream changed this description."
+	if _, err := New(twin, nil); err == nil || !strings.Contains(err.Error(), "SPEC_DRIFT") {
+		t.Fatalf("expected SPEC_DRIFT after descriptor change, got %v", err)
+	}
+}
+
+func TestUnknownAndDriftedSurfaceCannotStart(t *testing.T) {
+	for _, status := range []string{"unknown", "drifted"} {
+		twin := testSpec()
+		digest, err := twin.SurfaceDigest()
+		if err != nil {
+			t.Fatal(err)
+		}
+		twin.Metadata.Upstream = spec.UpstreamMetadata{Protocol: "mcp", Status: status, SurfaceDigest: digest}
+		if _, err := New(twin, nil); err == nil || !strings.Contains(err.Error(), "SPEC_DRIFT") {
+			t.Fatalf("status %s should fail closed, got %v", status, err)
+		}
 	}
 }
 

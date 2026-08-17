@@ -100,7 +100,9 @@ func runValidate(_ context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	return printJSON(map[string]any{"valid": true, "specDigest": runtime.Digest(), "tools": runtime.ToolNames()})
+	return printJSON(map[string]any{
+		"valid": true, "specDigest": runtime.Digest(), "surfaceDigest": runtime.SurfaceDigest(), "tools": runtime.ToolNames(),
+	})
 }
 
 func runInit(ctx context.Context, args []string) error {

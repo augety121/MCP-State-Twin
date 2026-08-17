@@ -10,8 +10,10 @@ The current development build has important limitations:
 
 - the MCP data plane has no built-in authentication;
 - TLS termination is not implemented;
-- recorder, secret scanning, egress enforcement, and multi-tenant isolation
-  are not implemented;
+- recorder and multi-tenant isolation are not implemented;
+- CI contains pinned repository secret scanning, a synthetic-fixture policy,
+  and an only-loopback hermetic test job; these are release evidence, not a
+  production sandbox or proof that arbitrary user TwinSpecs are safe;
 - the control plane uses one bearer token and is intended to remain on
   loopback;
 - native TwinSpec extensions are deliberately unsupported.

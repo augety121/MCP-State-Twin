@@ -14,9 +14,12 @@ import (
 	"github.com/google/cel-go/cel"
 )
 
+const MaxExpressionBytes = 4096
+
 type Runtime struct {
 	spec     *spec.TwinSpec
 	digest   string
+	surface  string
 	store    *store.Store
 	env      *cel.Env
 	programs map[string]cel.Program
@@ -28,6 +31,18 @@ func New(twin *spec.TwinSpec, stateStore *store.Store) (*Runtime, error) {
 	digest, err := twin.Digest()
 	if err != nil {
 		return nil, err
+	}
+	surfaceDigest, err := twin.SurfaceDigest()
+	if err != nil {
+		return nil, fmt.Errorf("compute MCP tool surface digest: %w", err)
+	}
+	switch twin.Metadata.Upstream.Status {
+	case "current":
+		if twin.Metadata.Upstream.SurfaceDigest != surfaceDigest {
+			return nil, fmt.Errorf("SPEC_DRIFT: declared upstream surface %s does not match TwinSpec surface %s", twin.Metadata.Upstream.SurfaceDigest, surfaceDigest)
+		}
+	case "drifted", "unknown":
+		return nil, fmt.Errorf("SPEC_DRIFT: upstream surface status is %s", twin.Metadata.Upstream.Status)
 	}
 	env, err := cel.NewEnv(
 		cel.Variable("input", cel.DynType),
@@ -41,7 +56,7 @@ func New(twin *spec.TwinSpec, stateStore *store.Store) (*Runtime, error) {
 		return nil, fmt.Errorf("create CEL environment: %w", err)
 	}
 	r := &Runtime{
-		spec: twin, digest: digest, store: stateStore, env: env,
+		spec: twin, digest: digest, surface: surfaceDigest, store: stateStore, env: env,
 		programs: make(map[string]cel.Program),
 		tools:    make(map[string]spec.ToolSpec, len(twin.Tools)),
 		schemas:  make(map[string]compiledSchemas, len(twin.Tools)),
@@ -101,9 +116,14 @@ func New(twin *spec.TwinSpec, stateStore *store.Store) (*Runtime, error) {
 
 func (r *Runtime) Digest() string { return r.digest }
 
+func (r *Runtime) SurfaceDigest() string { return r.surface }
+
 func (r *Runtime) Spec() *spec.TwinSpec { return r.spec }
 
 func (r *Runtime) compile(expression string) error {
+	if len(expression) > MaxExpressionBytes {
+		return fmt.Errorf("expression exceeds %d bytes", MaxExpressionBytes)
+	}
 	if _, exists := r.programs[expression]; exists {
 		return nil
 	}

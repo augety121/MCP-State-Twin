@@ -25,8 +25,9 @@ Exit criteria:
 ## Phase 1 — Deterministic kernel
 
 Progress: implemented in the development preview. A 1,000-call two-branch
-deterministic replay test currently passes; fuzz-budget and crash kill-point
-coverage remain incomplete.
+deterministic replay test currently passes. Bounded TwinSpec and CEL fuzz
+targets pass locally; Linux CI evidence and crash kill-point coverage remain
+incomplete.
 
 Build:
 
@@ -113,6 +114,10 @@ Exit criteria:
 - control-plane mutation audit completeness test.
 
 ## Phase 5 — Recorder and surface drift
+
+Progress: the canonical model-facing tool-surface envelope, digest, and
+fail-closed startup binding are implemented. The upstream inspector, recorder,
+redaction pipeline, and automatic refresh remain unimplemented.
 
 Build:
 

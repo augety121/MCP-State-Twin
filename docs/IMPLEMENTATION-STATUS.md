@@ -9,12 +9,14 @@ design target.
 
 | Capability | Evidence |
 |---|---|
-| Strict TwinSpec YAML decoding | unknown fields rejected by `yaml.v3`; spec tests |
+| Strict TwinSpec YAML decoding | 1 MiB limit, exactly one document, unknown fields rejected by `yaml.v3`; spec tests and fuzz target |
 | TwinSpec structural validation | API/kind/name/fidelity/upstream/entity/tool validation tests |
 | Full tool schema validation | JSON Schema 2020-12 input/output compilation, nested/format/rollback tests |
 | Hermetic schema loading | external `$ref` resource test fails closed |
 | Canonical spec and state digest | golden map-order tests |
-| Bounded declarative expressions | CEL programs compiled once with a cost limit of 10,000 |
+| Bounded declarative expressions | 4,096-byte source limit; CEL programs compiled once with a cost limit of 10,000 |
+| Canonical MCP tool-surface digest | order-independent name/description/schema/annotation digest; mutation tests |
+| Surface admission enforcement | matching `current` binding accepted; mismatch, `drifted`, and `unknown` fail `SPEC_DRIFT` |
 | Top-level input validation subset | required/additionalProperties/type/enum tests through engine calls |
 | Atomic state transitions | SQLite transaction; failed-outcome rollback test |
 | Declarative effects | allocate, insert, update/merge, delete |
@@ -39,8 +41,9 @@ design target.
 |---|---|
 | Virtual time | every branch has a fixed virtual clock used by CEL; clock advancement and scheduled effects are not implemented |
 | Migration coverage | schema v1 snapshot and untagged legacy audit layouts are upgraded; no tagged historical database fixture exists yet |
-| Surface binding | metadata models `current/drifted/unknown/unbound`; upstream inspection and automatic drift calculation are not implemented |
-| Hermeticity | there is no upstream connector or passthrough code; an automated egress-deny release test is not implemented |
+| Upstream surface discovery | local canonicalization and binding enforcement work; upstream inspection and automatic refresh are not implemented |
+| Hermeticity | there is no upstream connector or passthrough code; an only-loopback Linux CI job is configured and awaits first-main-run evidence |
+| Secret/fixture policy | pinned Gitleaks history scan and a synthetic-fixture heuristic are configured and await first-main-run evidence |
 | Snapshot storage | immutable logical snapshots work; copy-on-write/delta optimization and GC are not implemented |
 | MCP protocol coverage | tested conformance scenarios cover versions through `2025-11-25`; the complete `2026-07-28` design baseline is not covered by that framework |
 | HTTP resource bounds | 1 MiB bodies/headers and read/write/idle timeouts are configured; oversize/config tests pass, direct slow-client test remains incomplete |
@@ -66,6 +69,8 @@ design target.
 ```bash
 go test ./...
 go test -race ./...
+go test ./internal/spec -run=^$ -fuzz=FuzzDecodeTwinSpec -fuzztime=10s
+go test ./internal/engine -run=^$ -fuzz=FuzzExpressionCompilation -fuzztime=10s
 go vet ./...
 go build ./cmd/statetwin
 go run ./cmd/statetwin validate --spec examples/issue-tracker/twin.yaml
