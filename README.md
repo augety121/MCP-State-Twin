@@ -2,136 +2,234 @@
 
 > Fork the tool world, not production.
 
-MCP State Twin is a proposed open-source runtime for building deterministic,
+MCP State Twin is an experimental open-source runtime for deterministic,
 forkable, stateful test worlds behind Model Context Protocol (MCP) tools.
 
-The intended use is agent engineering: evaluate a tool-using agent, compare
-models or prompts, reproduce failures, and inject faults without letting the
-agent modify a production system of record.
-
-> [!IMPORTANT]
-> **This repository is currently a design package, not working software.** It
-> contains an implementation RFC, accepted architecture decisions, a failure
-> analysis, and a roadmap. It does not yet contain a runtime, CLI, Go module,
-> MCP server, tests, releases, packages, or provider integration results.
-
-## Repository status
-
-| Area | Current state |
-|---|---|
-| Product definition | Drafted in [RFC-0001](docs/RFC-0001.md) |
-| Protocol baseline | Accepted for v0.1 in [ADR-0001](docs/ADR-0001-PROTOCOL-BASELINE.md) |
-| Data/control-plane isolation | Accepted for v0.1 in [ADR-0002](docs/ADR-0002-CONTROL-PLANE-ISOLATION.md) |
-| Failure analysis | 100 design inputs catalogued; not a completed test report |
-| Runtime and CLI | Not implemented |
-| TwinSpec parser or schema | Not implemented; `v1alpha1` syntax is still proposed |
-| MCP conformance | Not run |
-| ChatGPT / OpenAI integration | Design target; not tested |
-| Claude / Anthropic integration | Design target; not tested |
-| Production readiness | No |
-
-The project name is also provisional until repository, package, and trademark
-checks are completed.
-
-## The problem
-
-A stateful tool call changes what later calls should observe.
-
-Consider an issue-tracker agent that:
-
-1. reads a repository and an issue;
-2. creates a comment;
-3. retries after an ambiguous timeout;
-4. reads the issue again;
-5. closes it only if the expected state is present.
-
-A static mock can return plausible JSON, but it does not necessarily preserve
-the relationships between those calls. A cassette can replay a recorded path,
-but a different model or prompt may take a new valid path. Running every trial
-against a live service creates real side effects, shared-state interference,
-rate limits, cost, and irreproducible starting conditions.
-
-MCP State Twin is intended to put an explicit state machine behind the same
-agent-facing tool contract:
+It lets agent engineers start multiple runs from the same world snapshot,
+allow each run to take a different valid tool trajectory, and compare terminal
+state without writing to a production service.
 
 ```text
-                           production service
-                                   X
-                                   |
-                         no hidden live writes
-                                   |
-                                   |
-    agent under test -- MCP tools --> data plane
-                                      |
-                              +-------v--------+
-                              | transition     |
-                              | engine         |
-                              |                |
-                              | virtual clock  |
-                              | seeded faults  |
-                              | state store    |
-                              +-------+--------+
-                                      |
-                              isolated branch
+                         immutable snapshot S0
+                                  |
+                   +--------------+--------------+
+                   |              |              |
+                fork A         fork B         fork C
+                   |              |              |
+               Agent A        Agent B        Agent C
+                   |              |              |
+                   +------ MCP State Twin -------+
+                                  |
+                    isolated state transitions
+                                  |
+                      canonical terminal diff
 
-    test harness -----------> separate control plane
-                              snapshot / fork / reset /
-                              inspect / diff / fault setup
+                     production writes: none
 ```
 
-The data plane is the world visible to the agent. The control plane owns test
-administration and hidden assertions. They are separate trust domains.
+## Status
 
-## Scope
+**Development preview (`0.1.0-dev`), no tagged release.** The repository now
+contains a working Go CLI and runtime, but it is not production-ready and has
+not completed the RFC's v0.1 release gates.
 
-The proposed runtime owns:
+Implemented and exercised locally:
 
-- a versioned, reviewable contract for modeled tool state and transitions;
-- deterministic state execution for an ordered sequence of tool calls;
-- immutable snapshots and isolated branches;
-- reset, import, export, and canonical state diff;
-- virtual time and explicitly seeded fault schedules;
-- upstream tool-surface capture and drift detection;
-- state-based scenario assertions;
-- an MCP tool data plane and a separate private simulation control plane.
+- strict TwinSpec `v1alpha1` YAML decoding and structural validation;
+- canonical SHA-256 digests for specs and world state;
+- bounded CEL expressions for preconditions, effects, queries,
+  postconditions, and global invariants;
+- SQLite-backed atomic transitions and tool-call audit records;
+- immutable logical snapshots, isolated forks, reset, and canonical state
+  diff;
+- stateless Streamable HTTP MCP data plane through the official Go SDK;
+- separately authenticated HTTP control plane;
+- six-tool issue-tracker reference twin with synthetic state;
+- unit, deterministic replay, MCP HTTP, authorization, and isolation tests;
+- a tested CLI loop: initialize → snapshot → fork twice → mutate each fork →
+  diff terminal state.
 
-It does **not** own:
+Not yet implemented or verified:
 
-- agent planning, orchestration, memory, RAG, or model inference;
-- production transaction management or action governance;
-- a universal MCP gateway;
-- a claim of behavioral equivalence to an undocumented upstream service;
-- automatic discovery of every business rule from traces;
-- identical behavior from different models or hosts;
-- a replacement for MCP conformance testing or general API test tools.
+- recorder, cassette replay, trace redaction, or upstream surface inspection;
+- deterministic fault injection or virtual-clock advancement;
+- full JSON Schema 2020-12 validation;
+- official MCP conformance-suite results;
+- live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
+- differential validation or an L2 fidelity promotion workflow;
+- data-plane authentication, TLS, remote multi-tenancy, or a security audit.
 
-## Core abstraction: TwinSpec
+See [Implementation Status](docs/IMPLEMENTATION-STATUS.md) for the evidence and
+the exact partial boundaries. Roadmap items are not presented as current
+features.
 
-TwinSpec is the proposed intermediate representation for a modeled tool world.
-It is meant to describe more than `function(args) -> JSON`:
+## Why this exists
+
+Serious tool-using agent tests need more than plausible JSON.
+
+An issue-tracker agent might read an issue, create a comment, retry after an
+ambiguous timeout, read the issue again, and close it only if the expected
+state exists. Every call changes what later calls should observe.
+
+Common approaches solve related but different problems:
+
+| Approach | Primary strength | Boundary for agent evaluation |
+|---|---|---|
+| Record/replay | Reproduce a previously captured path | A new model may take a valid path that was never recorded |
+| Static MCP mock | Isolate a client and return controlled data | Cross-call state, constraints, and failure semantics may be incomplete |
+| Hand-built benchmark sandbox | Evaluate one curated task collection | Reuse for a developer-owned tool surface is not the primary abstraction |
+| Live test/production service | Exercise real behavior | Side effects, rate limits, cost, shared-state pollution, and irreproducible starts |
+| MCP State Twin | Execute explicit transitions on forkable world state | Fidelity is limited to behavior that has been modeled and validated |
+
+Record/replay is planned as the L0 fidelity mode; it is complementary rather
+than something this project needs to displace.
+
+## Quick start
+
+Requirements:
+
+- Go 1.26.x
+- Git
+
+Clone the repository and validate the reference TwinSpec:
+
+```bash
+go mod download
+go run ./cmd/statetwin validate \
+  --spec examples/issue-tracker/twin.yaml
+```
+
+Create an isolated database and base snapshot:
+
+```bash
+go run ./cmd/statetwin init \
+  --spec examples/issue-tracker/twin.yaml \
+  --fixture examples/issue-tracker/state.json \
+  --db demo.db \
+  --branch main \
+  --snapshot base
+```
+
+Fork the same world twice:
+
+```bash
+go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-a
+go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-b
+```
+
+Take different valid trajectories:
+
+```bash
+go run ./cmd/statetwin call \
+  --spec examples/issue-tracker/twin.yaml \
+  --db demo.db \
+  --branch run-a \
+  --tool create_issue \
+  --input '{"owner":"octo","repository":"demo","title":"Fork A","body":"Created only in A"}'
+
+go run ./cmd/statetwin call \
+  --spec examples/issue-tracker/twin.yaml \
+  --db demo.db \
+  --branch run-b \
+  --tool close_issue \
+  --input '{"owner":"octo","repository":"demo","number":1}'
+```
+
+Compare terminal worlds:
+
+```bash
+go run ./cmd/statetwin diff \
+  --db demo.db \
+  --before run-a \
+  --after run-b
+```
+
+The diff uses stable JSON Pointer paths. Object keys containing `/` are escaped
+according to JSON Pointer rules, so a key such as `octo/demo#1` appears as
+`octo~1demo#1`.
+
+## Run the MCP server
+
+Set a control-plane token. Do not commit it.
+
+```bash
+export STATETWIN_CONTROL_TOKEN='replace-with-a-local-secret'
+```
+
+PowerShell:
+
+```powershell
+$env:STATETWIN_CONTROL_TOKEN = 'replace-with-a-local-secret'
+```
+
+Start the runtime:
+
+```bash
+go run ./cmd/statetwin serve \
+  --spec examples/issue-tracker/twin.yaml \
+  --fixture examples/issue-tracker/state.json \
+  --db demo.db
+```
+
+Default endpoints:
+
+| Plane | Endpoint | Visible operations |
+|---|---|---|
+| Agent data plane | `http://127.0.0.1:8090/mcp/main` | Only modeled business tools |
+| Private control plane | `http://127.0.0.1:8091/v1` | Branch state, snapshot, fork, reset, diff |
+
+The branch ID is part of the MCP URL, not an extra model-visible tool argument.
+This keeps the tool input schema identical across branches.
+
+> [!WARNING]
+> The current data plane has no authentication or TLS. Both servers bind to
+> loopback by default and should remain local. The control token is only one
+> development safeguard; it does not make this build safe for Internet
+> exposure.
+
+## Reference twin
+
+The included issue-tracker world exposes these agent-visible tools:
+
+- `get_repository`
+- `list_issues`
+- `get_issue`
+- `create_issue`
+- `add_comment`
+- `close_issue`
+
+Snapshot, fork, reset, diff, state inspection, and future fault controls are
+not MCP tools and do not appear in `tools/list`. An integration test connects
+with the official MCP Go client and verifies this boundary.
+
+The reference twin is synthetic, `L1`, `unverified`, and `unbound` to an
+upstream service. It must not be described as a GitHub-equivalent environment.
+
+## TwinSpec
+
+TwinSpec is the versioned, reviewable contract for a modeled tool world. A tool
+is more than `function(args) -> JSON`:
 
 ```text
-tool behavior = reads
-              + preconditions
-              + state effects
-              + postconditions
-              + result or error mapping
-              + time semantics
-              + idempotency semantics
+tool behavior = input contract
+              + reads and preconditions
+              + deterministic state effects
+              + postconditions and global invariants
+              + structured result or typed error
+              + time and idempotency semantics
 ```
 
-The following is an **illustrative design sketch**, not an accepted schema and
-not something the current repository can execute:
+Excerpt from the executable reference spec:
 
 ```yaml
 apiVersion: statetwin.dev/v1alpha1
 kind: Twin
 
 metadata:
-  name: issue-tracker-example
+  name: issue-tracker
   upstream:
     protocol: mcp
-    surfaceDigest: "sha256:<captured-tool-surface-digest>"
+    status: unbound
   fidelity:
     level: L1
     status: unverified
@@ -148,28 +246,50 @@ state:
       key: [repository, number]
 
 tools:
-  - name: create_issue
-    reads:
-      - "repository(input.owner, input.repository)"
+  - name: close_issue
+    description: Close an existing open issue in the isolated simulated repository.
     preconditions:
-      - "repository.exists == true"
+      - expr: "state.entities.issue[input.owner + '/' + input.repository + '#' + string(input.number)].state == 'open'"
+        code: CONFLICT
+        message: issue is already closed
     effects:
-      - "insert issue"
-    postconditions:
-      - "created_issue.number > 0"
-    errors:
-      - when: "repository.exists == false"
-        code: NOT_FOUND
+      - op: update
+        entity: issue
+        key: "input.owner + '/' + input.repository + '#' + string(input.number)"
+        merge: true
+        value: "{'state': 'closed', 'closedAt': clock}"
 ```
 
-The final format still requires ADRs for the bounded expression language,
-canonical artifact format, and storage/snapshot strategy. Arbitrary embedded
-scripts are outside the v0.1 design because they would weaken determinism,
-static analysis, and supply-chain safety.
+The complete file is
+[examples/issue-tracker/twin.yaml](examples/issue-tracker/twin.yaml).
+
+### Expression boundary
+
+TwinSpec expressions use `cel-go`. They are compiled at load time with a cost
+limit of 10,000 and receive only JSON-shaped variables:
+
+- `input`
+- `state`
+- `vars`
+- `item`
+- `clock`
+- `call_index`
+
+No filesystem, process, network, reflection, or arbitrary Go functions are
+registered. Native extensions are not supported in `v1alpha1`.
+
+### Current effect operations
+
+| Operation | Semantics |
+|---|---|
+| `allocate` | Increment a named deterministic sequence and bind the result to `vars` |
+| `insert` | Insert one keyed entity; conflict if it exists |
+| `update` | Replace or merge one keyed entity; fail if missing |
+| `delete` | Delete one keyed entity; fail if missing |
 
 ## Determinism contract
 
-The environment—not the language model—is intended to be deterministic.
+The environment—not the language model—is deterministic:
 
 ```text
 E = (runtime version,
@@ -181,211 +301,70 @@ E = (runtime version,
 execute(E) -> (ordered structured results, final state digest)
 ```
 
-For a supported runtime/platform combination, equal `E` should produce equal
-structured results and final state. Time, generated identifiers, pagination
-cursors, random sampling, and injected faults must therefore come from
-deterministic providers.
+Current code virtualizes state allocation and time exposed to expressions. A
+test replays a 1,000-call corpus on two branches and checks equality after
+every transition and at the final state.
 
-This contract does not say that two LLM runs will emit the same tool calls.
-Each trial instead starts from the same immutable snapshot, and correctness is
-primarily evaluated from terminal state and declared invariants.
+The model can still choose different calls. That is expected. Each comparison
+run starts from the same immutable snapshot, while success is evaluated from
+terminal state and declared invariants rather than exact trajectory equality.
 
-## Required invariants
+## Error and transaction semantics
 
-These are implementation requirements from the RFC, **not claims that the
-current repository has already verified them**:
+Normal tool transitions run inside one SQLite transaction:
 
-1. Hermetic mode has no hidden live writes.
-2. Snapshot, reset, fault, and hidden-state controls are absent from the
-   default agent-visible `tools/list`.
-3. Modeled transitions obey the determinism contract above.
-4. Unknown behavior fails explicitly; it is never replaced with plausible
-   invented data.
-5. A twin is bound to a canonical upstream tool-surface fingerprint, including
-   model-facing descriptions where available.
-6. A normal single-tool transition is atomic unless an explicit, reproducible
-   partial-effect fault is being simulated.
-7. Every scenario run owns an isolated branch namespace.
-8. A model is never the sole correctness oracle.
-9. Secrets and raw credentials stay out of specs, traces, logs, and exports.
-10. Errors retain their canonical evidence; the runtime does not silently turn
-    unknowns, validation failures, or timeouts into success.
+```text
+load branch head
+  -> validate input
+  -> evaluate preconditions
+  -> apply effects to an isolated working state
+  -> evaluate query, postconditions, and global invariants
+  -> commit state and audit record atomically
+```
 
-See [RFC-0001 §5](docs/RFC-0001.md#5-hard-invariants) and the
-[failure-mode matrix](docs/FAILURE-MODE-MATRIX.md) for the normative detail.
+Failed domain outcomes keep the prior state digest and still append a tool-call
+audit record. The implemented canonical error classes include:
 
-## Fidelity is explicit
+- `INVALID_INPUT`
+- `PRECONDITION_FAILED`
+- `NOT_FOUND`
+- `CONFLICT`
+- `INVARIANT_VIOLATION`
+- `UNMODELED_BEHAVIOR`
+- `INTERNAL_TWIN_ERROR`
 
-“Twin” does not mean “perfect copy.” Every artifact is expected to declare what
-evidence supports it and which behavior is not modeled.
+Timeout-before-effect, timeout-after-effect, partial-effect, rate-limit, and
+eventual-consistency faults remain specified but are not implemented yet.
 
-| Level | Evidence | Appropriate use |
+## Fidelity levels
+
+“Twin” does not mean “perfect copy.” Fidelity must be declared, bounded, and
+supported by evidence.
+
+| Level | Meaning | Intended use |
 |---|---|---|
-| L0 — Cassette replay | Recorded request/response matching | Exact-path smoke and regression tests |
+| L0 — Cassette replay | Match recorded interactions | Exact-path smoke/regression tests |
 | L1 — Stateful template | Explicit entities and reviewed basic transitions | Development and exploratory workflow tests |
 | L2 — Contract-backed | Human-reviewed rules, invariants, differential tests, upstream fingerprint | CI/evaluation within declared coverage |
-| L3 — Native/reference | Shared or domain-provided reference logic with a stated correspondence boundary | High-fidelity domain simulation |
+| L3 — Native/reference | Shared or domain-provided reference logic | High-fidelity domain simulation |
 
-An inferred or generated TwinSpec starts unverified. It cannot be promoted to
-L2 or L3 merely because an LLM produced convincing rules. Promotion requires
-reviewable evidence and tests, and even an L2 twin must publish its uncovered
-behavior.
+Generated or inferred behavior cannot promote itself to L2/L3. The current
+reference twin is L1 and unverified.
 
-## How this differs from adjacent tools
+## MCP and model providers
 
-These categories overlap and can be complementary. The distinction below is
-about the primary abstraction, not a claim that every project in a category
-lacks every other feature.
+The core integrates with MCP, not with model-provider SDKs. This is deliberate:
+the project can provide one tool surface without claiming different models will
+select the same tools or follow the same trajectory.
 
-| Approach | Primary artifact | Best at | Boundary relevant here |
-|---|---|---|---|
-| Record/replay | Interaction cassette | Reproducing previously recorded calls | A new trajectory may have no matching recording |
-| Static MCP mock | Tool definitions and generated responses | Client development and isolated happy paths | Cross-call state and business invariants may be incomplete |
-| Hand-built benchmark sandbox | Benchmark-specific environment | Evaluating a fixed task collection | Reuse for a developer-owned upstream surface is not the main abstraction |
-| Domain digital twin | Domain-specific reference model | High-fidelity simulation in one domain | Not a generic MCP tool-world contract |
-| MCP State Twin | Versioned state-transition contract plus forkable world state | New multi-step trajectories from identical snapshots | Fidelity is limited to explicitly modeled and validated behavior |
+The current automated integration test covers the official Go SDK as both
+server and client over stateless Streamable HTTP. OpenAI documents remote MCP
+servers and ChatGPT Developer mode read/write tools; Anthropic documents remote
+MCP tool calls and currently limits its Messages API connector to the tool-call
+subset. Those external capabilities motivated the tools-first design, but this
+repository has **not** run live provider smoke tests yet.
 
-Record/replay is intentionally retained as the proposed L0 fidelity level. It
-is not treated as a competing technology that must be replaced.
-
-The full prior-art screen and the directions deliberately rejected by this
-project are documented in [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md).
-The document is a dated research snapshot, not proof that no similar public or
-private project exists.
-
-## MCP and provider compatibility
-
-MCP is the proposed provider-facing boundary. Model-specific SDKs do not belong
-inside the deterministic state core.
-
-The v0.1 design baseline is MCP `2026-07-28` with a tools-first surface through
-the official Go SDK. The tools-first decision reflects a practical common
-denominator: OpenAI documents remote MCP use and ChatGPT Developer mode access
-to read/write tools, while Anthropic documents remote MCP tool calls and notes
-that its Messages API connector currently supports only the tool-call subset of
-MCP.
-
-| Host path | External capability documented by the provider | Project status |
-|---|---|---|
-| ChatGPT Developer mode | Remote MCP tools, including read/write tools | Planned smoke test; no result yet |
-| OpenAI Responses API | Remote MCP server tools | Planned integration test; no result yet |
-| Anthropic Messages API | Remote MCP tool calls over HTTP | Planned smoke test; no result yet |
-| Generic MCP client | Compatible negotiated tool subset | Planned conformance and smoke tests |
-
-Protocol compatibility means that a host can list and call the modeled tools.
-It does not mean that ChatGPT, Claude, Codex, or another agent will select the
-same tools, follow the same trajectory, or reach the same result.
-
-Because there is no server implementation in this repository yet, **none of
-these integrations can currently be installed or exercised from this repo**.
-
-## Security and evaluation integrity
-
-The proposed security boundary is structural:
-
-- the agent-facing MCP endpoint exposes only simulated application tools;
-- snapshot, fork, reset, state inspection, virtual-time control, fault setup,
-  and hidden assertions live on a separately authenticated control plane;
-- prompt instructions are not treated as access control;
-- hermetic CI is expected to enforce network egress denial in addition to
-  application-level safeguards;
-- recorder artifacts, if recording is implemented, are treated as sensitive
-  and untrusted input;
-- synthetic fixtures are preferred over production recordings.
-
-The project does not claim that structured business data can always be
-irreversibly anonymized. Users must also verify that recording a third-party
-service is permitted by its terms and their privacy obligations.
-
-See [ADR-0002](docs/ADR-0002-CONTROL-PLANE-ISOLATION.md) and the
-[P0/P1 failure modes](docs/FAILURE-MODE-MATRIX.md).
-
-## Proposed implementation direction
-
-The RFC currently recommends, but the repository has not yet implemented:
-
-- Go and a single-binary `statetwin` CLI;
-- the official Model Context Protocol Go SDK;
-- SQLite as the first transactional state backend;
-- YAML authoring with canonical JSON hashing for portable artifacts;
-- a bounded declarative expression language;
-- optional OpenTelemetry integration;
-- a GitHub-like issue workflow as the first reference twin;
-- a second independent stateful domain before v0.1 release.
-
-No package version, CLI command, storage layout, or TwinSpec syntax should be
-treated as stable until code, tests, and the remaining ADRs land.
-
-## Roadmap and release gates
-
-Implementation is deliberately ordered around the smallest credible loop:
-
-1. freeze the open ADRs and map every hard invariant to a test design;
-2. build and fuzz the deterministic kernel;
-3. implement immutable snapshots, isolated forks, import/export, and diff;
-4. expose the modeled tools through the official MCP SDK;
-5. implement and test the separate control plane;
-6. add safe upstream inspection, redaction, and drift detection;
-7. ship at least one useful reference twin with state-based scenarios;
-8. run conformance and cross-provider smoke tests;
-9. add trace-assisted bootstrap only after the deterministic core is trusted;
-10. publish measured fidelity and differential-validation reports.
-
-The v0.1 label is blocked until the release gates in
-[RFC-0001 §27](docs/RFC-0001.md#27-launch-gates-for-v01) and the
-[engineering roadmap](docs/ROADMAP.md#v01-release-gate) are satisfied. In
-particular, performance targets in the RFC are targets—not benchmark results.
-
-## Installation and quick start
-
-There is no installation or quick-start command yet. Any command shown in the
-RFC is a proposed interface and will fail against the current repository.
-
-The first honest quick start can be added only after a reproducible build can:
-
-1. validate a versioned TwinSpec;
-2. start an MCP data plane against a synthetic fixture;
-3. create two isolated branches from the same snapshot;
-4. execute different tool-call sequences;
-5. produce canonical final-state digests and a stable diff;
-6. prove that no production write path was reachable in hermetic mode.
-
-## Contributing at the current stage
-
-The most useful contributions now are design review and falsification:
-
-- identify a violated or missing hard invariant;
-- map a P0/P1 failure mode to a reproducible test design;
-- challenge TwinSpec semantics with a concrete stateful API workflow;
-- provide stronger prior art that changes the project positioning;
-- propose an ADR for the expression engine, snapshot strategy, or canonical
-  artifact format;
-- define observable fields for a safe differential test against a disposable
-  fixture service.
-
-Claims such as “perfect simulation,” “one-click twin for any SaaS,” or “the
-first stateful MCP sandbox” are intentionally out of scope. A useful review
-should instead state the behavior, evidence, fidelity boundary, and failure
-mode precisely.
-
-## Documentation map
-
-| Document | Role | Status |
-|---|---|---|
-| [RFC-0001](docs/RFC-0001.md) | Product boundary, invariants, architecture, semantics, testing, release gates | Draft for implementation |
-| [ADR-0001](docs/ADR-0001-PROTOCOL-BASELINE.md) | MCP protocol baseline and provider neutrality | Accepted for v0.1 |
-| [ADR-0002](docs/ADR-0002-CONTROL-PLANE-ISOLATION.md) | Data-plane/control-plane isolation | Accepted for v0.1 |
-| [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md) | 100 risks and required responses | Design input, not test evidence |
-| [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) | Prior art and rejected project directions | Research snapshot dated 2026-08-17 |
-| [Roadmap](docs/ROADMAP.md) | Ordered implementation phases and exit criteria | Pre-implementation plan |
-
-For design semantics, the RFC and accepted ADRs take precedence over this
-README. The roadmap is a plan, not a delivery claim.
-
-## Source baseline
-
-The protocol/provider statements above were checked against these primary
-sources on **2026-08-17**:
+Design-source links:
 
 - [MCP Specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)
 - [Official MCP Go SDK](https://github.com/modelcontextprotocol/go-sdk)
@@ -393,10 +372,117 @@ sources on **2026-08-17**:
 - [OpenAI: MCP servers for plugins and API integrations](https://developers.openai.com/api/docs/mcp)
 - [Anthropic: MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector)
 
-The broader research basis and adjacent OSS are listed in
-[Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md). Those references
-support the problem framing; they do not prove this proposed implementation or
-its future adoption.
+## CLI
+
+```text
+statetwin validate   validate structure, CEL, and print the spec digest
+statetwin init       initialize a branch and optional immutable snapshot
+statetwin call       execute one tool directly against a branch
+statetwin state      inspect canonical branch state
+statetwin snapshot   create an immutable logical snapshot
+statetwin fork       create an isolated branch from a snapshot
+statetwin diff       compare two branch states
+statetwin serve      run separate MCP data and HTTP control planes
+statetwin version    print the development version
+```
+
+CLI output is structured JSON except for server logs and fatal diagnostics.
+
+## Test and build
+
+```bash
+gofmt -w .
+go vet ./...
+go test ./...
+go test -race ./...
+go build ./cmd/statetwin
+```
+
+The latest local verification was performed on Windows amd64 with Go 1.26.5.
+GitHub Actions runs formatting, vet, race-enabled tests, coverage collection,
+and build on Linux after the repository is published.
+
+## Architecture boundaries
+
+The project intentionally separates two trust domains:
+
+### Agent data plane
+
+- exposes only business tools declared by TwinSpec;
+- binds a branch through the URL;
+- never advertises hidden expected state or test controls;
+- returns typed domain failures as MCP tool errors the model can observe.
+
+### Simulation control plane
+
+- requires an independent bearer token;
+- supports branch state, snapshot, fork, reset, and diff;
+- binds to a different loopback address/port by default;
+- is operated by a test harness or human, not the agent under test.
+
+Prompt instructions are not an authorization boundary.
+
+## Documentation
+
+| Document | Purpose |
+|---|---|
+| [Implementation Status](docs/IMPLEMENTATION-STATUS.md) | Evidence-backed implemented/partial/missing matrix |
+| [RFC-0001](docs/RFC-0001.md) | Product boundary, hard invariants, architecture, semantics, and release gates |
+| [ADR-0001](docs/ADR-0001-PROTOCOL-BASELINE.md) | MCP protocol baseline and provider neutrality |
+| [ADR-0002](docs/ADR-0002-CONTROL-PLANE-ISOLATION.md) | Data/control-plane isolation |
+| [ADR-0003](docs/ADR-0003-EXPRESSION-ENGINE.md) | Bounded CEL expressions |
+| [ADR-0004](docs/ADR-0004-STORAGE-AND-SNAPSHOTS.md) | SQLite and logical snapshot strategy |
+| [ADR-0005](docs/ADR-0005-CANONICAL-JSON.md) | Alpha canonical digest contract |
+| [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md) | 100 design risks and required responses—not a test-completion report |
+| [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) | Dated prior-art screen and rejected directions |
+| [Roadmap](docs/ROADMAP.md) | Ordered phases and exit criteria |
+
+The RFC and accepted ADRs define intended semantics. Implementation Status and
+executable tests define what the current development build can honestly claim.
+
+## Roadmap to the first tagged release
+
+The next release-critical work is:
+
+1. full JSON Schema 2020-12 validation for tool inputs and outputs;
+2. virtual-time advancement and deterministic scheduled faults;
+3. control-operation audit and stronger crash/reset tests;
+4. upstream surface inspector, canonical fingerprint, and drift enforcement;
+5. egress-deny hermetic integration test;
+6. official MCP conformance-suite execution;
+7. live OpenAI/ChatGPT and Anthropic/Claude smoke-test matrix;
+8. recorder redaction and secret-scanning tests;
+9. differential validation and an honest L2 coverage report;
+10. a second independent stateful reference domain.
+
+Cloud hosting, registries, marketplaces, and automatic production mirroring are
+not release priorities.
+
+## Contributing and security
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing protocol, TwinSpec,
+canonicalization, or trust-boundary semantics.
+
+Read [SECURITY.md](SECURITY.md) before using the runtime with anything other
+than synthetic local fixtures. Do not commit credentials, production traces,
+personal data, or third-party recordings that cannot legally be redistributed.
+
+## Positioning and research caveat
+
+The project does not claim to be the first mock server, stateful sandbox,
+service-virtualization system, or digital twin. The narrower hypothesis is that
+agent engineering benefits from a reusable combination of:
+
+- an MCP-compatible agent-facing surface;
+- explicit state-transition contracts;
+- forkable deterministic world state;
+- strict control-plane isolation;
+- declared fidelity and differential validation.
+
+The prior-art search is documented in
+[Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md). A dated public search
+cannot prove that no similar public, private, or unindexed project exists. The
+positioning should change if stronger prior art appears.
 
 ## License
 

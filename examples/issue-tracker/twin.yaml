@@ -1,0 +1,183 @@
+apiVersion: statetwin.dev/v1alpha1
+kind: Twin
+
+metadata:
+  name: issue-tracker
+  upstream:
+    protocol: mcp
+    status: unbound
+  fidelity:
+    level: L1
+    status: unverified
+
+clock:
+  mode: virtual
+  initial: "2026-08-01T00:00:00Z"
+
+state:
+  entities:
+    repository:
+      key: [owner, name]
+    issue:
+      key: [repository, number]
+    comment:
+      key: [id]
+
+invariants:
+  - id: issue-number-positive
+    assert: "state.entities.issue.all(k, state.entities.issue[k].number > 0)"
+  - id: issue-state-known
+    assert: "state.entities.issue.all(k, state.entities.issue[k].state in ['open', 'closed'])"
+
+tools:
+  - name: get_repository
+    description: Get a simulated repository by owner and name.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      required: [owner, repository]
+      properties:
+        owner: {type: string}
+        repository: {type: string}
+    outputSchema:
+      type: object
+    query:
+      entity: repository
+      key: "input.owner + '/' + input.repository"
+      as: repository
+    result: "{'repository': vars.repository}"
+
+  - name: list_issues
+    description: List simulated issues for one repository in stable key order.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      required: [owner, repository]
+      properties:
+        owner: {type: string}
+        repository: {type: string}
+    outputSchema:
+      type: object
+    query:
+      entity: issue
+      many: true
+      where: "item.repository == input.owner + '/' + input.repository"
+      as: issues
+    result: "{'issues': vars.issues}"
+
+  - name: get_issue
+    description: Get one simulated issue.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      required: [owner, repository, number]
+      properties:
+        owner: {type: string}
+        repository: {type: string}
+        number: {type: integer}
+    outputSchema:
+      type: object
+    query:
+      entity: issue
+      key: "input.owner + '/' + input.repository + '#' + string(input.number)"
+      as: issue
+    result: "{'issue': vars.issue}"
+
+  - name: create_issue
+    description: Create an issue in the isolated simulated repository.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      required: [owner, repository, title, body]
+      properties:
+        owner: {type: string}
+        repository: {type: string}
+        title: {type: string}
+        body: {type: string}
+    outputSchema:
+      type: object
+    preconditions:
+      - expr: "(input.owner + '/' + input.repository) in state.entities.repository"
+        code: NOT_FOUND
+        message: repository does not exist
+    effects:
+      - op: allocate
+        sequence: issue_number
+        as: issue_number
+      - op: insert
+        entity: issue
+        key: "input.owner + '/' + input.repository + '#' + string(vars.issue_number)"
+        value: "{'repository': input.owner + '/' + input.repository, 'number': vars.issue_number, 'title': input.title, 'body': input.body, 'state': 'open', 'createdAt': clock}"
+    query:
+      entity: issue
+      key: "input.owner + '/' + input.repository + '#' + string(vars.issue_number)"
+      as: issue
+    postconditions:
+      - expr: "vars.issue.state == 'open'"
+        message: new issue must be open
+    result: "{'issue': vars.issue}"
+
+  - name: add_comment
+    description: Add a comment to an existing simulated issue.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      required: [owner, repository, number, body]
+      properties:
+        owner: {type: string}
+        repository: {type: string}
+        number: {type: integer}
+        body: {type: string}
+    outputSchema:
+      type: object
+    preconditions:
+      - expr: "(input.owner + '/' + input.repository + '#' + string(input.number)) in state.entities.issue"
+        code: NOT_FOUND
+        message: issue does not exist
+    effects:
+      - op: allocate
+        sequence: comment_id
+        as: comment_id
+      - op: insert
+        entity: comment
+        key: "string(vars.comment_id)"
+        value: "{'id': vars.comment_id, 'issue': input.owner + '/' + input.repository + '#' + string(input.number), 'body': input.body, 'createdAt': clock}"
+    query:
+      entity: comment
+      key: "string(vars.comment_id)"
+      as: comment
+    result: "{'comment': vars.comment}"
+
+  - name: close_issue
+    description: Close an existing open issue in the isolated simulated repository.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      required: [owner, repository, number]
+      properties:
+        owner: {type: string}
+        repository: {type: string}
+        number: {type: integer}
+    outputSchema:
+      type: object
+    preconditions:
+      - expr: "(input.owner + '/' + input.repository + '#' + string(input.number)) in state.entities.issue"
+        code: NOT_FOUND
+        message: issue does not exist
+      - expr: "state.entities.issue[input.owner + '/' + input.repository + '#' + string(input.number)].state == 'open'"
+        code: CONFLICT
+        message: issue is already closed
+    effects:
+      - op: update
+        entity: issue
+        key: "input.owner + '/' + input.repository + '#' + string(input.number)"
+        merge: true
+        value: "{'state': 'closed', 'closedAt': clock}"
+    query:
+      entity: issue
+      key: "input.owner + '/' + input.repository + '#' + string(input.number)"
+      as: issue
+    postconditions:
+      - expr: "vars.issue.state == 'closed'"
+        message: close transition did not produce a closed issue
+    result: "{'issue': vars.issue}"

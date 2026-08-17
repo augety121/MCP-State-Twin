@@ -1,0 +1,26 @@
+# State Twin runtime data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+.statetwin/
+
+# Build output
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+coverage.*
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local secrets
+.env
+.env.*
+!.env.example

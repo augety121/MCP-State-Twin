@@ -1,0 +1,26 @@
+{
+  "entities": {
+    "repository": {
+      "octo/demo": {
+        "owner": "octo",
+        "name": "demo",
+        "defaultBranch": "main"
+      }
+    },
+    "issue": {
+      "octo/demo#1": {
+        "repository": "octo/demo",
+        "number": 1,
+        "title": "Document retry behavior",
+        "body": "Clarify timeout-before-effect and timeout-after-effect.",
+        "state": "open",
+        "createdAt": "2026-08-01T00:00:00Z"
+      }
+    },
+    "comment": {}
+  },
+  "sequences": {
+    "issue_number": 1,
+    "comment_id": 0
+  }
+}

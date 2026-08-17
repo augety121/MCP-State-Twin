@@ -1,9 +1,13 @@
 # Engineering Roadmap
 
-**Status:** pre-implementation  
+**Status:** implementation in progress; see `IMPLEMENTATION-STATUS.md` for evidence.
 **Rule:** 先完成最小可信闭环，再扩功能。每一阶段都必须有可运行 demo、自动测试和退出标准。
 
 ## Phase 0 — Design freeze
+
+Progress: protocol, control-plane isolation, expression engine, storage, and
+canonicalization decisions now have ADRs. RFC-0001 remains Draft for
+implementation and still requires review before a tagged v0.1.
 
 Deliverables:
 
@@ -20,6 +24,10 @@ Exit criteria:
 
 ## Phase 1 — Deterministic kernel
 
+Progress: implemented in the development preview. A 1,000-call two-branch
+deterministic replay test currently passes; fuzz-budget and crash kill-point
+coverage remain incomplete.
+
 Build:
 
 - Go module and CLI skeleton.
@@ -32,7 +40,8 @@ Build:
 - Atomic transition engine.
 - State assertions and canonical diff.
 
-No MCP network server yet.
+Phase 1 remains network-independent; the current development preview also
+contains the Phase 3 MCP server described below.
 
 Exit criteria:
 
@@ -41,6 +50,10 @@ Exit criteria:
 - fuzz parser/evaluator finds no panic for bounded test budget.
 
 ## Phase 2 — Snapshot/fork world model
+
+Progress: logical snapshots, isolated forks, reset, and canonical diff are
+implemented. Export/import, retention/GC, and 100-way parallel isolation gates
+remain incomplete.
 
 Build:
 
@@ -59,6 +72,10 @@ Exit criteria:
 
 ## Phase 3 — MCP data plane
 
+Progress: the official Go SDK serves the TwinSpec tool surface over stateless
+Streamable HTTP, and an official-SDK client integration test passes. The
+official conformance suite and broader negotiated-version matrix have not run.
+
 Build:
 
 - official Go MCP SDK integration.
@@ -75,6 +92,10 @@ Exit criteria:
 - tool descriptions/schemas exactly match canonical captured surface unless an explicit override exists.
 
 ## Phase 4 — Private control plane
+
+Progress: a separate bearer-authenticated HTTP plane implements state,
+snapshot, fork, reset, and diff, and tests verify that control functions are
+absent from MCP `tools/list`. Privileged-operation audit is not implemented.
 
 Build:
 
