@@ -25,3 +25,19 @@ jobs:
         run: go test -race -coverprofile=coverage.out ./...
       - name: Build
         run: go build ./cmd/statetwin
+
+  mcp-conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Build conformance server
+        run: go build -o ./statetwin ./cmd/statetwin
+      - name: MCP tools-first conformance
+        run: bash scripts/run-conformance.sh ./statetwin

@@ -128,3 +128,31 @@ func TestThousandCallCorpusReplaysToSameDigest(t *testing.T) {
 		t.Fatalf("final state digest differs: %s != %s", a.StateDigest, b.StateDigest)
 	}
 }
+
+func TestExplicitlyUnmodeledToolFailsWithoutStateChange(t *testing.T) {
+	ctx := context.Background()
+	twin := testSpec()
+	twin.Tools[0].Modeled = boolPtr(false)
+	s, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	runtime, err := New(twin, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.Initialize(ctx, "main", world.New()); err != nil {
+		t.Fatal(err)
+	}
+	result, err := runtime.Call(ctx, "main", "create_item", map[string]any{"name": "first"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ErrorClass != "UNMODELED_BEHAVIOR" {
+		t.Fatalf("error class = %q, want UNMODELED_BEHAVIOR", result.ErrorClass)
+	}
+	if result.BeforeDigest != result.AfterDigest {
+		t.Fatal("unmodeled behavior changed state")
+	}
+}

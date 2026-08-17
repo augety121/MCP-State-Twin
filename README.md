@@ -35,17 +35,20 @@ not completed the RFC's v0.1 release gates.
 
 Implemented and exercised locally:
 
-- strict TwinSpec `v1alpha1` YAML decoding and structural validation;
+- strict TwinSpec `v1alpha1` YAML decoding, structural validation, and
+  hermetic JSON Schema 2020-12 input/output compilation;
 - canonical SHA-256 digests for specs and world state;
 - bounded CEL expressions for preconditions, effects, queries,
   postconditions, and global invariants;
-- SQLite-backed atomic transitions and tool-call audit records;
+- SQLite-backed atomic transitions, versioned database identity, tool-call
+  audit, and transactional control-operation audit;
 - immutable logical snapshots, isolated forks, reset, and canonical state
   diff;
 - stateless Streamable HTTP MCP data plane through the official Go SDK;
 - separately authenticated HTTP control plane;
 - six-tool issue-tracker reference twin with synthetic state;
-- unit, deterministic replay, MCP HTTP, authorization, and isolation tests;
+- unit, deterministic replay, MCP HTTP, authorization, output-rollback,
+  migration-refusal, and 100-fork isolation tests;
 - a tested CLI loop: initialize → snapshot → fork twice → mutate each fork →
   diff terminal state.
 
@@ -53,7 +56,6 @@ Not yet implemented or verified:
 
 - recorder, cassette replay, trace redaction, or upstream surface inspection;
 - deterministic fault injection or virtual-clock advancement;
-- full JSON Schema 2020-12 validation;
 - official MCP conformance-suite results;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
 - differential validation or an L2 fidelity promotion workflow;
@@ -278,6 +280,14 @@ limit of 10,000 and receive only JSON-shaped variables:
 No filesystem, process, network, reflection, or arbitrary Go functions are
 registered. Native extensions are not supported in `v1alpha1`.
 
+### JSON Schema boundary
+
+Tool inputs and successful outputs are compiled and validated as JSON Schema
+Draft 2020-12. Format assertions are enabled. Local `$defs` and fragments are
+supported, while references that require an external network or filesystem
+resource fail at startup. An invalid declared output rolls back the transition
+and returns `INTERNAL_TWIN_ERROR`.
+
 ### Current effect operations
 
 | Operation | Semantics |
@@ -335,6 +345,13 @@ audit record. The implemented canonical error classes include:
 
 Timeout-before-effect, timeout-after-effect, partial-effect, rate-limit, and
 eventual-consistency faults remain specified but are not implemented yet.
+
+SQLite files carry the State Twin application ID and an explicit schema
+version. Snapshots persist that storage schema version and bind it into their
+IDs. Foreign databases and versions newer than the runtime are rejected.
+Snapshot, fork, and reset write a separate control-audit row in the same
+transaction as the privileged mutation; bearer tokens and HTTP headers are not
+recorded.
 
 ## Fidelity levels
 
@@ -428,12 +445,16 @@ Prompt instructions are not an authorization boundary.
 |---|---|
 | [Implementation Status](docs/IMPLEMENTATION-STATUS.md) | Evidence-backed implemented/partial/missing matrix |
 | [RFC-0001](docs/RFC-0001.md) | Product boundary, hard invariants, architecture, semantics, and release gates |
+| [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) | Normative first-release profile, limits, traceability, and gates |
 | [ADR-0001](docs/ADR-0001-PROTOCOL-BASELINE.md) | MCP protocol baseline and provider neutrality |
 | [ADR-0002](docs/ADR-0002-CONTROL-PLANE-ISOLATION.md) | Data/control-plane isolation |
 | [ADR-0003](docs/ADR-0003-EXPRESSION-ENGINE.md) | Bounded CEL expressions |
 | [ADR-0004](docs/ADR-0004-STORAGE-AND-SNAPSHOTS.md) | SQLite and logical snapshot strategy |
 | [ADR-0005](docs/ADR-0005-CANONICAL-JSON.md) | Alpha canonical digest contract |
+| [ADR-0006](docs/ADR-0006-JSON-SCHEMA-VALIDATION.md) | Hermetic JSON Schema 2020-12 validation |
+| [ADR-0007](docs/ADR-0007-STORAGE-IDENTITY-AND-CONTROL-AUDIT.md) | SQLite identity/version and privileged-operation audit |
 | [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md) | 100 design risks and required responses—not a test-completion report |
+| [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md) | P0-by-P0 evidence, exclusions, and stable-release blockers |
 | [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) | Dated prior-art screen and rejected directions |
 | [Roadmap](docs/ROADMAP.md) | Ordered phases and exit criteria |
 
@@ -444,16 +465,16 @@ executable tests define what the current development build can honestly claim.
 
 The next release-critical work is:
 
-1. full JSON Schema 2020-12 validation for tool inputs and outputs;
-2. virtual-time advancement and deterministic scheduled faults;
-3. control-operation audit and stronger crash/reset tests;
-4. upstream surface inspector, canonical fingerprint, and drift enforcement;
-5. egress-deny hermetic integration test;
-6. official MCP conformance-suite execution;
-7. live OpenAI/ChatGPT and Anthropic/Claude smoke-test matrix;
-8. recorder redaction and secret-scanning tests;
-9. differential validation and an honest L2 coverage report;
-10. a second independent stateful reference domain.
+1. virtual-time advancement and deterministic scheduled faults;
+2. crash kill-point and tagged-database migration fixtures;
+3. upstream surface inspector, canonical fingerprint, and drift enforcement;
+4. egress-deny hermetic integration test;
+5. pinned official MCP conformance scenarios for the tools-first subset;
+6. live OpenAI/ChatGPT and Anthropic/Claude smoke-test matrix;
+7. recorder redaction and secret-scanning tests, if recorder enters v0.1 scope;
+8. differential validation and an honest L2 coverage report;
+9. a second independent stateful reference domain;
+10. complete P0/P1 failure-mode traceability.
 
 Cloud hosting, registries, marketplaces, and automatic production mirroring are
 not release priorities.

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -116,6 +117,17 @@ func TestControlPlaneRequiresIndependentBearerToken(t *testing.T) {
 	}
 
 	request, _ = http.NewRequest(http.MethodGet, httpServer.URL+"/v1/branches/main", nil)
+	request.Header.Set("Authorization", "test-secret")
+	response, err = http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("token without Bearer scheme status = %d", response.StatusCode)
+	}
+
+	request, _ = http.NewRequest(http.MethodGet, httpServer.URL+"/v1/branches/main", nil)
 	request.Header.Set("Authorization", "Bearer test-secret")
 	response, err = http.DefaultClient.Do(request)
 	if err != nil {
@@ -124,5 +136,89 @@ func TestControlPlaneRequiresIndependentBearerToken(t *testing.T) {
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("authorized status = %d", response.StatusCode)
+	}
+}
+
+func TestControlPlaneRejectsOversizeBody(t *testing.T) {
+	_, stateStore := referenceRuntime(t)
+	httpServer := httptest.NewServer(NewControlPlane(stateStore, "test-secret"))
+	t.Cleanup(httpServer.Close)
+	body := bytes.Repeat([]byte(" "), (1<<20)+1)
+	request, _ := http.NewRequest(http.MethodPost, httpServer.URL+"/v1/snapshots", bytes.NewReader(body))
+	request.Header.Set("Authorization", "Bearer test-secret")
+	request.Header.Set("Content-Type", "application/json")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("oversize body status = %d, want %d", response.StatusCode, http.StatusBadRequest)
+	}
+}
+
+func TestMCPBranchComesOnlyFromURLAndForksStayIsolated(t *testing.T) {
+	runtime, stateStore := referenceRuntime(t)
+	ctx := context.Background()
+	if _, err := stateStore.CreateSnapshot(ctx, "base", "main"); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateStore.Fork(ctx, "base", "run-a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateStore.Fork(ctx, "base", "run-b"); err != nil {
+		t.Fatal(err)
+	}
+	httpServer := httptest.NewServer(NewDataPlane(runtime))
+	t.Cleanup(httpServer.Close)
+
+	client := mcp.NewClient(&mcp.Implementation{Name: "statetwin-test", Version: "v0.1.0"}, nil)
+	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{Endpoint: httpServer.URL + "/mcp/run-a"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { session.Close() })
+	result, err := session.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "close_issue",
+		Arguments: map[string]any{"owner": "octo", "repository": "demo", "number": 1, "branch": "run-b"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.IsError {
+		t.Fatal("model-visible branch override must be rejected by input schema")
+	}
+	result, err = session.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "close_issue",
+		Arguments: map[string]any{"owner": "octo", "repository": "demo", "number": 1},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.IsError {
+		t.Fatalf("valid close failed: %#v", result.Content)
+	}
+	a, err := stateStore.Branch(ctx, "run-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := stateStore.Branch(ctx, "run-b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.State.Entities["issue"]["octo/demo#1"]["state"] != "closed" {
+		t.Fatal("run-a did not receive its own transition")
+	}
+	if b.State.Entities["issue"]["octo/demo#1"]["state"] != "open" {
+		t.Fatal("run-a transition leaked into run-b")
+	}
+
+	response, err := http.Get(httpServer.URL + "/mcp/invalid%20branch")
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusNotFound {
+		t.Fatalf("invalid branch path status = %d", response.StatusCode)
 	}
 }

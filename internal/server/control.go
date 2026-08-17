@@ -28,17 +28,22 @@ func NewControlPlane(stateStore *store.Store, token string) *ControlPlane {
 }
 
 func (c *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	if c.token == "" {
 		writeError(w, http.StatusServiceUnavailable, "CONTROL_AUTH_REQUIRED", "control plane requires a non-empty token")
 		return
 	}
-	provided := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	scheme, provided, found := strings.Cut(r.Header.Get("Authorization"), " ")
+	if !found || !strings.EqualFold(scheme, "Bearer") || strings.TrimSpace(provided) != provided || strings.ContainsAny(provided, " \t\r\n") {
+		writeError(w, http.StatusUnauthorized, "AUTH_DENIED", "valid control-plane bearer token required")
+		return
+	}
 	if len(provided) != len(c.token) || subtle.ConstantTimeCompare([]byte(provided), []byte(c.token)) != 1 {
 		writeError(w, http.StatusUnauthorized, "AUTH_DENIED", "valid control-plane bearer token required")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "no-store")
 	c.mux.ServeHTTP(w, r)
 }
 

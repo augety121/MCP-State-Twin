@@ -52,8 +52,8 @@ Exit criteria:
 ## Phase 2 — Snapshot/fork world model
 
 Progress: logical snapshots, isolated forks, reset, and canonical diff are
-implemented. Export/import, retention/GC, and 100-way parallel isolation gates
-remain incomplete.
+implemented. The 100-way concurrent isolation gate passes. Export/import and
+retention/GC remain incomplete.
 
 Build:
 
@@ -95,7 +95,8 @@ Exit criteria:
 
 Progress: a separate bearer-authenticated HTTP plane implements state,
 snapshot, fork, reset, and diff, and tests verify that control functions are
-absent from MCP `tools/list`. Privileged-operation audit is not implemented.
+absent from MCP `tools/list`. Snapshot/fork/reset control audit is committed in
+the same transaction as each mutation.
 
 Build:
 

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/augety121/mcp-state-twin/internal/engine"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -15,13 +15,19 @@ import (
 const Version = "0.1.0-dev"
 
 type DataPlane struct {
-	runtime  *engine.Runtime
-	handlers sync.Map
+	runtime *engine.Runtime
+	handler http.Handler
 }
 
 func NewDataPlane(runtime *engine.Runtime) *DataPlane {
-	return &DataPlane{runtime: runtime}
+	d := &DataPlane{runtime: runtime}
+	d.handler = d.buildHandler()
+	return d
 }
+
+type branchContextKey struct{}
+
+var branchIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`)
 
 func (d *DataPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	branch, ok := branchFromPath(r.URL.Path)
@@ -29,8 +35,11 @@ func (d *DataPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	handler, _ := d.handlers.LoadOrStore(branch, d.branchHandler(branch))
-	handler.(http.Handler).ServeHTTP(w, r)
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	ctx := context.WithValue(r.Context(), branchContextKey{}, branch)
+	d.handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
 func branchFromPath(path string) (string, bool) {
@@ -39,13 +48,13 @@ func branchFromPath(path string) (string, bool) {
 		return "", false
 	}
 	branch := strings.Trim(strings.TrimPrefix(path, prefix), "/")
-	if branch == "" || strings.Contains(branch, "/") || len(branch) > 128 {
+	if !branchIDPattern.MatchString(branch) {
 		return "", false
 	}
 	return branch, true
 }
 
-func (d *DataPlane) branchHandler(branch string) http.Handler {
+func (d *DataPlane) buildHandler() http.Handler {
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    "SIMULATED/" + d.runtime.Spec().Metadata.Name,
 		Version: Version,
@@ -71,6 +80,10 @@ func (d *DataPlane) branchHandler(branch string) http.Handler {
 				DestructiveHint: &destructive,
 			},
 		}, func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			branch, ok := ctx.Value(branchContextKey{}).(string)
+			if !ok || branch == "" {
+				return nil, fmt.Errorf("branch context is missing")
+			}
 			var input map[string]any
 			if request.Params != nil && len(request.Params.Arguments) > 0 {
 				if err := json.Unmarshal(request.Params.Arguments, &input); err != nil {

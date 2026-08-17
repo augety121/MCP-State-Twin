@@ -21,6 +21,7 @@ type Runtime struct {
 	env      *cel.Env
 	programs map[string]cel.Program
 	tools    map[string]spec.ToolSpec
+	schemas  map[string]compiledSchemas
 }
 
 func New(twin *spec.TwinSpec, stateStore *store.Store) (*Runtime, error) {
@@ -43,9 +44,19 @@ func New(twin *spec.TwinSpec, stateStore *store.Store) (*Runtime, error) {
 		spec: twin, digest: digest, store: stateStore, env: env,
 		programs: make(map[string]cel.Program),
 		tools:    make(map[string]spec.ToolSpec, len(twin.Tools)),
+		schemas:  make(map[string]compiledSchemas, len(twin.Tools)),
 	}
 	for _, tool := range twin.Tools {
 		r.tools[tool.Name] = tool
+		inputSchema, err := compileJSONSchema(tool.Name, "input", tool.InputSchema)
+		if err != nil {
+			return nil, fmt.Errorf("tool %s inputSchema: %w", tool.Name, err)
+		}
+		outputSchema, err := compileJSONSchema(tool.Name, "output", tool.OutputSchema)
+		if err != nil {
+			return nil, fmt.Errorf("tool %s outputSchema: %w", tool.Name, err)
+		}
+		r.schemas[tool.Name] = compiledSchemas{input: inputSchema, output: outputSchema}
 		for _, condition := range tool.Preconditions {
 			if err := r.compile(condition.Expr); err != nil {
 				return nil, fmt.Errorf("tool %s precondition: %w", tool.Name, err)
@@ -135,7 +146,8 @@ func (r *Runtime) apply(tool spec.ToolSpec, state *world.State, clock time.Time,
 	if tool.Modeled != nil && !*tool.Modeled {
 		return failure("UNMODELED_BEHAVIOR", "tool behavior is not modeled")
 	}
-	if err := validateInput(tool.InputSchema, input); err != nil {
+	toolSchemas := r.schemas[tool.Name]
+	if err := validateJSON(input, toolSchemas.input); err != nil {
 		return failure("INVALID_INPUT", err.Error())
 	}
 	vars := make(map[string]any)
@@ -292,6 +304,9 @@ func (r *Runtime) apply(tool spec.ToolSpec, state *world.State, clock time.Time,
 			return failure("INTERNAL_TWIN_ERROR", "result evaluation failed: "+err.Error())
 		}
 		result = value
+	}
+	if err := validateJSON(result, toolSchemas.output); err != nil {
+		return failure("INTERNAL_TWIN_ERROR", "declared outputSchema rejected tool result: "+err.Error())
 	}
 	return store.CallOutcome{Result: result, CommitState: true}
 }

@@ -41,6 +41,17 @@ tools:
         repository: {type: string}
     outputSchema:
       type: object
+      additionalProperties: false
+      required: [repository]
+      properties:
+        repository: &repositorySchema
+          type: object
+          additionalProperties: false
+          required: [owner, name, defaultBranch]
+          properties:
+            owner: {type: string, minLength: 1}
+            name: {type: string, minLength: 1}
+            defaultBranch: {type: string, minLength: 1}
     query:
       entity: repository
       key: "input.owner + '/' + input.repository"
@@ -58,6 +69,23 @@ tools:
         repository: {type: string}
     outputSchema:
       type: object
+      additionalProperties: false
+      required: [issues]
+      properties:
+        issues:
+          type: array
+          items: &issueSchema
+            type: object
+            additionalProperties: false
+            required: [repository, number, title, body, state, createdAt]
+            properties:
+              repository: {type: string, minLength: 1}
+              number: {type: integer, minimum: 1}
+              title: {type: string, minLength: 1}
+              body: {type: string}
+              state: {type: string, enum: [open, closed]}
+              createdAt: {type: string, format: date-time}
+              closedAt: {type: string, format: date-time}
     query:
       entity: issue
       many: true
@@ -77,6 +105,10 @@ tools:
         number: {type: integer}
     outputSchema:
       type: object
+      additionalProperties: false
+      required: [issue]
+      properties:
+        issue: *issueSchema
     query:
       entity: issue
       key: "input.owner + '/' + input.repository + '#' + string(input.number)"
@@ -96,6 +128,10 @@ tools:
         body: {type: string}
     outputSchema:
       type: object
+      additionalProperties: false
+      required: [issue]
+      properties:
+        issue: *issueSchema
     preconditions:
       - expr: "(input.owner + '/' + input.repository) in state.entities.repository"
         code: NOT_FOUND
@@ -130,6 +166,18 @@ tools:
         body: {type: string}
     outputSchema:
       type: object
+      additionalProperties: false
+      required: [comment]
+      properties:
+        comment: &commentSchema
+          type: object
+          additionalProperties: false
+          required: [id, issue, body, createdAt]
+          properties:
+            id: {type: integer, minimum: 1}
+            issue: {type: string, minLength: 1}
+            body: {type: string}
+            createdAt: {type: string, format: date-time}
     preconditions:
       - expr: "(input.owner + '/' + input.repository + '#' + string(input.number)) in state.entities.issue"
         code: NOT_FOUND
@@ -160,6 +208,10 @@ tools:
         number: {type: integer}
     outputSchema:
       type: object
+      additionalProperties: false
+      required: [issue]
+      properties:
+        issue: *issueSchema
     preconditions:
       - expr: "(input.owner + '/' + input.repository + '#' + string(input.number)) in state.entities.issue"
         code: NOT_FOUND

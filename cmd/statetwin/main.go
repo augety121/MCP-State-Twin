@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -254,6 +255,9 @@ func runServe(args []string) error {
 	if token == "" {
 		return errors.New("STATETWIN_CONTROL_TOKEN must be set")
 	}
+	if strings.ContainsAny(token, " \t\r\n") {
+		return errors.New("STATETWIN_CONTROL_TOKEN must not contain whitespace")
+	}
 	runtime, stateStore, err := loadRuntime(*specPath, *dbPath)
 	if err != nil {
 		return err
@@ -269,8 +273,8 @@ func runServe(args []string) error {
 		return err
 	}
 
-	dataServer := &http.Server{Addr: *dataAddr, Handler: server.NewDataPlane(runtime), ReadHeaderTimeout: 5 * time.Second}
-	controlServer := &http.Server{Addr: *controlAddr, Handler: server.NewControlPlane(stateStore, token), ReadHeaderTimeout: 5 * time.Second}
+	dataServer := hardenedHTTPServer(*dataAddr, server.NewDataPlane(runtime))
+	controlServer := hardenedHTTPServer(*controlAddr, server.NewControlPlane(stateStore, token))
 	for name, addr := range map[string]string{"data": *dataAddr, "control": *controlAddr} {
 		host, _, err := net.SplitHostPort(addr)
 		if err != nil {
@@ -303,6 +307,18 @@ func runServe(args []string) error {
 	_ = dataServer.Shutdown(shutdownCtx)
 	_ = controlServer.Shutdown(shutdownCtx)
 	return nil
+}
+
+func hardenedHTTPServer(address string, handler http.Handler) *http.Server {
+	return &http.Server{
+		Addr:              address,
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20,
+	}
 }
 
 func loadRuntime(specPath, dbPath string) (*engine.Runtime, *store.Store, error) {

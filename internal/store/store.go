@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/augety121/mcp-state-twin/internal/canonical"
@@ -20,6 +21,11 @@ var (
 )
 
 var idPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`)
+
+const (
+	applicationID = 0x5354574e // ASCII "STWN"
+	schemaVersion = 2
+)
 
 type Store struct {
 	db *sql.DB
@@ -35,12 +41,13 @@ type Branch struct {
 }
 
 type Snapshot struct {
-	ID          string       `json:"id"`
-	Name        string       `json:"name"`
-	SpecDigest  string       `json:"specDigest"`
-	State       *world.State `json:"state"`
-	StateDigest string       `json:"stateDigest"`
-	Clock       time.Time    `json:"clock"`
+	ID                   string       `json:"id"`
+	Name                 string       `json:"name"`
+	SpecDigest           string       `json:"specDigest"`
+	State                *world.State `json:"state"`
+	StateDigest          string       `json:"stateDigest"`
+	Clock                time.Time    `json:"clock"`
+	StorageSchemaVersion int          `json:"storageSchemaVersion"`
 }
 
 type CallOutcome struct {
@@ -55,6 +62,16 @@ type ApplyResult struct {
 	BeforeDigest string `json:"beforeDigest"`
 	AfterDigest  string `json:"afterDigest"`
 	CallIndex    int64  `json:"callIndex"`
+}
+
+type ControlAuditEntry struct {
+	ID           int64  `json:"id"`
+	Operation    string `json:"operation"`
+	BranchID     string `json:"branchId,omitempty"`
+	SnapshotName string `json:"snapshotName,omitempty"`
+	BeforeDigest string `json:"beforeDigest,omitempty"`
+	AfterDigest  string `json:"afterDigest,omitempty"`
+	CreatedAt    string `json:"createdAt"`
 }
 
 func Open(path string) (*Store, error) {
@@ -87,6 +104,26 @@ func Open(path string) (*Store, error) {
 func (s *Store) Close() error { return s.db.Close() }
 
 func (s *Store) migrate() error {
+	var appID int
+	if err := s.db.QueryRow(`PRAGMA application_id`).Scan(&appID); err != nil {
+		return fmt.Errorf("read SQLite application_id: %w", err)
+	}
+	if appID != 0 && appID != applicationID {
+		return fmt.Errorf("database application_id %d does not belong to MCP State Twin", appID)
+	}
+	var version int
+	if err := s.db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
+		return fmt.Errorf("read SQLite user_version: %w", err)
+	}
+	if version > schemaVersion {
+		return fmt.Errorf("database schema version %d is newer than supported version %d", version, schemaVersion)
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin SQLite migration: %w", err)
+	}
+	defer tx.Rollback()
 	const schema = `
 CREATE TABLE IF NOT EXISTS branches (
   id TEXT PRIMARY KEY,
@@ -103,6 +140,7 @@ CREATE TABLE IF NOT EXISTS snapshots (
   state_json BLOB NOT NULL,
   state_digest TEXT NOT NULL,
   clock TEXT NOT NULL,
+  storage_schema_version INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS audit (
@@ -117,9 +155,87 @@ CREATE TABLE IF NOT EXISTS audit (
   after_digest TEXT NOT NULL,
   created_at TEXT NOT NULL,
   FOREIGN KEY(branch_id) REFERENCES branches(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS control_audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  operation TEXT NOT NULL,
+  branch_id TEXT NOT NULL DEFAULT '',
+  snapshot_name TEXT NOT NULL DEFAULT '',
+  before_digest TEXT NOT NULL DEFAULT '',
+  after_digest TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL
 );`
-	if _, err := s.db.Exec(schema); err != nil {
+	if _, err := tx.Exec(schema); err != nil {
 		return fmt.Errorf("migrate SQLite schema: %w", err)
+	}
+	rows, err := tx.Query(`PRAGMA table_info(snapshots)`)
+	if err != nil {
+		return fmt.Errorf("inspect snapshot schema: %w", err)
+	}
+	hasStorageSchemaVersion := false
+	for rows.Next() {
+		var cid, notNull, primaryKey int
+		var name, columnType string
+		var defaultValue any
+		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &primaryKey); err != nil {
+			rows.Close()
+			return fmt.Errorf("scan snapshot schema: %w", err)
+		}
+		if name == "storage_schema_version" {
+			hasStorageSchemaVersion = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("iterate snapshot schema: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return fmt.Errorf("close snapshot schema rows: %w", err)
+	}
+	if !hasStorageSchemaVersion {
+		if _, err := tx.Exec(`ALTER TABLE snapshots ADD COLUMN storage_schema_version INTEGER NOT NULL DEFAULT 1`); err != nil {
+			return fmt.Errorf("add snapshot storage schema version: %w", err)
+		}
+	}
+	// Early development databases briefly used a uniqueness constraint on
+	// (branch_id, call_index). Reset intentionally rewinds call_index while the
+	// audit ledger remains append-only, so that legacy constraint must be
+	// removed without discarding records.
+	var auditSQL string
+	if err := tx.QueryRow(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'audit'`).Scan(&auditSQL); err != nil {
+		return fmt.Errorf("inspect audit schema: %w", err)
+	}
+	compactAuditSQL := strings.ToLower(strings.Join(strings.Fields(auditSQL), ""))
+	if strings.Contains(compactAuditSQL, "unique(branch_id,call_index)") {
+		if _, err := tx.Exec(`
+ALTER TABLE audit RENAME TO audit_legacy;
+CREATE TABLE audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  branch_id TEXT NOT NULL,
+  call_index INTEGER NOT NULL,
+  tool_name TEXT NOT NULL,
+  input_json BLOB NOT NULL,
+  result_json BLOB NOT NULL,
+  error_class TEXT NOT NULL,
+  before_digest TEXT NOT NULL,
+  after_digest TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY(branch_id) REFERENCES branches(id) ON DELETE CASCADE
+);
+INSERT INTO audit(id, branch_id, call_index, tool_name, input_json, result_json, error_class, before_digest, after_digest, created_at)
+SELECT id, branch_id, call_index, tool_name, input_json, result_json, error_class, before_digest, after_digest, created_at FROM audit_legacy;
+DROP TABLE audit_legacy;`); err != nil {
+			return fmt.Errorf("upgrade legacy audit schema: %w", err)
+		}
+	}
+	if _, err := tx.Exec(fmt.Sprintf(`PRAGMA application_id = %d`, applicationID)); err != nil {
+		return fmt.Errorf("set SQLite application_id: %w", err)
+	}
+	if _, err := tx.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, schemaVersion)); err != nil {
+		return fmt.Errorf("set SQLite user_version: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit SQLite migration: %w", err)
 	}
 	return nil
 }
@@ -252,15 +368,21 @@ func (s *Store) CreateSnapshot(ctx context.Context, name, branchID string) (*Sna
 	if err := validateID("snapshot name", name); err != nil {
 		return nil, err
 	}
-	branch, err := s.Branch(ctx, branchID)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin snapshot transaction: %w", err)
+	}
+	defer tx.Rollback()
+	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count FROM branches WHERE id = ?`, branchID))
 	if err != nil {
 		return nil, err
 	}
 	id, err := canonical.Digest(map[string]any{
-		"name":        name,
-		"specDigest":  branch.SpecDigest,
-		"stateDigest": branch.StateDigest,
-		"clock":       branch.Clock.UTC().Format(time.RFC3339Nano),
+		"name":                 name,
+		"specDigest":           branch.SpecDigest,
+		"stateDigest":          branch.StateDigest,
+		"clock":                branch.Clock.UTC().Format(time.RFC3339Nano),
+		"storageSchemaVersion": schemaVersion,
 	})
 	if err != nil {
 		return nil, err
@@ -269,20 +391,30 @@ func (s *Store) CreateSnapshot(ctx context.Context, name, branchID string) (*Sna
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.db.ExecContext(ctx, `
-INSERT INTO snapshots(id, name, spec_digest, state_json, state_digest, clock, created_at)
-VALUES(?, ?, ?, ?, ?, ?, ?)`, id, name, branch.SpecDigest, stateJSON, branch.StateDigest, branch.Clock.UTC().Format(time.RFC3339Nano), time.Now().UTC().Format(time.RFC3339Nano))
+	_, err = tx.ExecContext(ctx, `
+INSERT INTO snapshots(id, name, spec_digest, state_json, state_digest, clock, storage_schema_version, created_at)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?)`, id, name, branch.SpecDigest, stateJSON, branch.StateDigest, branch.Clock.UTC().Format(time.RFC3339Nano), schemaVersion, time.Now().UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return nil, fmt.Errorf("create snapshot: %w", err)
 	}
-	return &Snapshot{ID: id, Name: name, SpecDigest: branch.SpecDigest, State: branch.State, StateDigest: branch.StateDigest, Clock: branch.Clock}, nil
+	if err := appendControlAudit(ctx, tx, "snapshot.create", branchID, name, branch.StateDigest, branch.StateDigest); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit snapshot transaction: %w", err)
+	}
+	return &Snapshot{ID: id, Name: name, SpecDigest: branch.SpecDigest, State: branch.State, StateDigest: branch.StateDigest, Clock: branch.Clock, StorageSchemaVersion: schemaVersion}, nil
 }
 
 func (s *Store) snapshotByName(ctx context.Context, name string) (*Snapshot, error) {
+	return scanSnapshot(name, s.db.QueryRowContext(ctx, `SELECT id, spec_digest, state_json, state_digest, clock, storage_schema_version FROM snapshots WHERE name = ?`, name))
+}
+
+func scanSnapshot(name string, row rowScanner) (*Snapshot, error) {
 	var result Snapshot
 	var stateJSON []byte
 	var clockRaw string
-	err := s.db.QueryRowContext(ctx, `SELECT id, spec_digest, state_json, state_digest, clock FROM snapshots WHERE name = ?`, name).Scan(&result.ID, &result.SpecDigest, &stateJSON, &result.StateDigest, &clockRaw)
+	err := row.Scan(&result.ID, &result.SpecDigest, &stateJSON, &result.StateDigest, &clockRaw, &result.StorageSchemaVersion)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrSnapshotNotFound
@@ -307,7 +439,12 @@ func (s *Store) Fork(ctx context.Context, snapshotName, branchID string) error {
 	if err := validateID("branch ID", branchID); err != nil {
 		return err
 	}
-	snapshot, err := s.snapshotByName(ctx, snapshotName)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin fork transaction: %w", err)
+	}
+	defer tx.Rollback()
+	snapshot, err := scanSnapshot(snapshotName, tx.QueryRowContext(ctx, `SELECT id, spec_digest, state_json, state_digest, clock, storage_schema_version FROM snapshots WHERE name = ?`, snapshotName))
 	if err != nil {
 		return err
 	}
@@ -315,17 +452,35 @@ func (s *Store) Fork(ctx context.Context, snapshotName, branchID string) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.db.ExecContext(ctx, `
+	_, err = tx.ExecContext(ctx, `
 INSERT INTO branches(id, spec_digest, state_json, state_digest, clock, call_count)
 VALUES(?, ?, ?, ?, ?, 0)`, branchID, snapshot.SpecDigest, stateJSON, snapshot.StateDigest, snapshot.Clock.UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return fmt.Errorf("fork snapshot: %w", err)
 	}
+	if err := appendControlAudit(ctx, tx, "branch.fork", branchID, snapshotName, "", snapshot.StateDigest); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit fork transaction: %w", err)
+	}
 	return nil
 }
 
 func (s *Store) Reset(ctx context.Context, snapshotName, branchID string) error {
-	snapshot, err := s.snapshotByName(ctx, snapshotName)
+	if err := validateID("branch ID", branchID); err != nil {
+		return err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin reset transaction: %w", err)
+	}
+	defer tx.Rollback()
+	snapshot, err := scanSnapshot(snapshotName, tx.QueryRowContext(ctx, `SELECT id, spec_digest, state_json, state_digest, clock, storage_schema_version FROM snapshots WHERE name = ?`, snapshotName))
+	if err != nil {
+		return err
+	}
+	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count FROM branches WHERE id = ?`, branchID))
 	if err != nil {
 		return err
 	}
@@ -333,7 +488,7 @@ func (s *Store) Reset(ctx context.Context, snapshotName, branchID string) error 
 	if err != nil {
 		return err
 	}
-	result, err := s.db.ExecContext(ctx, `
+	result, err := tx.ExecContext(ctx, `
 UPDATE branches SET spec_digest = ?, state_json = ?, state_digest = ?, clock = ?, call_count = 0 WHERE id = ?`, snapshot.SpecDigest, stateJSON, snapshot.StateDigest, snapshot.Clock.UTC().Format(time.RFC3339Nano), branchID)
 	if err != nil {
 		return fmt.Errorf("reset branch: %w", err)
@@ -345,5 +500,47 @@ UPDATE branches SET spec_digest = ?, state_json = ?, state_digest = ?, clock = ?
 	if count == 0 {
 		return ErrBranchNotFound
 	}
+	if err := appendControlAudit(ctx, tx, "branch.reset", branchID, snapshotName, branch.StateDigest, snapshot.StateDigest); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit reset transaction: %w", err)
+	}
 	return nil
+}
+
+type sqlExecer interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+}
+
+func appendControlAudit(ctx context.Context, execer sqlExecer, operation, branchID, snapshotName, beforeDigest, afterDigest string) error {
+	_, err := execer.ExecContext(ctx, `
+INSERT INTO control_audit(operation, branch_id, snapshot_name, before_digest, after_digest, created_at)
+VALUES(?, ?, ?, ?, ?, ?)`, operation, branchID, snapshotName, beforeDigest, afterDigest, time.Now().UTC().Format(time.RFC3339Nano))
+	if err != nil {
+		return fmt.Errorf("append control audit: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) ControlAudit(ctx context.Context) ([]ControlAuditEntry, error) {
+	rows, err := s.db.QueryContext(ctx, `
+SELECT id, operation, branch_id, snapshot_name, before_digest, after_digest, created_at
+FROM control_audit ORDER BY id`)
+	if err != nil {
+		return nil, fmt.Errorf("query control audit: %w", err)
+	}
+	defer rows.Close()
+	var entries []ControlAuditEntry
+	for rows.Next() {
+		var entry ControlAuditEntry
+		if err := rows.Scan(&entry.ID, &entry.Operation, &entry.BranchID, &entry.SnapshotName, &entry.BeforeDigest, &entry.AfterDigest, &entry.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan control audit: %w", err)
+		}
+		entries = append(entries, entry)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate control audit: %w", err)
+	}
+	return entries, nil
 }

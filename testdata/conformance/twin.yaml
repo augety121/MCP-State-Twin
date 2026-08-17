@@ -1,0 +1,45 @@
+apiVersion: statetwin.dev/v1alpha1
+kind: Twin
+
+metadata:
+  name: mcp-conformance
+  upstream:
+    protocol: mcp
+    status: unbound
+  fidelity:
+    level: L1
+    status: unverified
+
+clock:
+  mode: virtual
+  initial: "2026-08-01T00:00:00Z"
+
+state:
+  entities:
+    marker:
+      key: [id]
+
+tools:
+  - name: json_schema_2020_12_tool
+    description: Tool with JSON Schema 2020-12 features
+    inputSchema:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      $defs:
+        address:
+          type: object
+          properties:
+            street: {type: string}
+            city: {type: string}
+      properties:
+        name: {type: string}
+        address:
+          $ref: "#/$defs/address"
+      additionalProperties: false
+    outputSchema:
+      type: object
+      additionalProperties: false
+      required: [ok]
+      properties:
+        ok: {type: boolean}
+    result: "{'ok': true}"
