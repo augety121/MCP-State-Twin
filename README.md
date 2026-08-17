@@ -239,4 +239,4 @@ That is not proof that no similar project exists. If stronger prior art appears,
 
 ## License
 
-Planned: Apache-2.0 or MIT. Final choice will be made before the first code release.
+MIT.
