@@ -74,12 +74,20 @@ Not yet implemented or verified:
   inspection/refresh;
 - deterministic fault injection or virtual-clock advancement;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
+- evidence-derived host compatibility reports or a provider harness;
 - differential validation or an L2 fidelity promotion workflow;
 - data-plane authentication, TLS, remote multi-tenancy, or a security audit.
 
 See [Implementation Status](docs/IMPLEMENTATION-STATUS.md) for the evidence and
 the exact partial boundaries. Roadmap items are not presented as current
 features.
+
+Protocol compatibility is intentionally narrower than model compatibility.
+The runtime can expose a provider-neutral MCP tool surface while ChatGPT,
+OpenAI API clients, Claude, Claude Code, and custom agents choose different
+tool trajectories. A host is listed as verified only after a versioned smoke
+run produces the evidence required by
+[SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md).
 
 ## Why this exists
 
@@ -495,6 +503,7 @@ Prompt instructions are not an authorization boundary.
 | [SPEC-0003](docs/SPEC-0003-MCP-BOUNDARIES-AND-COMPATIBILITY.md) | MCP data/control planes, hermetic mode, and provider neutrality |
 | [SPEC-0004](docs/SPEC-0004-EVIDENCE-FIDELITY-AND-RELEASE.md) | Evidence, provenance, fidelity, and release gates |
 | [SPEC-0005](docs/SPEC-0005-SCENARIO-AND-REPORT.md) | Bounded scenarios, state assertions, environment identity, and evidence report |
+| [SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md) | Host profiles, model-evaluation isolation, compatibility evidence, and claim language |
 | [ADR-0001](docs/ADR-0001-PROTOCOL-BASELINE.md) | MCP protocol baseline and provider neutrality |
 | [ADR-0002](docs/ADR-0002-CONTROL-PLANE-ISOLATION.md) | Data/control-plane isolation |
 | [ADR-0003](docs/ADR-0003-EXPRESSION-ENGINE.md) | Bounded CEL expressions |

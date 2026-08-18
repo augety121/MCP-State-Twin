@@ -35,6 +35,10 @@ Compatibility means protocol/tool usability, not model behavior equivalence.
 The supported matrix records host, provider, model, MCP protocol version,
 transport, tools/list, tools/call, schemas, errors, and test date.
 
+The normative host profiles, evidence levels, trial isolation, and claim
+language are defined by SPEC-0006. This document only defines the runtime
+boundary; it does not grant a provider-specific support claim.
+
 ChatGPT, OpenAI API, Claude, Claude Code, and other hosts may choose different
 tool trajectories. The core MUST remain provider-neutral and MUST NOT import a
 provider SDK to execute state transitions.

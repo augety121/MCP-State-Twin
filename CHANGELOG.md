@@ -24,3 +24,5 @@ have a tagged release.
 - bounded Scenario v1alpha1 execution with deterministic evidence reports,
   expected error classes, JSON Pointer state assertions, and a reference
   issue-closing scenario.
+- proposed host-compatibility and cross-model evaluation evidence contract in
+  SPEC-0006; this does not claim live provider support.

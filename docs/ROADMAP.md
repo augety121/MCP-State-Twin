@@ -7,13 +7,13 @@
 
 Progress: protocol, control-plane isolation, expression engine, storage,
 canonicalization, and operational logging decisions have ADRs. RFC-0001 remains
-the umbrella Draft; SPEC-0001 through SPEC-0005 now define the proposed
+the umbrella Draft; SPEC-0001 through SPEC-0006 now define the proposed
 normative layers and still require maintainer review before a tagged v0.1.
 
 Deliverables:
 
 - RFC-0001 umbrella reviewed and reconciled with RFC-0002.
-- SPEC-0001 through SPEC-0005 prepared as the proposed v0.1 normative set;
+- SPEC-0001 through SPEC-0006 prepared as the proposed v0.1 normative set;
   maintainer acceptance remains a governance gate.
 - Failure matrix P0/P1 reviewed.
 - ADRs for expression engine, storage snapshot strategy, MCP protocol support, and artifact format.

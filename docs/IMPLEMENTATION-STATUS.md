@@ -3,7 +3,7 @@
 **Build status:** development preview, no tagged release  
 **Last verified:** 2026-08-18
 **Authority:** this file reports implementation evidence. RFC-0001 is the
-umbrella design; RFC-0002 and SPEC-0001 through SPEC-0005 define the proposed
+umbrella design; RFC-0002 and SPEC-0001 through SPEC-0006 define the proposed
 v0.1 normative profile.
 
 ## Implemented and tested
@@ -61,6 +61,7 @@ v0.1 normative profile.
 - provider/model harnesses and live-agent trajectory capture;
 - official MCP conformance-suite execution;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
+- HostCompatibilityReport schema, serializer, and evidence-derived matrix;
 - differential validation against an upstream fixture service;
 - L2 promotion workflow and coverage report;
 - full import/export/migration tooling;
