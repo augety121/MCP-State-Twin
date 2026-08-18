@@ -1,123 +1,103 @@
-# MCP State Twin
+<div align="center">
+
+# 🪞 MCP State Twin
+
+**用于可复现 AI Agent 评测的确定性、可分叉、有状态 MCP 测试世界——不对生产环境产生副作用。**
+
+**简体中文** · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
 [![CI](https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml/badge.svg)](https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+![Status](https://img.shields.io/badge/status-development%20preview-orange)
+![Go](https://img.shields.io/badge/Go-1.26.x-00ADD8?logo=go&logoColor=white)
 
-> Fork the tool world, not production.
+> **分叉工具世界，而不是生产环境。**
 
-MCP State Twin is an experimental open-source environment layer for agent
-evaluation: deterministic, forkable, stateful test worlds behind Model Context
-Protocol (MCP) tools.
+</div>
 
-It lets agent engineers start multiple runs from the same world snapshot,
-allow each run to take a different valid tool trajectory, and compare terminal
-state without writing to a production service.
+MCP State Twin 是一个面向 Agent 评测的实验性开源环境层：它在 Model Context Protocol（MCP）工具背后提供**确定性、可分叉、有状态**的测试世界。
 
-It is not an AGI system, agent framework, memory system, RAG service, or model
-runtime. The intended AGI-facing primitive is a reproducible external world in
-which agents can act, fail, and be compared without production side effects.
+它允许 Agent 工程师从同一个不可变世界快照启动多次运行，让每次运行采取不同但合法的工具调用轨迹，并在**不写入生产服务**的前提下比较最终状态。
 
-```text
-                         immutable snapshot S0
-                                  |
-                   +--------------+--------------+
-                   |              |              |
-                fork A         fork B         fork C
-                   |              |              |
-               Agent A        Agent B        Agent C
-                   |              |              |
-                   +------ MCP State Twin -------+
-                                  |
-                    isolated state transitions
-                                  |
-                      canonical terminal diff
-
-                     production writes: none
+```mermaid
+flowchart TD
+    S0["不可变快照 S₀"] --> A["分叉 A"]
+    S0 --> B["分叉 B"]
+    S0 --> C["分叉 C"]
+    A --> AA["Agent A"]
+    B --> AB["Agent B"]
+    C --> AC["Agent C"]
+    AA --> T["MCP State Twin"]
+    AB --> T
+    AC --> T
+    T --> X["隔离的状态转换"]
+    X --> D["规范化最终状态 Diff"]
+    D --> P["生产环境写入：0"]
 ```
 
-## Status
+> [!NOTE]
+> README 的多语言版本用于帮助阅读，不重新定义项目语义。项目的技术语义与当前可声明能力边界，以 RFC、已接受 ADR、规范文档、Implementation Status 证据和可执行测试为准。
 
-**Development preview (`0.1.0-dev`), no tagged release.** The repository now
-contains a working Go CLI and runtime, but it is not production-ready and has
-not completed the RFC's v0.1 release gates.
+## 项目状态
 
-Implemented and exercised locally:
+**开发预览版（`0.1.0-dev`），当前没有已打标签的正式 Release。** 仓库已经包含可工作的 Go CLI 与运行时，但仍未达到 production-ready，也尚未完成 RFC 中 v0.1 的全部发布门槛。
 
-- strict TwinSpec `v1alpha1` YAML decoding, structural validation, and
-  hermetic JSON Schema 2020-12 input/output compilation;
-- canonical SHA-256 digests for specs, MCP tool surfaces, and world state;
-- upstream binding admission that fails closed for mismatched `current`,
-  `drifted`, or `unknown` surfaces;
-- 4,096-byte, cost-limited CEL expressions for preconditions, effects, queries,
-  postconditions, and global invariants;
-- SQLite-backed atomic transitions, versioned database identity, tool-call
-  audit, and transactional control-operation audit;
-- immutable logical snapshots, isolated forks, reset, and canonical state
-  diff;
-- stateless Streamable HTTP MCP data plane through the official Go SDK;
-- separately authenticated HTTP control plane;
-- six-tool issue-tracker reference twin with synthetic state;
-- unit, deterministic replay, MCP HTTP, authorization, output-rollback,
-  migration-refusal, and 100-fork isolation tests;
-- pinned official MCP conformance checks for initialize, ping, tools-list, and
-  JSON Schema 2020-12 on Linux CI;
-- bounded TwinSpec/CEL fuzz targets plus pinned secret-policy and loopback-only
-  hermetic CI gates (all passed in Linux CI run #6);
-- a tested CLI loop: initialize → snapshot → fork twice → mutate each fork →
-  diff terminal state.
-- a bounded Scenario v1alpha1 runner with deterministic environment identity,
-  ordered tool traces, JSON Pointer state assertions, and canonical state diff.
+### 已实现并经过本地/CI 覆盖的能力
 
-Not yet implemented or verified:
+- 严格的 TwinSpec `v1alpha1` YAML 解码与结构校验，以及 hermetic JSON Schema 2020-12 输入/输出编译；
+- 对 Spec、MCP 工具表面和世界状态生成规范化 SHA-256 摘要；
+- 上游绑定准入检查：当 `current`、`drifted` 或 `unknown` 工具表面不匹配时 fail closed；
+- 最大 4,096 字节、带执行成本限制的 CEL 表达式，用于前置条件、effects、查询、后置条件和全局不变量；
+- 基于 SQLite 的原子状态转换、版本化数据库身份、工具调用审计，以及事务化控制操作审计；
+- 不可变逻辑快照、隔离分叉、reset 和规范化状态 diff；
+- 基于官方 Go SDK 的无状态 Streamable HTTP MCP 数据面；
+- 独立鉴权的 HTTP 控制面；
+- 一个包含 6 个工具、使用合成状态的 issue-tracker 参考 Twin；
+- 单元测试、确定性重放测试、MCP HTTP 测试、鉴权测试、输出回滚测试、迁移拒绝测试，以及 100 分叉隔离测试；
+- Linux CI 中固定版本的官方 MCP conformance 检查，覆盖 initialize、ping、tools-list 和 JSON Schema 2020-12；
+- 有界 TwinSpec/CEL fuzz 目标，以及固定的 secret-policy 与仅 loopback 的 hermetic CI gate；
+- 已测试的 CLI 主链路：initialize → snapshot → fork 两次 → 分别修改 → diff 最终状态；
+- 有界 Scenario `v1alpha1` runner，提供确定性的环境身份、按序工具 trace、JSON Pointer 状态断言和规范化状态 diff。
 
-- recorder, cassette replay, trace redaction, or automatic upstream surface
-  inspection/refresh;
-- deterministic fault injection or virtual-clock advancement;
-- live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
-- evidence-derived host compatibility reports or a provider harness;
-- differential validation or an L2 fidelity promotion workflow;
-- data-plane authentication, TLS, remote multi-tenancy, or a security audit.
+### 尚未实现或尚未验证
 
-See [Implementation Status](docs/IMPLEMENTATION-STATUS.md) for the evidence and
-the exact partial boundaries. Roadmap items are not presented as current
-features.
+- recorder、cassette replay、trace 脱敏，或自动上游工具表面检查/刷新；
+- 确定性故障注入或虚拟时钟推进；
+- 真实 ChatGPT、OpenAI API、Claude 或 Claude Code smoke test；
+- 基于证据的 host 兼容性报告或 provider harness；
+- differential validation 或 L2 fidelity 晋级工作流；
+- 数据面鉴权、TLS、远程多租户或正式安全审计。
 
-Protocol compatibility is intentionally narrower than model compatibility.
-The runtime can expose a provider-neutral MCP tool surface while ChatGPT,
-OpenAI API clients, Claude, Claude Code, and custom agents choose different
-tool trajectories. A host is listed as verified only after a versioned smoke
-run produces the evidence required by
-[SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md).
+详见 [Implementation Status](docs/IMPLEMENTATION-STATUS.md)。路线图中的能力不会被描述成当前已实现功能。
 
-## Why this exists
+协议兼容性和模型兼容性是两个不同的问题。运行时可以暴露 provider-neutral 的 MCP 工具表面，但 ChatGPT、OpenAI API 客户端、Claude、Claude Code 以及自定义 Agent 可能选择完全不同的工具调用轨迹。只有在版本化 smoke run 产出 [SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md) 要求的证据后，某个 host 才会被列为已验证。
 
-Serious tool-using agent tests need more than plausible JSON.
+## 为什么要做这个项目
 
-An issue-tracker agent might read an issue, create a comment, retry after an
-ambiguous timeout, read the issue again, and close it only if the expected
-state exists. Every call changes what later calls should observe.
+严肃的工具型 Agent 测试，仅靠“看起来合理的 JSON”是不够的。
 
-Common approaches solve related but different problems:
+例如，一个 issue-tracker Agent 可能先读取 issue、创建评论、在模糊超时后重试、再次读取 issue，并且只有在预期状态真实存在时才关闭它。**每一次调用都会改变后续调用应该看到的世界。**
 
-| Approach | Primary strength | Boundary for agent evaluation |
+常见方案解决的是相关但不同的问题：
+
+| 方案 | 主要优势 | 用于 Agent 评测时的边界 |
 |---|---|---|
-| Record/replay | Reproduce a previously captured path | A new model may take a valid path that was never recorded |
-| Static MCP mock | Isolate a client and return controlled data | Cross-call state, constraints, and failure semantics may be incomplete |
-| Hand-built benchmark sandbox | Evaluate one curated task collection | Reuse for a developer-owned tool surface is not the primary abstraction |
-| Live test/production service | Exercise real behavior | Side effects, rate limits, cost, shared-state pollution, and irreproducible starts |
-| MCP State Twin | Execute explicit transitions on forkable world state | Fidelity is limited to behavior that has been modeled and validated |
+| Record/replay | 重现之前捕获过的调用路径 | 新模型可能采取从未被录制过、但仍然合法的路径 |
+| 静态 MCP mock | 隔离客户端并返回可控数据 | 跨调用状态、约束和失败语义可能不完整 |
+| 手工 benchmark sandbox | 评估一组精心设计的任务 | 复用开发者自有工具表面并不是其核心抽象 |
+| Live 测试/生产服务 | 运行真实行为 | 有副作用、限流、成本、共享状态污染，而且起点难以复现 |
+| **MCP State Twin** | 在可分叉世界状态上执行显式状态转换 | fidelity 只覆盖已经建模并验证的行为 |
 
-Record/replay is planned as the L0 fidelity mode; it is complementary rather
-than something this project needs to displace.
+Record/replay 计划作为 L0 fidelity 模式存在；它与 MCP State Twin 是互补关系，而不是要被取代的方案。
 
-## Quick start
+## 快速开始
 
-Requirements:
+### 环境要求
 
 - Go 1.26.x
 - Git
 
-Clone the repository and validate the reference TwinSpec:
+克隆仓库后，先校验参考 TwinSpec：
 
 ```bash
 go mod download
@@ -125,7 +105,7 @@ go run ./cmd/statetwin validate \
   --spec examples/issue-tracker/twin.yaml
 ```
 
-Create an isolated database and base snapshot:
+创建隔离数据库和基础快照：
 
 ```bash
 go run ./cmd/statetwin init \
@@ -136,14 +116,14 @@ go run ./cmd/statetwin init \
   --snapshot base
 ```
 
-Fork the same world twice:
+从同一个世界快照分叉两次：
 
 ```bash
 go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-a
 go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-b
 ```
 
-Take different valid trajectories:
+让两个分叉采取不同但合法的轨迹：
 
 ```bash
 go run ./cmd/statetwin call \
@@ -161,7 +141,7 @@ go run ./cmd/statetwin call \
   --input '{"owner":"octo","repository":"demo","number":1}'
 ```
 
-Compare terminal worlds:
+比较两个最终世界：
 
 ```bash
 go run ./cmd/statetwin diff \
@@ -170,13 +150,11 @@ go run ./cmd/statetwin diff \
   --after run-b
 ```
 
-The diff uses stable JSON Pointer paths. Object keys containing `/` are escaped
-according to JSON Pointer rules, so a key such as `octo/demo#1` appears as
-`octo~1demo#1`.
+Diff 使用稳定的 JSON Pointer 路径。对象 key 中的 `/` 会按 JSON Pointer 规则转义，例如 `octo/demo#1` 会显示为 `octo~1demo#1`。
 
-## Run a reproducible scenario
+## 运行可复现场景
 
-Execute the bundled state-scored scenario:
+执行仓库自带的、按状态评分的 Scenario：
 
 ```bash
 go run ./cmd/statetwin scenario \
@@ -185,31 +163,28 @@ go run ./cmd/statetwin scenario \
   --scenario examples/issue-tracker/scenario-close-issue.yaml
 ```
 
-The command exits non-zero on an unexpected error class or failed assertion.
-Its JSON report includes the environment digest, ordered tool trace, initial and
-terminal state digests, assertion evidence, and canonical state diff. The
-current runner identifies itself as `scripted-scenario`; this is deliberately
-not presented as a live Codex, OpenAI, Claude, or other model evaluation.
+如果出现非预期错误类别或断言失败，命令会以非 0 状态退出。JSON 报告包含：环境摘要、按序工具 trace、初始/最终状态摘要、断言证据和规范化状态 diff。
 
-Scenario reports contain tool inputs and results. Use synthetic fixtures only;
-do not commit reports containing credentials, production traces, or personal
-data.
+当前 runner 的身份是 `scripted-scenario`。它**不会**被描述成真实 Codex、OpenAI、Claude 或其他模型评测。
 
-## Run the MCP server
+> [!WARNING]
+> Scenario 报告会包含工具输入与结果。请只使用合成 fixture；不要提交含凭证、生产 trace 或个人数据的报告。
 
-Set a control-plane token. Do not commit it.
+## 运行 MCP Server
+
+先设置控制面 token，请勿提交到仓库：
 
 ```bash
 export STATETWIN_CONTROL_TOKEN='replace-with-a-local-secret'
 ```
 
-PowerShell:
+PowerShell：
 
 ```powershell
 $env:STATETWIN_CONTROL_TOKEN = 'replace-with-a-local-secret'
 ```
 
-Start the runtime:
+启动运行时：
 
 ```bash
 go run ./cmd/statetwin serve \
@@ -218,25 +193,21 @@ go run ./cmd/statetwin serve \
   --db demo.db
 ```
 
-Default endpoints:
+默认 endpoint：
 
-| Plane | Endpoint | Visible operations |
+| 平面 | Endpoint | 可见操作 |
 |---|---|---|
-| Agent data plane | `http://127.0.0.1:8090/mcp/main` | Only modeled business tools |
-| Private control plane | `http://127.0.0.1:8091/v1` | Branch state, snapshot, fork, reset, diff |
+| Agent 数据面 | `http://127.0.0.1:8090/mcp/main` | 仅暴露已建模业务工具 |
+| 私有控制面 | `http://127.0.0.1:8091/v1` | branch state、snapshot、fork、reset、diff |
 
-The branch ID is part of the MCP URL, not an extra model-visible tool argument.
-This keeps the tool input schema identical across branches.
+Branch ID 是 MCP URL 的一部分，而不是额外暴露给模型的工具参数，因此不同分支可以保持完全相同的工具输入 schema。
 
 > [!WARNING]
-> The current data plane has no authentication or TLS. Both servers bind to
-> loopback by default and should remain local. The control token is only one
-> development safeguard; it does not make this build safe for Internet
-> exposure.
+> 当前数据面没有鉴权或 TLS。两个服务默认只绑定 loopback，并应保持本地使用。控制面 token 只是开发期的一层保护，**不能**让当前构建版本适合直接暴露到公网。
 
-## Reference twin
+## 参考 Twin
 
-The included issue-tracker world exposes these agent-visible tools:
+仓库自带的 issue-tracker 世界向 Agent 暴露 6 个工具：
 
 - `get_repository`
 - `list_issues`
@@ -245,17 +216,13 @@ The included issue-tracker world exposes these agent-visible tools:
 - `add_comment`
 - `close_issue`
 
-Snapshot, fork, reset, diff, state inspection, and future fault controls are
-not MCP tools and do not appear in `tools/list`. An integration test connects
-with the official MCP Go client and verifies this boundary.
+Snapshot、fork、reset、diff、状态检查以及未来的 fault control **都不是 MCP 工具**，不会出现在 `tools/list` 中。集成测试通过官方 MCP Go client 验证这一边界。
 
-The reference twin is synthetic, `L1`, `unverified`, and `unbound` to an
-upstream service. It must not be described as a GitHub-equivalent environment.
+该参考 Twin 使用合成数据，fidelity 为 `L1`，状态为 `unverified`，并且 `unbound` 于任何上游服务。**它不能被描述为 GitHub 等价环境。**
 
 ## TwinSpec
 
-TwinSpec is the versioned, reviewable contract for a modeled tool world. A tool
-is more than `function(args) -> JSON`:
+TwinSpec 是对“已建模工具世界”进行版本化、可审查描述的契约。一个工具远不止 `function(args) -> JSON`：
 
 ```text
 tool behavior = input contract
@@ -266,7 +233,7 @@ tool behavior = input contract
               + time and idempotency semantics
 ```
 
-Excerpt from the executable reference spec:
+可执行参考 Spec 片段：
 
 ```yaml
 apiVersion: statetwin.dev/v1alpha1
@@ -307,14 +274,11 @@ tools:
         value: "{'state': 'closed', 'closedAt': clock}"
 ```
 
-The complete file is
-[examples/issue-tracker/twin.yaml](examples/issue-tracker/twin.yaml).
+完整文件见 [examples/issue-tracker/twin.yaml](examples/issue-tracker/twin.yaml)。
 
-### Expression boundary
+### 表达式边界
 
-TwinSpec expressions use `cel-go`. Source text is limited to 4,096 UTF-8 bytes,
-compiled at load time, and evaluated with a cost limit of 10,000. Expressions
-receive only JSON-shaped variables:
+TwinSpec 表达式使用 `cel-go`。源码长度限制为 4,096 UTF-8 字节，在加载阶段编译，并以 10,000 的 cost limit 执行。表达式只能访问 JSON 形态的变量：
 
 - `input`
 - `state`
@@ -323,29 +287,26 @@ receive only JSON-shaped variables:
 - `clock`
 - `call_index`
 
-No filesystem, process, network, reflection, or arbitrary Go functions are
-registered. Native extensions are not supported in `v1alpha1`.
+不会注册文件系统、进程、网络、反射或任意 Go 函数；`v1alpha1` 不支持 native extension。
 
-### JSON Schema boundary
+### JSON Schema 边界
 
-Tool inputs and successful outputs are compiled and validated as JSON Schema
-Draft 2020-12. Format assertions are enabled. Local `$defs` and fragments are
-supported, while references that require an external network or filesystem
-resource fail at startup. An invalid declared output rolls back the transition
-and returns `INTERNAL_TWIN_ERROR`.
+工具输入和成功输出都会按 JSON Schema Draft 2020-12 编译和校验，并启用 format assertion。支持本地 `$defs` 与 fragment；如果 `$ref` 需要访问外部网络或文件系统资源，运行时会在启动阶段失败。
 
-### Current effect operations
+如果声明的成功输出不符合 schema，该状态转换会回滚，并返回 `INTERNAL_TWIN_ERROR`。
 
-| Operation | Semantics |
+### 当前 effect 操作
+
+| 操作 | 语义 |
 |---|---|
-| `allocate` | Increment a named deterministic sequence and bind the result to `vars` |
-| `insert` | Insert one keyed entity; conflict if it exists |
-| `update` | Replace or merge one keyed entity; fail if missing |
-| `delete` | Delete one keyed entity; fail if missing |
+| `allocate` | 对命名确定性 sequence 自增，并把结果绑定到 `vars` |
+| `insert` | 插入一个带 key 的实体；已存在时冲突 |
+| `update` | 替换或 merge 一个带 key 的实体；不存在时失败 |
+| `delete` | 删除一个带 key 的实体；不存在时失败 |
 
-## Determinism contract
+## 确定性契约
 
-The environment—not the language model—is deterministic:
+**确定的是环境，不是语言模型。**
 
 ```text
 E = (runtime version,
@@ -357,17 +318,13 @@ E = (runtime version,
 execute(E) -> (ordered structured results, final state digest)
 ```
 
-Current code virtualizes state allocation and time exposed to expressions. A
-test replays a 1,000-call corpus on two branches and checks equality after
-every transition and at the final state.
+当前实现会虚拟化状态分配，以及表达式可见的时间。测试会在两个 branch 上重放 1,000 次调用语料，并在每次状态转换后与最终状态上检查一致性。
 
-The model can still choose different calls. That is expected. Each comparison
-run starts from the same immutable snapshot, while success is evaluated from
-terminal state and declared invariants rather than exact trajectory equality.
+模型仍然可以选择不同的调用序列，这是预期行为。比较运行从同一个不可变快照出发，成功与否根据最终状态和声明的不变量判断，而不是强制要求调用轨迹逐步完全一致。
 
-## Error and transaction semantics
+## 错误与事务语义
 
-Normal tool transitions run inside one SQLite transaction:
+普通工具状态转换在一个 SQLite 事务中完成：
 
 ```text
 load branch head
@@ -378,8 +335,7 @@ load branch head
   -> commit state and audit record atomically
 ```
 
-Failed domain outcomes keep the prior state digest and still append a tool-call
-audit record. The implemented canonical error classes include:
+Domain failure 会保留之前的 state digest，同时仍追加一条工具调用审计记录。当前规范化错误类别包括：
 
 - `INVALID_INPUT`
 - `PRECONDITION_FAILED`
@@ -389,51 +345,36 @@ audit record. The implemented canonical error classes include:
 - `UNMODELED_BEHAVIOR`
 - `INTERNAL_TWIN_ERROR`
 
-Timeout-before-effect, timeout-after-effect, partial-effect, rate-limit, and
-eventual-consistency faults remain specified but are not implemented yet.
+以下 fault 目前仍处于已规范但未实现状态：timeout-before-effect、timeout-after-effect、partial-effect、rate-limit、eventual-consistency。
 
-SQLite files carry the State Twin application ID and an explicit schema
-version. Snapshots persist that storage schema version and bind it into their
-IDs. Foreign databases and versions newer than the runtime are rejected.
-Snapshot, fork, and reset write a separate control-audit row in the same
-transaction as the privileged mutation; bearer tokens and HTTP headers are not
-recorded.
+SQLite 文件带有 State Twin application ID 和显式 schema version。Snapshot 会持久化该存储 schema version，并将其绑定进 snapshot ID。非本项目数据库，以及版本高于当前运行时的数据库都会被拒绝。
 
-## Fidelity levels
+Snapshot、fork 和 reset 会在特权状态修改所在的同一事务里写入独立 control-audit 行；bearer token 和 HTTP header 不会被记录。
 
-“Twin” does not mean “perfect copy.” Fidelity must be declared, bounded, and
-supported by evidence.
+## Fidelity 等级
 
-| Level | Meaning | Intended use |
+“Twin”并不意味着“完美副本”。Fidelity 必须被明确声明、限制在可证明范围内，并由证据支持。
+
+| 等级 | 含义 | 预期用途 |
 |---|---|---|
-| L0 — Cassette replay | Match recorded interactions | Exact-path smoke/regression tests |
-| L1 — Stateful template | Explicit entities and reviewed basic transitions | Development and exploratory workflow tests |
-| L2 — Contract-backed | Human-reviewed rules, invariants, differential tests, upstream fingerprint | CI/evaluation within declared coverage |
-| L3 — Native/reference | Shared or domain-provided reference logic | High-fidelity domain simulation |
+| L0 — Cassette replay | 匹配已录制交互 | 精确路径 smoke/regression test |
+| L1 — Stateful template | 显式实体 + 经审查的基础状态转换 | 开发与探索性 workflow test |
+| L2 — Contract-backed | 人工审查规则、不变量、differential test、上游 fingerprint | 在已声明覆盖范围内做 CI/评测 |
+| L3 — Native/reference | 共享或领域提供的参考逻辑 | 高保真领域模拟 |
 
-Generated or inferred behavior cannot promote itself to L2/L3. The current
-reference twin is L1 and unverified.
+自动生成或推断出的行为不能自行把 fidelity 提升到 L2/L3。当前参考 Twin 是 **L1 + unverified**。
 
-## MCP and model providers
+## MCP 与模型提供方
 
-The core integrates with MCP, not with model-provider SDKs. This is deliberate:
-the project can provide one tool surface without claiming different models will
-select the same tools or follow the same trajectory.
+核心项目集成的是 MCP，而不是某个模型厂商的 SDK。这是有意设计：项目可以提供统一的工具表面，但不会声称不同模型会选择相同工具或遵循相同轨迹。
 
-The automated integration test covers the official Go SDK as both server and
-client over stateless Streamable HTTP. Linux CI also runs the official MCP
-conformance framework `v0.1.16` for initialize, ping, tools-list, and JSON
-Schema 2020-12. That framework currently exercises protocol versions through
-`2025-11-25`; it does not prove every feature of the design baseline
-`2026-07-28`.
+自动化集成测试使用官方 Go SDK 作为 server 与 client，并通过 stateless Streamable HTTP 通信。Linux CI 还会运行固定版本的官方 MCP conformance framework `v0.1.16`，覆盖 initialize、ping、tools-list 和 JSON Schema 2020-12。
 
-OpenAI documents remote MCP
-servers and ChatGPT Developer mode read/write tools; Anthropic documents remote
-MCP tool calls and currently limits its Messages API connector to the tool-call
-subset. Those external capabilities motivated the tools-first design, but this
-repository has **not** run live provider smoke tests yet.
+该 conformance framework 当前覆盖到 `2025-11-25` 协议版本；这**不等于**证明设计基线 `2026-07-28` 的每个特性都已经通过验证。
 
-Design-source links:
+OpenAI 已公开 remote MCP server 与 ChatGPT Developer mode 的读写工具能力；Anthropic 也公开了 remote MCP tool call，并且其 Messages API connector 当前只支持 tool-call 子集。这些外部能力推动了本项目的 tools-first 设计，但**本仓库尚未完成真实 provider smoke test**。
+
+设计来源：
 
 - [MCP Specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)
 - [Official MCP Go SDK](https://github.com/modelcontextprotocol/go-sdk)
@@ -455,9 +396,9 @@ statetwin serve      run separate MCP data and HTTP control planes
 statetwin version    print the development version
 ```
 
-CLI output is structured JSON except for server logs and fatal diagnostics.
+除 server log 与 fatal diagnostic 外，CLI 输出均为结构化 JSON。
 
-## Test and build
+## 测试与构建
 
 ```bash
 gofmt -w .
@@ -467,105 +408,94 @@ go test -race ./...
 go build ./cmd/statetwin
 ```
 
-The latest local verification was performed on Windows amd64 with Go 1.26.5.
-GitHub Actions runs formatting, vet, race-enabled tests, coverage collection,
-and build on Linux after the repository is published.
+当前 README 基线记录的最近本地验证环境为 Windows amd64 + Go 1.26.5。GitHub Actions 在 Linux 上执行 formatting、vet、race-enabled test、coverage collection 和 build。
 
-## Architecture boundaries
+## 架构与信任边界
 
-The project intentionally separates two trust domains:
+项目明确拆分两个 trust domain：
 
-### Agent data plane
+### Agent 数据面
 
-- exposes only business tools declared by TwinSpec;
-- binds a branch through the URL;
-- never advertises hidden expected state or test controls;
-- returns typed domain failures as MCP tool errors the model can observe.
+- 只暴露 TwinSpec 声明的业务工具；
+- 通过 URL 绑定 branch；
+- 永远不向 Agent 广播隐藏的 expected state 或测试控制能力；
+- 将 typed domain failure 作为 Agent 可观察的 MCP tool error 返回。
 
-### Simulation control plane
+### Simulation 控制面
 
-- requires an independent bearer token;
-- supports branch state, snapshot, fork, reset, and diff;
-- binds to a different loopback address/port by default;
-- is operated by a test harness or human, not the agent under test.
+- 使用独立 bearer token；
+- 支持 branch state、snapshot、fork、reset 和 diff；
+- 默认绑定到另一组 loopback 地址/端口；
+- 由 test harness 或人操作，而不是由被测 Agent 控制。
 
-Prompt instructions are not an authorization boundary.
+**Prompt instruction 不是授权边界。**
 
-## Documentation
+## 文档
 
-| Document | Purpose |
+| 文档 | 作用 |
 |---|---|
-| [Implementation Status](docs/IMPLEMENTATION-STATUS.md) | Evidence-backed implemented/partial/missing matrix |
-| [RFC-0001](docs/RFC-0001.md) | Product boundary, hard invariants, architecture, semantics, and release gates |
-| [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) | Normative first-release profile, limits, traceability, and gates |
-| [SPEC-0001](docs/SPEC-0001-TWINSPEC-CORE.md) | TwinSpec v1alpha1 data model and admission rules |
-| [SPEC-0002](docs/SPEC-0002-RUNTIME-SEMANTICS.md) | Determinism, transactions, snapshots, errors, and limits |
-| [SPEC-0003](docs/SPEC-0003-MCP-BOUNDARIES-AND-COMPATIBILITY.md) | MCP data/control planes, hermetic mode, and provider neutrality |
-| [SPEC-0004](docs/SPEC-0004-EVIDENCE-FIDELITY-AND-RELEASE.md) | Evidence, provenance, fidelity, and release gates |
-| [SPEC-0005](docs/SPEC-0005-SCENARIO-AND-REPORT.md) | Bounded scenarios, state assertions, environment identity, and evidence report |
-| [SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md) | Host profiles, model-evaluation isolation, compatibility evidence, and claim language |
-| [ADR-0001](docs/ADR-0001-PROTOCOL-BASELINE.md) | MCP protocol baseline and provider neutrality |
-| [ADR-0002](docs/ADR-0002-CONTROL-PLANE-ISOLATION.md) | Data/control-plane isolation |
-| [ADR-0003](docs/ADR-0003-EXPRESSION-ENGINE.md) | Bounded CEL expressions |
-| [ADR-0004](docs/ADR-0004-STORAGE-AND-SNAPSHOTS.md) | SQLite and logical snapshot strategy |
+| [Implementation Status](docs/IMPLEMENTATION-STATUS.md) | 基于证据的 implemented / partial / missing 矩阵 |
+| [RFC-0001](docs/RFC-0001.md) | 产品边界、硬不变量、架构、语义和 release gate |
+| [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) | 首个 release 的规范化 profile、限制、traceability 和 gate |
+| [SPEC-0001](docs/SPEC-0001-TWINSPEC-CORE.md) | TwinSpec v1alpha1 数据模型与 admission rule |
+| [SPEC-0002](docs/SPEC-0002-RUNTIME-SEMANTICS.md) | 确定性、事务、snapshot、错误与限制 |
+| [SPEC-0003](docs/SPEC-0003-MCP-BOUNDARIES-AND-COMPATIBILITY.md) | MCP 数据/控制面、hermetic mode 与 provider neutrality |
+| [SPEC-0004](docs/SPEC-0004-EVIDENCE-FIDELITY-AND-RELEASE.md) | 证据、provenance、fidelity 与 release gate |
+| [SPEC-0005](docs/SPEC-0005-SCENARIO-AND-REPORT.md) | 有界 Scenario、状态断言、环境身份与证据报告 |
+| [SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md) | Host profile、模型评测隔离、兼容性证据与声明语言 |
+| [ADR-0001](docs/ADR-0001-PROTOCOL-BASELINE.md) | MCP 协议基线与 provider neutrality |
+| [ADR-0002](docs/ADR-0002-CONTROL-PLANE-ISOLATION.md) | 数据面 / 控制面隔离 |
+| [ADR-0003](docs/ADR-0003-EXPRESSION-ENGINE.md) | 有界 CEL 表达式 |
+| [ADR-0004](docs/ADR-0004-STORAGE-AND-SNAPSHOTS.md) | SQLite 与逻辑 snapshot 策略 |
 | [ADR-0005](docs/ADR-0005-CANONICAL-JSON.md) | Alpha canonical digest contract |
-| [ADR-0006](docs/ADR-0006-JSON-SCHEMA-VALIDATION.md) | Hermetic JSON Schema 2020-12 validation |
-| [ADR-0007](docs/ADR-0007-STORAGE-IDENTITY-AND-CONTROL-AUDIT.md) | SQLite identity/version and privileged-operation audit |
-| [ADR-0008](docs/ADR-0008-MCP-TOOL-SURFACE-DIGEST.md) | Canonical model-facing MCP surface and fail-closed binding |
-| [ADR-0009](docs/ADR-0009-OPERATIONAL-LOGGING-BOUNDARY.md) | Operational log redaction boundary |
-| [ADR-0010](docs/ADR-0010-SCENARIO-ARTIFACTS.md) | Bounded scenario artifacts and scripted evidence reports |
-| [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md) | Design risks and required responses—not a test-completion report |
-| [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md) | P0-by-P0 evidence, exclusions, and stable-release blockers |
-| [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) | Dated prior-art screen and rejected directions |
-| [Roadmap](docs/ROADMAP.md) | Ordered phases and exit criteria |
+| [ADR-0006](docs/ADR-0006-JSON-SCHEMA-VALIDATION.md) | Hermetic JSON Schema 2020-12 校验 |
+| [ADR-0007](docs/ADR-0007-STORAGE-IDENTITY-AND-CONTROL-AUDIT.md) | SQLite identity/version 与特权操作审计 |
+| [ADR-0008](docs/ADR-0008-MCP-TOOL-SURFACE-DIGEST.md) | 规范化 model-facing MCP surface 与 fail-closed binding |
+| [ADR-0009](docs/ADR-0009-OPERATIONAL-LOGGING-BOUNDARY.md) | Operational log 脱敏边界 |
+| [ADR-0010](docs/ADR-0010-SCENARIO-ARTIFACTS.md) | 有界 Scenario artifact 与 scripted evidence report |
+| [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md) | 设计风险和必需响应；不是测试完成报告 |
+| [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md) | P0 逐项证据、排除项和稳定发布 blocker |
+| [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) | 带日期的 prior-art 调研与被拒方案 |
+| [Roadmap](docs/ROADMAP.md) | 有序阶段与退出标准 |
 
-The RFC and accepted ADRs define intended semantics. Implementation Status and
-executable tests define what the current development build can honestly claim.
+RFC 和已接受 ADR 定义设计意图；Implementation Status 与可执行测试定义当前开发构建**实际上可以诚实声明什么**。
 
-## Roadmap to the first tagged release
+## 首个正式 Release 路线图
 
-The next release-critical work is:
+当前 release-critical 工作包括：
 
-1. virtual-time advancement and deterministic scheduled faults;
-2. crash kill-point and tagged-database migration fixtures;
-3. upstream surface inspector and automated refresh (canonical local binding is implemented);
-4. prove the new egress-deny hermetic integration gate on Linux CI;
-5. pinned official MCP conformance scenarios for the tools-first subset;
-6. live OpenAI/ChatGPT and Anthropic/Claude smoke-test matrix;
-7. recorder redaction tests if recorder enters v0.1 scope; repository secret
-   scanning is configured separately;
-8. differential validation and an honest L2 coverage report;
-9. a second independent stateful reference domain;
-10. complete P0/P1 failure-mode traceability.
+1. 虚拟时间推进与确定性的计划故障；
+2. crash kill-point 与 tagged-database migration fixture；
+3. 上游 surface inspector 与自动刷新（规范化本地 binding 已实现）；
+4. 在 Linux CI 上证明新的 egress-deny hermetic integration gate；
+5. 固定版本的官方 MCP conformance scenario，覆盖 tools-first 子集；
+6. 真实 OpenAI/ChatGPT 与 Anthropic/Claude smoke-test 矩阵；
+7. 如果 recorder 进入 v0.1 scope，则补齐 recorder redaction test；仓库 secret scanning 独立配置；
+8. differential validation 与诚实的 L2 coverage report；
+9. 第二个独立、有状态的参考领域；
+10. 完成 P0/P1 failure-mode traceability。
 
-Cloud hosting, registries, marketplaces, and automatic production mirroring are
-not release priorities.
+Cloud hosting、registry、marketplace 和自动生产镜像不是首个正式 Release 的优先事项。
 
-## Contributing and security
+## 贡献与安全
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing protocol, TwinSpec,
-canonicalization, or trust-boundary semantics.
+在修改 protocol、TwinSpec、canonicalization 或 trust-boundary 语义前，请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-Read [SECURITY.md](SECURITY.md) before using the runtime with anything other
-than synthetic local fixtures. Do not commit credentials, production traces,
-personal data, or third-party recordings that cannot legally be redistributed.
+在使用合成本地 fixture 以外的任何数据前，请阅读 [SECURITY.md](SECURITY.md)。不要提交凭证、生产 trace、个人数据，或你无权重新分发的第三方录制内容。
 
-## Positioning and research caveat
+## 项目定位与研究声明
 
-The project does not claim to be the first mock server, stateful sandbox,
-service-virtualization system, or digital twin. The narrower hypothesis is that
-agent engineering benefits from a reusable combination of:
+本项目**不声称**自己是第一个 mock server、stateful sandbox、service virtualization 系统或 digital twin。
 
-- an MCP-compatible agent-facing surface;
-- explicit state-transition contracts;
-- forkable deterministic world state;
-- strict control-plane isolation;
-- declared fidelity and differential validation.
+它提出的更窄假设是：Agent 工程需要一种可复用组合，将以下能力放在一起：
 
-The prior-art search is documented in
-[Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md). A dated public search
-cannot prove that no similar public, private, or unindexed project exists. The
-positioning should change if stronger prior art appears.
+- MCP-compatible 的 Agent-facing surface；
+- 显式状态转换契约；
+- 可分叉的确定性世界状态；
+- 严格控制面隔离；
+- 明确声明的 fidelity 与 differential validation。
+
+Prior-art 调研记录在 [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md)。一次带日期的公开检索无法证明不存在类似的公开、私有或未被索引项目。如果出现更强的 prior art，本项目的定位应随证据调整。
 
 ## License
 
