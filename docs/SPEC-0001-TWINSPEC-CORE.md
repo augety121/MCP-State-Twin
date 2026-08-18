@@ -29,9 +29,10 @@ state: {}
 tools: []
 ```
 
-Unknown typed fields MUST be rejected. The document MUST be at most 1 MiB.
-YAML aliases, multiple documents, remote references, and native extensions are
-not supported by v1alpha1.
+Unknown typed fields MUST be rejected. The document MUST be at most 1 MiB and
+MUST NOT exceed structural depth 128.
+YAML anchors, aliases, explicit tags, multiple documents, remote references,
+and native extensions are not supported by v1alpha1.
 
 ## 3. Metadata and binding
 

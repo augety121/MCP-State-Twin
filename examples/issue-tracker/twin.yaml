@@ -44,7 +44,7 @@ tools:
       additionalProperties: false
       required: [repository]
       properties:
-        repository: &repositorySchema
+        repository:
           type: object
           additionalProperties: false
           required: [owner, name, defaultBranch]
@@ -74,7 +74,7 @@ tools:
       properties:
         issues:
           type: array
-          items: &issueSchema
+          items:
             type: object
             additionalProperties: false
             required: [repository, number, title, body, state, createdAt]
@@ -108,7 +108,18 @@ tools:
       additionalProperties: false
       required: [issue]
       properties:
-        issue: *issueSchema
+        issue:
+          type: object
+          additionalProperties: false
+          required: [repository, number, title, body, state, createdAt]
+          properties:
+            repository: {type: string, minLength: 1}
+            number: {type: integer, minimum: 1}
+            title: {type: string, minLength: 1}
+            body: {type: string}
+            state: {type: string, enum: [open, closed]}
+            createdAt: {type: string, format: date-time}
+            closedAt: {type: string, format: date-time}
     query:
       entity: issue
       key: "input.owner + '/' + input.repository + '#' + string(input.number)"
@@ -131,7 +142,18 @@ tools:
       additionalProperties: false
       required: [issue]
       properties:
-        issue: *issueSchema
+        issue:
+          type: object
+          additionalProperties: false
+          required: [repository, number, title, body, state, createdAt]
+          properties:
+            repository: {type: string, minLength: 1}
+            number: {type: integer, minimum: 1}
+            title: {type: string, minLength: 1}
+            body: {type: string}
+            state: {type: string, enum: [open, closed]}
+            createdAt: {type: string, format: date-time}
+            closedAt: {type: string, format: date-time}
     preconditions:
       - expr: "(input.owner + '/' + input.repository) in state.entities.repository"
         code: NOT_FOUND
@@ -169,7 +191,7 @@ tools:
       additionalProperties: false
       required: [comment]
       properties:
-        comment: &commentSchema
+        comment:
           type: object
           additionalProperties: false
           required: [id, issue, body, createdAt]
@@ -211,7 +233,18 @@ tools:
       additionalProperties: false
       required: [issue]
       properties:
-        issue: *issueSchema
+        issue:
+          type: object
+          additionalProperties: false
+          required: [repository, number, title, body, state, createdAt]
+          properties:
+            repository: {type: string, minLength: 1}
+            number: {type: integer, minimum: 1}
+            title: {type: string, minLength: 1}
+            body: {type: string}
+            state: {type: string, enum: [open, closed]}
+            createdAt: {type: string, format: date-time}
+            closedAt: {type: string, format: date-time}
     preconditions:
       - expr: "(input.owner + '/' + input.repository + '#' + string(input.number)) in state.entities.issue"
         code: NOT_FOUND

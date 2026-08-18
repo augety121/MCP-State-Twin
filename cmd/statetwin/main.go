@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -18,11 +19,14 @@ import (
 
 	"github.com/augety121/mcp-state-twin/internal/engine"
 	"github.com/augety121/mcp-state-twin/internal/logging"
+	statetwinscenario "github.com/augety121/mcp-state-twin/internal/scenario"
 	"github.com/augety121/mcp-state-twin/internal/server"
 	"github.com/augety121/mcp-state-twin/internal/spec"
 	"github.com/augety121/mcp-state-twin/internal/store"
 	"github.com/augety121/mcp-state-twin/internal/world"
 )
+
+const maxFixtureBytes = 16 << 20
 
 func main() {
 	if len(os.Args) < 2 {
@@ -46,6 +50,8 @@ func main() {
 		err = runFork(ctx, os.Args[2:])
 	case "diff":
 		err = runDiff(ctx, os.Args[2:])
+	case "scenario":
+		err = runScenario(ctx, os.Args[2:])
 	case "serve":
 		err = runServe(os.Args[2:])
 	case "version":
@@ -74,6 +80,7 @@ Usage:
   statetwin snapshot --db twin.db --branch main --name base
   statetwin fork --db twin.db --snapshot base --branch run-a
   statetwin diff --db twin.db --before run-a --after run-b
+  statetwin scenario --spec twin.yaml --fixture state.json --scenario scenario.yaml
   statetwin serve --spec twin.yaml --fixture state.json --db twin.db
 
 Control-plane authentication is read from STATETWIN_CONTROL_TOKEN.`)
@@ -243,6 +250,45 @@ func runDiff(ctx context.Context, args []string) error {
 	return printJSON(map[string]any{"changes": changes})
 }
 
+func runScenario(ctx context.Context, args []string) error {
+	flags := flag.NewFlagSet("scenario", flag.ContinueOnError)
+	specPath := flags.String("spec", "", "TwinSpec YAML path")
+	fixturePath := flags.String("fixture", "", "initial state JSON path")
+	scenarioPath := flags.String("scenario", "", "Scenario YAML path")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if *specPath == "" {
+		return errors.New("--spec is required")
+	}
+	if *scenarioPath == "" {
+		return errors.New("--scenario is required")
+	}
+	twin, err := spec.Load(*specPath)
+	if err != nil {
+		return err
+	}
+	initial, err := loadFixture(*fixturePath)
+	if err != nil {
+		return err
+	}
+	scenario, err := statetwinscenario.Load(*scenarioPath)
+	if err != nil {
+		return err
+	}
+	report, err := statetwinscenario.Run(ctx, twin, initial, scenario, server.Version)
+	if err != nil {
+		return err
+	}
+	if err := printJSON(report); err != nil {
+		return err
+	}
+	if !report.Passed {
+		return errors.New("scenario assertions failed")
+	}
+	return nil
+}
+
 func runServe(args []string) error {
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	specPath := flags.String("spec", "", "TwinSpec YAML path")
@@ -352,11 +398,17 @@ func loadFixture(path string) (*world.State, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read fixture: %w", err)
 	}
+	if len(data) > maxFixtureBytes {
+		return nil, fmt.Errorf("decode fixture: document exceeds %d bytes", maxFixtureBytes)
+	}
 	var state world.State
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&state); err != nil {
 		return nil, fmt.Errorf("decode fixture: %w", err)
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return nil, errors.New("decode fixture: document must contain one JSON value")
 	}
 	state.Normalize()
 	return &state, nil

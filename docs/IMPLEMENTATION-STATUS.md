@@ -3,7 +3,7 @@
 **Build status:** development preview, no tagged release  
 **Last verified:** 2026-08-18
 **Authority:** this file reports implementation evidence. RFC-0001 is the
-umbrella design; RFC-0002 and SPEC-0001 through SPEC-0004 define the proposed
+umbrella design; RFC-0002 and SPEC-0001 through SPEC-0005 define the proposed
 v0.1 normative profile.
 
 ## Implemented and tested
@@ -34,8 +34,10 @@ v0.1 normative profile.
 | Control authentication | independent bearer-token HTTP test |
 | Control auth grammar | missing scheme and raw-token negative tests; constant-time token comparison |
 | Operational log boundary | CLI errors pass through secret/identifier redaction; redaction unit tests |
+| Strict YAML safety | shared decoder rejects multiple documents, unknown fields, explicit tags, anchors, and aliases |
 | Reference environment | six-tool issue-tracker TwinSpec with synthetic fixture |
 | CLI closed loop | init → snapshot → two forks → different calls → canonical diff run locally |
+| Scripted scenario runner | bounded Scenario v1alpha1 parser, expected error classes, JSON Pointer assertions, deterministic environment/report digests, ordered trace, and state diff |
 
 ## Partially implemented
 
@@ -56,7 +58,7 @@ v0.1 normative profile.
 - L0 cassette replay;
 - deterministic fault injection;
 - virtual-clock advancement and eventual consistency;
-- scenario runner and provider harnesses;
+- provider/model harnesses and live-agent trajectory capture;
 - official MCP conformance-suite execution;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
 - differential validation against an upstream fixture service;

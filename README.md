@@ -1,5 +1,8 @@
 # MCP State Twin
 
+[![CI](https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml/badge.svg)](https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 > Fork the tool world, not production.
 
 MCP State Twin is an experimental open-source environment layer for agent
@@ -62,6 +65,8 @@ Implemented and exercised locally:
   hermetic CI gates (all passed in Linux CI run #6);
 - a tested CLI loop: initialize → snapshot → fork twice → mutate each fork →
   diff terminal state.
+- a bounded Scenario v1alpha1 runner with deterministic environment identity,
+  ordered tool traces, JSON Pointer state assertions, and canonical state diff.
 
 Not yet implemented or verified:
 
@@ -160,6 +165,27 @@ go run ./cmd/statetwin diff \
 The diff uses stable JSON Pointer paths. Object keys containing `/` are escaped
 according to JSON Pointer rules, so a key such as `octo/demo#1` appears as
 `octo~1demo#1`.
+
+## Run a reproducible scenario
+
+Execute the bundled state-scored scenario:
+
+```bash
+go run ./cmd/statetwin scenario \
+  --spec examples/issue-tracker/twin.yaml \
+  --fixture examples/issue-tracker/state.json \
+  --scenario examples/issue-tracker/scenario-close-issue.yaml
+```
+
+The command exits non-zero on an unexpected error class or failed assertion.
+Its JSON report includes the environment digest, ordered tool trace, initial and
+terminal state digests, assertion evidence, and canonical state diff. The
+current runner identifies itself as `scripted-scenario`; this is deliberately
+not presented as a live Codex, OpenAI, Claude, or other model evaluation.
+
+Scenario reports contain tool inputs and results. Use synthetic fixtures only;
+do not commit reports containing credentials, production traces, or personal
+data.
 
 ## Run the MCP server
 
@@ -468,6 +494,7 @@ Prompt instructions are not an authorization boundary.
 | [SPEC-0002](docs/SPEC-0002-RUNTIME-SEMANTICS.md) | Determinism, transactions, snapshots, errors, and limits |
 | [SPEC-0003](docs/SPEC-0003-MCP-BOUNDARIES-AND-COMPATIBILITY.md) | MCP data/control planes, hermetic mode, and provider neutrality |
 | [SPEC-0004](docs/SPEC-0004-EVIDENCE-FIDELITY-AND-RELEASE.md) | Evidence, provenance, fidelity, and release gates |
+| [SPEC-0005](docs/SPEC-0005-SCENARIO-AND-REPORT.md) | Bounded scenarios, state assertions, environment identity, and evidence report |
 | [ADR-0001](docs/ADR-0001-PROTOCOL-BASELINE.md) | MCP protocol baseline and provider neutrality |
 | [ADR-0002](docs/ADR-0002-CONTROL-PLANE-ISOLATION.md) | Data/control-plane isolation |
 | [ADR-0003](docs/ADR-0003-EXPRESSION-ENGINE.md) | Bounded CEL expressions |
@@ -477,6 +504,7 @@ Prompt instructions are not an authorization boundary.
 | [ADR-0007](docs/ADR-0007-STORAGE-IDENTITY-AND-CONTROL-AUDIT.md) | SQLite identity/version and privileged-operation audit |
 | [ADR-0008](docs/ADR-0008-MCP-TOOL-SURFACE-DIGEST.md) | Canonical model-facing MCP surface and fail-closed binding |
 | [ADR-0009](docs/ADR-0009-OPERATIONAL-LOGGING-BOUNDARY.md) | Operational log redaction boundary |
+| [ADR-0010](docs/ADR-0010-SCENARIO-ARTIFACTS.md) | Bounded scenario artifacts and scripted evidence reports |
 | [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md) | Design risks and required responses—not a test-completion report |
 | [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md) | P0-by-P0 evidence, exclusions, and stable-release blockers |
 | [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) | Dated prior-art screen and rejected directions |

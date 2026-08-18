@@ -16,6 +16,7 @@ go mod download
 go test ./...
 go build ./cmd/statetwin
 go run ./cmd/statetwin validate --spec examples/issue-tracker/twin.yaml
+go run ./cmd/statetwin scenario --spec examples/issue-tracker/twin.yaml --fixture examples/issue-tracker/state.json --scenario examples/issue-tracker/scenario-close-issue.yaml
 ```
 
 Before submitting a change:
@@ -37,6 +38,7 @@ Open an ADR or RFC change before implementing anything that changes:
 - failure taxonomy;
 - fidelity-level meaning;
 - supported MCP protocol behavior.
+- Scenario/report semantics or environment identity.
 
 ## Pull requests
 

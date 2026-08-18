@@ -75,6 +75,12 @@ func TestUnknownAndDriftedSurfaceCannotStart(t *testing.T) {
 	}
 }
 
+func TestNewRejectsNilTwinSpec(t *testing.T) {
+	if _, err := New(nil, nil); err == nil || !strings.Contains(err.Error(), "TwinSpec is required") {
+		t.Fatalf("expected nil TwinSpec rejection, got %v", err)
+	}
+}
+
 func TestToolResultSizeLimitFailsClosed(t *testing.T) {
 	twin := testSpec()
 	twin.Tools[0].Result = "{'payload': input.payload}"

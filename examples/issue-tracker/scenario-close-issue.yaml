@@ -1,0 +1,54 @@
+apiVersion: statetwin.dev/v1alpha1
+kind: Scenario
+
+metadata:
+  name: close-issue
+
+steps:
+  - id: inspect
+    tool: get_issue
+    input:
+      owner: octo
+      repository: demo
+      number: 1
+    expect:
+      errorClass: ""
+      assertions:
+        - path: /entities/issue/octo~1demo#1/state
+          operator: equals
+          value: open
+
+  - id: close
+    tool: close_issue
+    input:
+      owner: octo
+      repository: demo
+      number: 1
+    expect:
+      errorClass: ""
+      assertions:
+        - path: /entities/issue/octo~1demo#1/state
+          operator: equals
+          value: closed
+        - path: /entities/issue/octo~1demo#1/closedAt
+          operator: equals
+          value: "2026-08-01T00:00:00Z"
+
+  - id: reject-duplicate-close
+    tool: close_issue
+    input:
+      owner: octo
+      repository: demo
+      number: 1
+    expect:
+      errorClass: CONFLICT
+      assertions:
+        - path: /entities/issue/octo~1demo#1/state
+          operator: equals
+          value: closed
+
+finalAssertions:
+  - path: /entities/comment
+    operator: exists
+  - path: /entities/issue/octo~1demo#1/deletedAt
+    operator: absent

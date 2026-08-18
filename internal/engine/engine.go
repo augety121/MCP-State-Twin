@@ -31,6 +31,12 @@ type Runtime struct {
 }
 
 func New(twin *spec.TwinSpec, stateStore *store.Store) (*Runtime, error) {
+	if twin == nil {
+		return nil, fmt.Errorf("TwinSpec is required")
+	}
+	if err := twin.Validate(); err != nil {
+		return nil, err
+	}
 	digest, err := twin.Digest()
 	if err != nil {
 		return nil, err

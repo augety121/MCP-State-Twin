@@ -13,6 +13,7 @@
 *.test
 *.out
 coverage.*
+.codex-go-cache-*/
 
 # Editors and operating systems
 .idea/

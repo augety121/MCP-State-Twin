@@ -1,0 +1,37 @@
+name: Feature request
+description: Propose a concrete, evidence-backed capability
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Engineering problem
+      description: Describe the user workflow or correctness gap, not only the proposed implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and users
+      description: Link issues, benchmarks, integrations, or maintainers that demonstrate demand.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed contract
+      description: Include failure semantics, limits, compatibility, and test strategy.
+    validations:
+      required: true
+  - type: checkboxes
+    id: invariants
+    attributes:
+      label: Invariants
+      options:
+        - label: The proposal keeps hermetic mode free of upstream production writes.
+          required: true
+        - label: The proposal does not expose control-plane tools to agents.
+          required: true
+        - label: Unknown behavior fails explicitly instead of inventing success.
+          required: true

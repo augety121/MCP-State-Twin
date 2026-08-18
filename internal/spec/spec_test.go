@@ -86,6 +86,14 @@ func TestValidateRejectsMalformedSurfaceDigest(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsUnknownErrorClass(t *testing.T) {
+	s := minimalSpec()
+	s.Tools[0].Preconditions = []Condition{{Expr: "true", Code: "MADE_UP"}}
+	if err := s.Validate(); err == nil || !strings.Contains(err.Error(), "canonical error class") {
+		t.Fatalf("expected error-class rejection, got %v", err)
+	}
+}
+
 func TestValidateRejectsOversizedAndDeepSchemas(t *testing.T) {
 	tooLarge := minimalSpec()
 	tooLarge.Tools[0].InputSchema["description"] = strings.Repeat("x", MaxSchemaBytes)

@@ -19,3 +19,8 @@ have a tagged release.
 - CLI commands for validation, initialization, calls, state, snapshots, forks,
   diffs, and serving;
 - unit and MCP HTTP integration tests.
+- strict shared YAML admission that rejects aliases, anchors, explicit tags,
+  multiple documents, and unknown fields;
+- bounded Scenario v1alpha1 execution with deterministic evidence reports,
+  expected error classes, JSON Pointer state assertions, and a reference
+  issue-closing scenario.

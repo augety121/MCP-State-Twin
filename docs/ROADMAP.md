@@ -7,13 +7,13 @@
 
 Progress: protocol, control-plane isolation, expression engine, storage,
 canonicalization, and operational logging decisions have ADRs. RFC-0001 remains
-the umbrella Draft; SPEC-0001 through SPEC-0004 now define the proposed
+the umbrella Draft; SPEC-0001 through SPEC-0005 now define the proposed
 normative layers and still require maintainer review before a tagged v0.1.
 
 Deliverables:
 
 - RFC-0001 umbrella reviewed and reconciled with RFC-0002.
-- SPEC-0001 through SPEC-0004 prepared as the proposed v0.1 normative set;
+- SPEC-0001 through SPEC-0005 prepared as the proposed v0.1 normative set;
   maintainer acceptance remains a governance gate.
 - Failure matrix P0/P1 reviewed.
 - ADRs for expression engine, storage snapshot strategy, MCP protocol support, and artifact format.
@@ -55,7 +55,8 @@ Exit criteria:
 ## Phase 2 — Snapshot/fork world model
 
 Progress: logical snapshots, isolated forks, reset, and canonical diff are
-implemented. The 100-way concurrent isolation gate passes. Export/import and
+implemented. The 100-way concurrent isolation gate passes. A bounded Scenario
+v1alpha1 format and scripted evidence report are implemented. Export/import and
 retention/GC remain incomplete.
 
 Build:

@@ -1,0 +1,47 @@
+name: Bug report
+description: Report reproducible incorrect or unsafe behavior
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not attach credentials, production traces, or personal data. Prefer the synthetic issue-tracker fixture or a minimal replacement.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: c64dac8 or v0.x.y
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include commands and a synthetic TwinSpec/Scenario when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and sanitized evidence
+    validations:
+      required: true
+  - type: dropdown
+    id: boundary
+    attributes:
+      label: Affected boundary
+      options:
+        - TwinSpec or Scenario admission
+        - Deterministic runtime/state
+        - Snapshot/fork/control plane
+        - MCP data plane
+        - CLI or documentation
+        - Unknown
+    validations:
+      required: true

@@ -23,6 +23,8 @@ jobs:
         run: go vet ./...
       - name: Test
         run: go test -race -coverprofile=coverage.out ./...
+      - name: Scenario smoke
+        run: go run ./cmd/statetwin scenario --spec examples/issue-tracker/twin.yaml --fixture examples/issue-tracker/state.json --scenario examples/issue-tracker/scenario-close-issue.yaml
       - name: Build
         run: go build ./cmd/statetwin
 

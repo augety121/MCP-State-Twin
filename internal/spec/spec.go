@@ -1,17 +1,15 @@
 package spec
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/augety121/mcp-state-twin/internal/canonical"
-	"gopkg.in/yaml.v3"
+	"github.com/augety121/mcp-state-twin/internal/strictyaml"
 )
 
 const (
@@ -29,6 +27,11 @@ const (
 var (
 	namePattern   = regexp.MustCompile(`^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$`)
 	digestPattern = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
+	errorClasses  = map[string]struct{}{
+		"INVALID_INPUT": {}, "PRECONDITION_FAILED": {}, "NOT_FOUND": {},
+		"CONFLICT": {}, "INVARIANT_VIOLATION": {}, "UNMODELED_BEHAVIOR": {},
+		"INTERNAL_TWIN_ERROR": {},
+	}
 )
 
 type TwinSpec struct {
@@ -144,21 +147,9 @@ func Load(path string) (*TwinSpec, error) {
 
 // Decode strictly decodes exactly one TwinSpec YAML document.
 func Decode(data []byte) (*TwinSpec, error) {
-	if len(data) > MaxTwinSpecBytes {
-		return nil, fmt.Errorf("decode TwinSpec: document exceeds %d bytes", MaxTwinSpecBytes)
-	}
-	decoder := yaml.NewDecoder(bytes.NewReader(data))
-	decoder.KnownFields(true)
 	var result TwinSpec
-	if err := decoder.Decode(&result); err != nil {
-		return nil, fmt.Errorf("decode TwinSpec: %w", err)
-	}
-	var trailing any
-	if err := decoder.Decode(&trailing); err != io.EOF {
-		if err == nil {
-			return nil, errors.New("decode TwinSpec: multiple YAML documents are not allowed")
-		}
-		return nil, fmt.Errorf("decode TwinSpec trailing document: %w", err)
+	if err := strictyaml.DecodeOne(data, MaxTwinSpecBytes, "TwinSpec", &result); err != nil {
+		return nil, err
 	}
 	if err := result.Validate(); err != nil {
 		return nil, err
@@ -178,6 +169,11 @@ func ToolAnnotations(tool ToolSpec) SurfaceAnnotations {
 		}
 	}
 	return annotations
+}
+
+func IsCanonicalErrorClass(value string) bool {
+	_, ok := errorClasses[value]
+	return ok
 }
 
 // Surface returns a stable MCP tool surface independent of TwinSpec tool order.
@@ -279,6 +275,16 @@ func (s *TwinSpec) Validate() error {
 		if tool.OutputSchema != nil {
 			if err := validateSchemaBudget(tool.OutputSchema); err != nil {
 				problems = append(problems, prefix+".outputSchema "+err.Error())
+			}
+		}
+		for j, condition := range tool.Preconditions {
+			if condition.Code != "" && !IsCanonicalErrorClass(condition.Code) {
+				problems = append(problems, fmt.Sprintf("%s.preconditions[%d].code is not a canonical error class", prefix, j))
+			}
+		}
+		for j, condition := range tool.Postconditions {
+			if condition.Code != "" && !IsCanonicalErrorClass(condition.Code) {
+				problems = append(problems, fmt.Sprintf("%s.postconditions[%d].code is not a canonical error class", prefix, j))
 			}
 		}
 		for j, effect := range tool.Effects {
