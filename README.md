@@ -1,28 +1,51 @@
 <div align="center">
 
-# 🪞 MCP State Twin
+<h1>MCP State Twin</h1>
 
-**用于可复现 AI Agent 评测的确定性、可分叉、有状态 MCP 测试世界——不对生产环境产生副作用。**
+<p><strong>用于可复现 AI Agent 评测的确定性、可分叉、有状态 MCP 测试世界</strong></p>
+<p>从同一世界快照出发，让不同 Agent 安全地执行不同工具轨迹，再比较最终状态——不写入生产服务。</p>
 
-**简体中文** · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
+<p>
+  <strong>简体中文</strong> ·
+  <a href="README.en.md">English</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ko.md">한국어</a>
+</p>
 
-[![CI](https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml/badge.svg)](https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Status](https://img.shields.io/badge/status-development%20preview-orange)
-![Go](https://img.shields.io/badge/Go-1.26.x-00ADD8?logo=go&logoColor=white)
+<p>
+  <a href="https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/augety121/MCP-State-Twin/ci.yml?branch=main&style=flat-square&label=CI&logo=githubactions&logoColor=white"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/augety121/MCP-State-Twin?style=flat-square&label=License"></a>
+  <img alt="Go 1.26.x" src="https://img.shields.io/badge/Go-1.26.x-00ADD8?style=flat-square&logo=go&logoColor=white">
+  <img alt="MCP" src="https://img.shields.io/badge/MCP-Streamable_HTTP-5B5BD6?style=flat-square">
+  <img alt="Development Preview" src="https://img.shields.io/badge/status-development_preview-D97706?style=flat-square">
+</p>
 
-> **Fork the tool world, not production.**  
-> **分叉工具世界，而不是生产环境。**
+<p><strong>Fork the tool world, not production.</strong></p>
+<p><code>snapshot</code> → <code>fork</code> → <code>act</code> → <code>assert</code> → <code>diff</code></p>
 
 </div>
 
 > [!IMPORTANT]
-> **当前为开发预览版 `0.1.0-dev`，尚无正式 tagged release，也不是 production-ready。**  
-> README 用于帮助理解项目；当前实现究竟可以声明什么，以 [Implementation Status](docs/IMPLEMENTATION-STATUS.md)、RFC、已接受 ADR、规范文档以及可执行测试证据为准。
+> **Development Preview · `0.1.0-dev` · 无正式 tagged release · 非 production-ready。**  
+> 当前实现究竟可以声明什么，以 [Implementation Status](docs/IMPLEMENTATION-STATUS.md)、RFC、已接受 ADR、规范文档和可执行测试证据为准。Roadmap 中的能力不会被当作当前功能宣传。
 
-**快速入口：** [快速开始](#快速开始) · [工作原理](#30-秒看懂工作原理) · [当前状态](#当前状态) · [TwinSpec](#twinspec) · [确定性契约](#确定性契约) · [安全边界](#架构与安全边界) · [文档地图](#文档地图)
+<p align="center">
+  <a href="#快速开始"><strong>快速开始</strong></a> ·
+  <a href="#30-秒看懂工作原理">工作原理</a> ·
+  <a href="#当前状态">当前状态</a> ·
+  <a href="#twinspec">TwinSpec</a> ·
+  <a href="#架构与安全边界">安全边界</a> ·
+  <a href="#文档地图">文档地图</a>
+</p>
 
----
+<table>
+<tr>
+<td width="25%" align="center"><strong>Reproducible</strong><br><sub>从同一不可变 Snapshot 起步</sub></td>
+<td width="25%" align="center"><strong>Forkable</strong><br><sub>每次评测拥有隔离 Branch</sub></td>
+<td width="25%" align="center"><strong>Stateful</strong><br><sub>跨工具调用保留真实状态演化</sub></td>
+<td width="25%" align="center"><strong>Comparable</strong><br><sub>用 Assertion 与 Canonical Diff 比较终态</sub></td>
+</tr>
+</table>
 
 ## MCP State Twin 是什么？
 
@@ -53,6 +76,83 @@ MCP State Twin **不是**：
 - 可以直接暴露到公网的 production service。
 
 “Twin”表示**明确声明、可审查、由证据约束的行为模型**，而不是无限制地声称与真实服务完全等价。
+
+---
+
+## 快速开始
+
+### 环境要求
+
+- Go 1.26.x
+- Git
+
+### 1. 获取代码并验证 TwinSpec
+
+```bash
+git clone https://github.com/augety121/MCP-State-Twin.git
+cd MCP-State-Twin
+
+go mod download
+
+go run ./cmd/statetwin validate \
+  --spec examples/issue-tracker/twin.yaml
+```
+
+### 2. 初始化世界并创建基础 Snapshot
+
+```bash
+go run ./cmd/statetwin init \
+  --spec examples/issue-tracker/twin.yaml \
+  --fixture examples/issue-tracker/state.json \
+  --db demo.db \
+  --branch main \
+  --snapshot base
+```
+
+### 3. 从同一个 Snapshot 创建两个隔离 Fork
+
+```bash
+go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-a
+go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-b
+```
+
+### 4. 让两个 Fork 走不同的合法轨迹
+
+```bash
+go run ./cmd/statetwin call \
+  --spec examples/issue-tracker/twin.yaml \
+  --db demo.db \
+  --branch run-a \
+  --tool create_issue \
+  --input '{"owner":"octo","repository":"demo","title":"Fork A","body":"Created only in A"}'
+
+go run ./cmd/statetwin call \
+  --spec examples/issue-tracker/twin.yaml \
+  --db demo.db \
+  --branch run-b \
+  --tool close_issue \
+  --input '{"owner":"octo","repository":"demo","number":1}'
+```
+
+### 5. 比较最终世界
+
+```bash
+go run ./cmd/statetwin diff \
+  --db demo.db \
+  --before run-a \
+  --after run-b
+```
+
+Diff 使用稳定的 JSON Pointer path。对象 key 中的 `/` 会按 JSON Pointer 规则转义，例如 `octo/demo#1` 会显示为 `octo~1demo#1`。
+
+### 这段 Demo 在验证什么？
+
+它不是在验证两个 Agent 必须走同一条路径，而是在验证：
+
+- 两个运行拥有相同起点；
+- 两个 branch 的状态修改彼此隔离；
+- 工具调用产生真实的跨调用状态变化；
+- 最终世界可以通过 canonical diff 稳定比较。
 
 ---
 
@@ -175,83 +275,6 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 </details>
 
 完整证据与 partial boundaries 请看 [Implementation Status](docs/IMPLEMENTATION-STATUS.md)。**Roadmap 中的能力不会被描述成当前已实现功能。**
-
----
-
-## 快速开始
-
-### 环境要求
-
-- Go 1.26.x
-- Git
-
-### 1. 获取代码并验证 TwinSpec
-
-```bash
-git clone https://github.com/augety121/MCP-State-Twin.git
-cd MCP-State-Twin
-
-go mod download
-
-go run ./cmd/statetwin validate \
-  --spec examples/issue-tracker/twin.yaml
-```
-
-### 2. 初始化世界并创建基础 Snapshot
-
-```bash
-go run ./cmd/statetwin init \
-  --spec examples/issue-tracker/twin.yaml \
-  --fixture examples/issue-tracker/state.json \
-  --db demo.db \
-  --branch main \
-  --snapshot base
-```
-
-### 3. 从同一个 Snapshot 创建两个隔离 Fork
-
-```bash
-go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-a
-go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-b
-```
-
-### 4. 让两个 Fork 走不同的合法轨迹
-
-```bash
-go run ./cmd/statetwin call \
-  --spec examples/issue-tracker/twin.yaml \
-  --db demo.db \
-  --branch run-a \
-  --tool create_issue \
-  --input '{"owner":"octo","repository":"demo","title":"Fork A","body":"Created only in A"}'
-
-go run ./cmd/statetwin call \
-  --spec examples/issue-tracker/twin.yaml \
-  --db demo.db \
-  --branch run-b \
-  --tool close_issue \
-  --input '{"owner":"octo","repository":"demo","number":1}'
-```
-
-### 5. 比较最终世界
-
-```bash
-go run ./cmd/statetwin diff \
-  --db demo.db \
-  --before run-a \
-  --after run-b
-```
-
-Diff 使用稳定的 JSON Pointer path。对象 key 中的 `/` 会按 JSON Pointer 规则转义，例如 `octo/demo#1` 会显示为 `octo~1demo#1`。
-
-### 这段 Demo 在验证什么？
-
-它不是在验证两个 Agent 必须走同一条路径，而是在验证：
-
-- 两个运行拥有相同起点；
-- 两个 branch 的状态修改彼此隔离；
-- 工具调用产生真实的跨调用状态变化；
-- 最终世界可以通过 canonical diff 稳定比较。
 
 ---
 
@@ -716,4 +739,6 @@ Prior-art 调研记录在 [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md)
 
 ## License
 
-[MIT](LICENSE)
+MCP State Twin 使用 **MIT License**。完整、具有约束力的许可证文本见 [LICENSE](LICENSE)。
+
+README 中对许可证的任何说明仅用于帮助阅读；若存在差异，以 `LICENSE` 文件中的标准 MIT 文本为准。

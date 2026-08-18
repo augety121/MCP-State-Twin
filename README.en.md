@@ -1,27 +1,51 @@
 <div align="center">
 
-# 🪞 MCP State Twin
+<h1>MCP State Twin</h1>
 
-**Deterministic, forkable, stateful MCP test worlds for reproducible AI agent evaluation—without production side effects.**
+<p><strong>Deterministic, forkable, stateful MCP test worlds for reproducible AI agent evaluation</strong></p>
+<p>Start from the same world snapshot, let agents take different valid tool trajectories, then compare terminal state—without writing to production services.</p>
 
-[简体中文](README.md) · **English** · [日本語](README.ja.md) · [한국어](README.ko.md)
+<p>
+  <a href="README.md">简体中文</a> ·
+  <strong>English</strong> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ko.md">한국어</a>
+</p>
 
-[![CI](https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml/badge.svg)](https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Status](https://img.shields.io/badge/status-development%20preview-orange)
-![Go](https://img.shields.io/badge/Go-1.26.x-00ADD8?logo=go&logoColor=white)
+<p>
+  <a href="https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/augety121/MCP-State-Twin/ci.yml?branch=main&style=flat-square&label=CI&logo=githubactions&logoColor=white"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/augety121/MCP-State-Twin?style=flat-square&label=License"></a>
+  <img alt="Go 1.26.x" src="https://img.shields.io/badge/Go-1.26.x-00ADD8?style=flat-square&logo=go&logoColor=white">
+  <img alt="MCP" src="https://img.shields.io/badge/MCP-Streamable_HTTP-5B5BD6?style=flat-square">
+  <img alt="Development Preview" src="https://img.shields.io/badge/status-development_preview-D97706?style=flat-square">
+</p>
 
-> **Fork the tool world, not production.**
+<p><strong>Fork the tool world, not production.</strong></p>
+<p><code>snapshot</code> → <code>fork</code> → <code>act</code> → <code>assert</code> → <code>diff</code></p>
 
 </div>
 
 > [!IMPORTANT]
-> **MCP State Twin is currently a development preview (`0.1.0-dev`), with no tagged release, and is not production-ready.**  
-> This README is explanatory. Current implementation claims are bounded by [Implementation Status](docs/IMPLEMENTATION-STATUS.md), the RFCs, accepted ADRs, specifications, and executable test evidence.
+> **Development Preview · `0.1.0-dev` · no tagged release · not production-ready.**  
+> Current claims are bounded by [Implementation Status](docs/IMPLEMENTATION-STATUS.md), the RFCs, accepted ADRs, specifications, and executable test evidence. Roadmap items are not presented as current features.
 
-**Quick links:** [Quick start](#quick-start) · [How it works](#how-it-works-in-30-seconds) · [Status](#current-status) · [TwinSpec](#twinspec) · [Determinism](#determinism-contract) · [Security boundaries](#architecture-and-security-boundaries) · [Docs](#documentation-map)
+<p align="center">
+  <a href="#quick-start"><strong>Quick start</strong></a> ·
+  <a href="#how-it-works-in-30-seconds">How it works</a> ·
+  <a href="#current-status">Status</a> ·
+  <a href="#twinspec">TwinSpec</a> ·
+  <a href="#architecture-and-security-boundaries">Security</a> ·
+  <a href="#documentation-map">Docs</a>
+</p>
 
----
+<table>
+<tr>
+<td width="25%" align="center"><strong>Reproducible</strong><br><sub>Start from the same immutable snapshot</sub></td>
+<td width="25%" align="center"><strong>Forkable</strong><br><sub>Give each evaluation an isolated branch</sub></td>
+<td width="25%" align="center"><strong>Stateful</strong><br><sub>Preserve real cross-call state transitions</sub></td>
+<td width="25%" align="center"><strong>Comparable</strong><br><sub>Score terminal state with assertions and canonical diffs</sub></td>
+</tr>
+</table>
 
 ## What is MCP State Twin?
 
@@ -52,6 +76,83 @@ MCP State Twin is **not**:
 - an Internet-ready production service.
 
 “Twin” means a **declared, reviewable behavior model with explicit evidence boundaries**, not an unlimited claim that the simulated world is identical to production.
+
+---
+
+## Quick start
+
+### Requirements
+
+- Go 1.26.x
+- Git
+
+### 1. Clone and validate the reference TwinSpec
+
+```bash
+git clone https://github.com/augety121/MCP-State-Twin.git
+cd MCP-State-Twin
+
+go mod download
+
+go run ./cmd/statetwin validate \
+  --spec examples/issue-tracker/twin.yaml
+```
+
+### 2. Initialize a world and create the base snapshot
+
+```bash
+go run ./cmd/statetwin init \
+  --spec examples/issue-tracker/twin.yaml \
+  --fixture examples/issue-tracker/state.json \
+  --db demo.db \
+  --branch main \
+  --snapshot base
+```
+
+### 3. Fork the same snapshot twice
+
+```bash
+go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-a
+go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-b
+```
+
+### 4. Take different valid trajectories
+
+```bash
+go run ./cmd/statetwin call \
+  --spec examples/issue-tracker/twin.yaml \
+  --db demo.db \
+  --branch run-a \
+  --tool create_issue \
+  --input '{"owner":"octo","repository":"demo","title":"Fork A","body":"Created only in A"}'
+
+go run ./cmd/statetwin call \
+  --spec examples/issue-tracker/twin.yaml \
+  --db demo.db \
+  --branch run-b \
+  --tool close_issue \
+  --input '{"owner":"octo","repository":"demo","number":1}'
+```
+
+### 5. Compare terminal worlds
+
+```bash
+go run ./cmd/statetwin diff \
+  --db demo.db \
+  --before run-a \
+  --after run-b
+```
+
+The diff uses stable JSON Pointer paths. Object keys containing `/` are escaped according to JSON Pointer rules, so `octo/demo#1` appears as `octo~1demo#1`.
+
+### What this demo proves
+
+It does not prove that two agents take the same path. It demonstrates that:
+
+- both runs can start from the same world state;
+- branch mutations remain isolated;
+- tool calls produce real cross-call state transitions;
+- terminal worlds can be compared through a canonical diff.
 
 ---
 
@@ -174,83 +275,6 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 </details>
 
 See [Implementation Status](docs/IMPLEMENTATION-STATUS.md) for evidence and exact partial boundaries. **Roadmap items are not presented as current features.**
-
----
-
-## Quick start
-
-### Requirements
-
-- Go 1.26.x
-- Git
-
-### 1. Clone and validate the reference TwinSpec
-
-```bash
-git clone https://github.com/augety121/MCP-State-Twin.git
-cd MCP-State-Twin
-
-go mod download
-
-go run ./cmd/statetwin validate \
-  --spec examples/issue-tracker/twin.yaml
-```
-
-### 2. Initialize a world and create the base snapshot
-
-```bash
-go run ./cmd/statetwin init \
-  --spec examples/issue-tracker/twin.yaml \
-  --fixture examples/issue-tracker/state.json \
-  --db demo.db \
-  --branch main \
-  --snapshot base
-```
-
-### 3. Fork the same snapshot twice
-
-```bash
-go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-a
-go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-b
-```
-
-### 4. Take different valid trajectories
-
-```bash
-go run ./cmd/statetwin call \
-  --spec examples/issue-tracker/twin.yaml \
-  --db demo.db \
-  --branch run-a \
-  --tool create_issue \
-  --input '{"owner":"octo","repository":"demo","title":"Fork A","body":"Created only in A"}'
-
-go run ./cmd/statetwin call \
-  --spec examples/issue-tracker/twin.yaml \
-  --db demo.db \
-  --branch run-b \
-  --tool close_issue \
-  --input '{"owner":"octo","repository":"demo","number":1}'
-```
-
-### 5. Compare terminal worlds
-
-```bash
-go run ./cmd/statetwin diff \
-  --db demo.db \
-  --before run-a \
-  --after run-b
-```
-
-The diff uses stable JSON Pointer paths. Object keys containing `/` are escaped according to JSON Pointer rules, so `octo/demo#1` appears as `octo~1demo#1`.
-
-### What this demo proves
-
-It does not prove that two agents take the same path. It demonstrates that:
-
-- both runs can start from the same world state;
-- branch mutations remain isolated;
-- tool calls produce real cross-call state transitions;
-- terminal worlds can be compared through a canonical diff.
 
 ---
 
@@ -715,4 +739,6 @@ The prior-art search is documented in [Competitive Landscape](docs/COMPETITIVE-L
 
 ## License
 
-[MIT](LICENSE)
+MCP State Twin is licensed under the **MIT License**. See [LICENSE](LICENSE) for the complete license text.
+
+Any license summary in this README is explanatory only; the standard MIT text in `LICENSE` controls.

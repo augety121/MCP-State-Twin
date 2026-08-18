@@ -1,42 +1,33 @@
 <div align="center">
 
-# 🪞 MCP State Twin
+<h1>MCP State Twin</h1>
 
-**再現可能な AI Agent 評価のための、決定論的・フォーク可能・ステートフルな MCP テストワールド — 本番環境に副作用を与えずに。**
+<p><strong>再現可能な AI Agent 評価のための、決定論的・fork 可能・stateful な MCP テストワールド</strong></p>
+<p>同じ world snapshot から開始し、Agent ごとに異なる有効な tool trajectory を実行し、production service に書き込まず terminal state を比較します。</p>
 
-[简体中文](README.md) · [English](README.en.md) · **日本語** · [한국어](README.ko.md)
+<p>
+  <a href="README.md">简体中文</a> ·
+  <a href="README.en.md">English</a> ·
+  <strong>日本語</strong> ·
+  <a href="README.ko.md">한국어</a>
+</p>
 
-[![CI](https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml/badge.svg)](https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Status](https://img.shields.io/badge/status-development%20preview-orange)
-![Go](https://img.shields.io/badge/Go-1.26.x-00ADD8?logo=go&logoColor=white)
+<p>
+  <a href="https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/augety121/MCP-State-Twin/ci.yml?branch=main&style=flat-square&label=CI&logo=githubactions&logoColor=white"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/augety121/MCP-State-Twin?style=flat-square&label=License"></a>
+  <img alt="Go 1.26.x" src="https://img.shields.io/badge/Go-1.26.x-00ADD8?style=flat-square&logo=go&logoColor=white">
+  <img alt="MCP" src="https://img.shields.io/badge/MCP-Streamable_HTTP-5B5BD6?style=flat-square">
+  <img alt="Development Preview" src="https://img.shields.io/badge/status-development_preview-D97706?style=flat-square">
+</p>
 
-> **本番環境ではなく、ツールの世界を fork する。**
+<p><strong>Fork the tool world, not production.</strong></p>
+<p><code>snapshot</code> → <code>fork</code> → <code>act</code> → <code>assert</code> → <code>diff</code></p>
 
 </div>
 
-MCP State Twin は、Model Context Protocol（MCP）ツールの背後に**決定論的・fork 可能・stateful**なテストワールドを提供する、Agent 評価向けの実験的オープンソース環境レイヤーです。
-
-同一の不変スナップショットから複数の実行を開始し、それぞれが異なる有効なツール呼び出し経路を取った場合でも、**本番サービスへ書き込むことなく**最終状態を比較できます。
-
-```mermaid
-flowchart TD
-    S0["不変スナップショット S₀"] --> A["Fork A"]
-    S0 --> B["Fork B"]
-    S0 --> C["Fork C"]
-    A --> AA["Agent A"]
-    B --> AB["Agent B"]
-    C --> AC["Agent C"]
-    AA --> T["MCP State Twin"]
-    AB --> T
-    AC --> T
-    T --> X["分離された状態遷移"]
-    X --> D["正規化された最終状態 diff"]
-    D --> P["本番環境への書き込み: なし"]
-```
-
-> [!NOTE]
-> README の翻訳は説明目的です。技術的な意味、保証範囲、現在主張できる実装状態は RFC、採用済み ADR、仕様書、Implementation Status の証拠、および実行可能なテストによって定義されます。
+> [!IMPORTANT]
+> **Development Preview · `0.1.0-dev` · tagged release なし · production-ready ではありません。**  
+> 現在主張できる実装範囲は [Implementation Status](docs/IMPLEMENTATION-STATUS.md)、RFC、採用済み ADR、仕様、および実行可能なテスト証拠によって定義されます。
 
 ## ステータス
 
@@ -376,4 +367,4 @@ Prior-art 調査は [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) に�
 
 ## License
 
-[MIT](LICENSE)
+MCP State Twin は **MIT License** の下で提供されます。完全なライセンス本文は [LICENSE](LICENSE) を参照してください。README 内の説明と相違がある場合は `LICENSE` の標準 MIT 本文が優先されます。

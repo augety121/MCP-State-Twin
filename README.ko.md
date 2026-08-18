@@ -1,42 +1,33 @@
 <div align="center">
 
-# 🪞 MCP State Twin
+<h1>MCP State Twin</h1>
 
-**재현 가능한 AI Agent 평가를 위한 결정적(deterministic)·포크 가능(forkable)·상태 유지형(stateful) MCP 테스트 월드 — 프로덕션 환경에 부작용 없이.**
+<p><strong>재현 가능한 AI Agent 평가를 위한 deterministic · forkable · stateful MCP 테스트 월드</strong></p>
+<p>동일한 world snapshot에서 시작해 Agent마다 서로 다른 유효한 tool trajectory를 실행하고, production service에 쓰지 않은 채 terminal state를 비교합니다.</p>
 
-[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · **한국어**
+<p>
+  <a href="README.md">简体中文</a> ·
+  <a href="README.en.md">English</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <strong>한국어</strong>
+</p>
 
-[![CI](https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml/badge.svg)](https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Status](https://img.shields.io/badge/status-development%20preview-orange)
-![Go](https://img.shields.io/badge/Go-1.26.x-00ADD8?logo=go&logoColor=white)
+<p>
+  <a href="https://github.com/augety121/MCP-State-Twin/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/augety121/MCP-State-Twin/ci.yml?branch=main&style=flat-square&label=CI&logo=githubactions&logoColor=white"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/augety121/MCP-State-Twin?style=flat-square&label=License"></a>
+  <img alt="Go 1.26.x" src="https://img.shields.io/badge/Go-1.26.x-00ADD8?style=flat-square&logo=go&logoColor=white">
+  <img alt="MCP" src="https://img.shields.io/badge/MCP-Streamable_HTTP-5B5BD6?style=flat-square">
+  <img alt="Development Preview" src="https://img.shields.io/badge/status-development_preview-D97706?style=flat-square">
+</p>
 
-> **프로덕션이 아니라 도구의 세계를 포크하세요.**
+<p><strong>Fork the tool world, not production.</strong></p>
+<p><code>snapshot</code> → <code>fork</code> → <code>act</code> → <code>assert</code> → <code>diff</code></p>
 
 </div>
 
-MCP State Twin은 Model Context Protocol(MCP) 도구 뒤에 **결정적(deterministic), 포크 가능(forkable), 상태 기반(stateful)** 테스트 월드를 제공하는 Agent 평가용 실험적 오픈소스 환경 레이어입니다.
-
-동일한 불변 스냅샷에서 여러 실행을 시작하고, 각 실행이 서로 다른 유효한 도구 호출 경로를 선택하더라도 **프로덕션 서비스에 쓰기 작업을 하지 않고** 최종 상태를 비교할 수 있습니다.
-
-```mermaid
-flowchart TD
-    S0["불변 스냅샷 S₀"] --> A["Fork A"]
-    S0 --> B["Fork B"]
-    S0 --> C["Fork C"]
-    A --> AA["Agent A"]
-    B --> AB["Agent B"]
-    C --> AC["Agent C"]
-    AA --> T["MCP State Twin"]
-    AB --> T
-    AC --> T
-    T --> X["격리된 상태 전이"]
-    X --> D["정규화된 최종 상태 diff"]
-    D --> P["프로덕션 쓰기: 없음"]
-```
-
-> [!NOTE]
-> README 번역은 이해를 돕기 위한 설명 자료입니다. 기술적 의미, 보장 범위, 현재 주장 가능한 구현 상태는 RFC, 승인된 ADR, 사양 문서, Implementation Status의 증거 및 실행 가능한 테스트가 정의합니다.
+> [!IMPORTANT]
+> **Development Preview · `0.1.0-dev` · tagged release 없음 · production-ready 아님.**  
+> 현재 주장 가능한 구현 범위는 [Implementation Status](docs/IMPLEMENTATION-STATUS.md), RFC, 승인된 ADR, 사양 및 실행 가능한 테스트 증거에 의해 정의됩니다.
 
 ## 상태
 
@@ -376,4 +367,4 @@ Prior-art 조사는 [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md)에 �
 
 ## License
 
-[MIT](LICENSE)
+MCP State Twin은 **MIT License**로 제공됩니다. 전체 라이선스 본문은 [LICENSE](LICENSE)를 확인하세요. README의 설명과 차이가 있는 경우 `LICENSE`의 표준 MIT 본문이 우선합니다.
