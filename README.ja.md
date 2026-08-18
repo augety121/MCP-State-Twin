@@ -2,7 +2,7 @@
 
 # 🪞 MCP State Twin
 
-**再現可能な AI Agent 評価のための、決定論的・fork 可能・stateful な MCP テストワールド — 本番環境に副作用を与えません。**
+**再現可能な AI Agent 評価のための、決定論的・フォーク可能・ステートフルな MCP テストワールド — 本番環境に副作用を与えずに。**
 
 [简体中文](README.md) · [English](README.en.md) · **日本語** · [한국어](README.ko.md)
 
@@ -313,6 +313,7 @@ statetwin state      inspect canonical branch state
 statetwin snapshot   create an immutable logical snapshot
 statetwin fork       create an isolated branch from a snapshot
 statetwin diff       compare two branch states
+statetwin scenario   execute a bounded scripted scenario and assertions
 statetwin serve      run separate MCP data and HTTP control planes
 statetwin version    print the development version
 ```

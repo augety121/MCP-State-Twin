@@ -2,7 +2,7 @@
 
 # 🪞 MCP State Twin
 
-**재현 가능한 AI Agent 평가를 위한 결정적·포크 가능·상태 기반 MCP 테스트 월드 — 프로덕션 환경에 부작용을 만들지 않습니다.**
+**재현 가능한 AI Agent 평가를 위한 결정적(deterministic)·포크 가능(forkable)·상태 유지형(stateful) MCP 테스트 월드 — 프로덕션 환경에 부작용 없이.**
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · **한국어**
 
@@ -313,6 +313,7 @@ statetwin state      inspect canonical branch state
 statetwin snapshot   create an immutable logical snapshot
 statetwin fork       create an isolated branch from a snapshot
 statetwin diff       compare two branch states
+statetwin scenario   execute a bounded scripted scenario and assertions
 statetwin serve      run separate MCP data and HTTP control planes
 statetwin version    print the development version
 ```

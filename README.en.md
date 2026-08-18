@@ -15,120 +15,188 @@
 
 </div>
 
-MCP State Twin is an experimental open-source environment layer for agent evaluation: deterministic, forkable, stateful test worlds behind Model Context Protocol (MCP) tools.
+> [!IMPORTANT]
+> **MCP State Twin is currently a development preview (`0.1.0-dev`), with no tagged release, and is not production-ready.**  
+> This README is explanatory. Current implementation claims are bounded by [Implementation Status](docs/IMPLEMENTATION-STATUS.md), the RFCs, accepted ADRs, specifications, and executable test evidence.
 
-It lets agent engineers start multiple runs from the same immutable world snapshot, allow each run to take a different valid tool trajectory, and compare terminal state without writing to a production service.
+**Quick links:** [Quick start](#quick-start) · [How it works](#how-it-works-in-30-seconds) · [Status](#current-status) · [TwinSpec](#twinspec) · [Determinism](#determinism-contract) · [Security boundaries](#architecture-and-security-boundaries) · [Docs](#documentation-map)
+
+---
+
+## What is MCP State Twin?
+
+MCP State Twin is an experimental open-source environment layer for AI agent evaluation. It puts **deterministic, forkable, stateful test worlds** behind Model Context Protocol (MCP) tools so multiple evaluation runs can start from the same immutable snapshot, take different valid tool trajectories, and compare terminal world state.
+
+The goal is not to make the model deterministic. The goal is to make **the external world the model acts on reproducible, isolated, forkable, and comparable**.
+
+| Dimension | MCP State Twin approach |
+|---|---|
+| Reproducible starts | Multiple runs begin from the same immutable snapshot |
+| State isolation | Each fork evolves independently |
+| Tool interface | Provider-neutral MCP tool surface |
+| Evaluation | Compare terminal state, declared invariants, and canonical diffs instead of requiring identical trajectories |
+| Environment determinism | A fixed environment identity plus ordered tool calls yields replayable structured results and a final state digest |
+| Production side effects | The reference twin executes against isolated simulated state rather than writing to production services |
+| Current reference fidelity | `L1` · `unverified` · `unbound` |
+| Current storage | SQLite with versioned database identity and transactional transitions |
+
+### What it is not
+
+MCP State Twin is **not**:
+
+- an AGI system or model runtime;
+- an agent framework, planner, or orchestration framework;
+- a memory system or RAG service;
+- a claim of perfect equivalence to an upstream service;
+- an automatic guarantee of compatibility with ChatGPT, the OpenAI API, Claude, Claude Code, or another host;
+- an Internet-ready production service.
+
+“Twin” means a **declared, reviewable behavior model with explicit evidence boundaries**, not an unlimited claim that the simulated world is identical to production.
+
+---
+
+## How it works in 30 seconds
 
 ```mermaid
-flowchart TD
-    S0["Immutable snapshot S₀"] --> A["Fork A"]
-    S0 --> B["Fork B"]
-    S0 --> C["Fork C"]
-    A --> AA["Agent A"]
-    B --> AB["Agent B"]
-    C --> AC["Agent C"]
-    AA --> T["MCP State Twin"]
-    AB --> T
-    AC --> T
-    T --> X["Isolated state transitions"]
-    X --> D["Canonical terminal diff"]
-    D --> P["Production writes: none"]
+flowchart LR
+    S0[(Immutable Snapshot S₀)]
+
+    S0 --> A[Branch: run-a]
+    S0 --> B[Branch: run-b]
+
+    AA[Agent A] -->|MCP| UA["/mcp/run-a/"]
+    AB[Agent B] -->|MCP| UB["/mcp/run-b/"]
+
+    UA --> R[MCP State Twin Runtime]
+    UB --> R
+
+    R --> A
+    R --> B
+
+    H[Test Harness / Human] -->|Bearer token| C[Private Control Plane]
+    C -->|snapshot / fork / reset / diff| R
+
+    A --> D[Canonical Terminal Diff]
+    B --> D
+
+    P[(Production Service)]
+    R -. reference twin does not write .-> P
 ```
 
+A typical evaluation looks like this:
+
+1. initialize a world from a fixed fixture;
+2. create an immutable snapshot;
+3. fork multiple isolated branches from that snapshot;
+4. let different agents, prompts, or models call the same MCP tool surface on their own branches;
+5. score terminal state, state assertions, invariants, and canonical diffs;
+6. do **not** require every run to take the same tool trajectory.
+
 > [!NOTE]
-> README translations are explanatory. The RFCs, accepted ADRs, specifications, implementation-status evidence, and executable tests define the project's technical semantics and current claim boundaries.
+> **The environment is deterministic; the language model is not.** Different model decisions are expected. State Twin makes those decisions happen inside worlds that can be reproduced and compared.
 
-## Status
-
-**Development preview (`0.1.0-dev`), no tagged release.** The repository now
-contains a working Go CLI and runtime, but it is not production-ready and has
-not completed the RFC's v0.1 release gates.
-
-Implemented and exercised locally:
-
-- strict TwinSpec `v1alpha1` YAML decoding, structural validation, and
-  hermetic JSON Schema 2020-12 input/output compilation;
-- canonical SHA-256 digests for specs, MCP tool surfaces, and world state;
-- upstream binding admission that fails closed for mismatched `current`,
-  `drifted`, or `unknown` surfaces;
-- 4,096-byte, cost-limited CEL expressions for preconditions, effects, queries,
-  postconditions, and global invariants;
-- SQLite-backed atomic transitions, versioned database identity, tool-call
-  audit, and transactional control-operation audit;
-- immutable logical snapshots, isolated forks, reset, and canonical state
-  diff;
-- stateless Streamable HTTP MCP data plane through the official Go SDK;
-- separately authenticated HTTP control plane;
-- six-tool issue-tracker reference twin with synthetic state;
-- unit, deterministic replay, MCP HTTP, authorization, output-rollback,
-  migration-refusal, and 100-fork isolation tests;
-- pinned official MCP conformance checks for initialize, ping, tools-list, and
-  JSON Schema 2020-12 on Linux CI;
-- bounded TwinSpec/CEL fuzz targets plus pinned secret-policy and loopback-only
-  hermetic CI gates (all passed in Linux CI run #6);
-- a tested CLI loop: initialize → snapshot → fork twice → mutate each fork →
-  diff terminal state.
-- a bounded Scenario v1alpha1 runner with deterministic environment identity,
-  ordered tool traces, JSON Pointer state assertions, and canonical state diff.
-
-Not yet implemented or verified:
-
-- recorder, cassette replay, trace redaction, or automatic upstream surface
-  inspection/refresh;
-- deterministic fault injection or virtual-clock advancement;
-- live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
-- evidence-derived host compatibility reports or a provider harness;
-- differential validation or an L2 fidelity promotion workflow;
-- data-plane authentication, TLS, remote multi-tenancy, or a security audit.
-
-See [Implementation Status](docs/IMPLEMENTATION-STATUS.md) for the evidence and
-the exact partial boundaries. Roadmap items are not presented as current
-features.
-
-Protocol compatibility is intentionally narrower than model compatibility.
-The runtime can expose a provider-neutral MCP tool surface while ChatGPT,
-OpenAI API clients, Claude, Claude Code, and custom agents choose different
-tool trajectories. A host is listed as verified only after a versioned smoke
-run produces the evidence required by
-[SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md).
+---
 
 ## Why this exists
 
-Serious tool-using agent tests need more than plausible JSON.
+Serious tool-using agent evaluation needs more than plausible JSON.
 
-An issue-tracker agent might read an issue, create a comment, retry after an
-ambiguous timeout, read the issue again, and close it only if the expected
-state exists. Every call changes what later calls should observe.
+An issue-tracker agent might read an issue, add a comment, retry after an ambiguous timeout, read the issue again, and close it only if the expected state exists. **Every call changes what later calls should observe.**
 
 Common approaches solve related but different problems:
 
 | Approach | Primary strength | Boundary for agent evaluation |
 |---|---|---|
 | Record/replay | Reproduce a previously captured path | A new model may take a valid path that was never recorded |
-| Static MCP mock | Isolate a client and return controlled data | Cross-call state, constraints, and failure semantics may be incomplete |
+| Static MCP mock | Isolate a client and return controlled data | Cross-call state, constraints, idempotency, and failure semantics may be incomplete |
 | Hand-built benchmark sandbox | Evaluate one curated task collection | Reuse for a developer-owned tool surface is not the primary abstraction |
 | Live test/production service | Exercise real behavior | Side effects, rate limits, cost, shared-state pollution, and irreproducible starts |
-| MCP State Twin | Execute explicit transitions on forkable world state | Fidelity is limited to behavior that has been modeled and validated |
+| **MCP State Twin** | Execute explicit transitions on forkable world state | Fidelity is limited to behavior that has been modeled and validated |
 
-Record/replay is planned as the L0 fidelity mode; it is complementary rather
-than something this project needs to displace.
+Record/replay is planned as the `L0` fidelity mode. It is complementary rather than something State Twin needs to displace.
+
+---
+
+## Current status
+
+**Development preview (`0.1.0-dev`) · no tagged release · not production-ready.**
+
+### Capability overview
+
+| Capability | Status | Boundary |
+|---|---:|---|
+| Strict TwinSpec `v1alpha1` parsing and structural validation | ✅ | Includes hermetic JSON Schema 2020-12 compilation |
+| Canonical spec / MCP surface / world-state digests | ✅ | SHA-256 |
+| Upstream binding admission | ✅ | Fails closed on surface mismatch |
+| SQLite atomic transitions and audit | ✅ | Versioned database identity and storage schema |
+| Immutable snapshot / fork / reset / diff | ✅ | Isolated branch state |
+| Stateless Streamable HTTP MCP data plane | ✅ | Official Go SDK |
+| Separate HTTP control plane | ✅ | Bearer token; isolated from the data plane |
+| Issue-tracker reference twin | ✅ | 6 tools; synthetic; `L1/unverified/unbound` |
+| Scenario `v1alpha1` runner | ✅ | Bounded scripted scenario; not live model evaluation |
+| Live OpenAI / ChatGPT / Claude smoke tests | ❌ not verified | No host-compatibility claim |
+| Deterministic fault injection / virtual-clock advancement | ⏳ | Planned/specified boundary, not a current feature |
+| Recorder / cassette replay / trace redaction | ⏳ | Not implemented |
+| Differential validation / L2 promotion | ⏳ | Not complete |
+| Data-plane auth / TLS / remote multi-tenancy | ⏳ | Current build should remain local/loopback |
+
+<details>
+<summary><strong>Expand: implemented and exercised capabilities</strong></summary>
+
+- strict TwinSpec `v1alpha1` YAML decoding and structural validation;
+- hermetic JSON Schema 2020-12 input/output compilation;
+- canonical SHA-256 digests for specs, MCP tool surfaces, and world state;
+- upstream binding admission that fails closed on mismatched `current`, `drifted`, or `unknown` surfaces;
+- CEL expressions limited to 4,096 UTF-8 bytes and bounded by an evaluation cost limit, for preconditions, effects, queries, postconditions, and global invariants;
+- SQLite-backed atomic transitions, versioned database identity, tool-call audit, and transactional control-operation audit;
+- immutable logical snapshots, isolated forks, reset, and canonical state diff;
+- stateless Streamable HTTP MCP data plane through the official Go SDK;
+- separately authenticated HTTP control plane;
+- six-tool issue-tracker reference twin with synthetic state;
+- unit, deterministic replay, MCP HTTP, authorization, output-rollback, migration-refusal, and 100-fork isolation tests;
+- pinned official MCP conformance checks for initialize, ping, tools-list, and JSON Schema 2020-12;
+- bounded TwinSpec/CEL fuzz targets plus secret-policy and loopback-only hermetic CI gates;
+- a tested CLI loop: initialize → snapshot → fork twice → mutate → terminal diff;
+- bounded Scenario `v1alpha1` runner with deterministic environment identity, ordered tool traces, JSON Pointer state assertions, and canonical state diff.
+
+</details>
+
+<details>
+<summary><strong>Expand: not implemented or not verified</strong></summary>
+
+- recorder, cassette replay, trace redaction, or automatic upstream surface inspection/refresh;
+- deterministic fault injection or virtual-clock advancement;
+- live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
+- evidence-derived host compatibility reports or a provider harness;
+- differential validation or an L2 fidelity promotion workflow;
+- data-plane authentication, TLS, remote multi-tenancy, or a security audit.
+
+</details>
+
+See [Implementation Status](docs/IMPLEMENTATION-STATUS.md) for evidence and exact partial boundaries. **Roadmap items are not presented as current features.**
+
+---
 
 ## Quick start
 
-Requirements:
+### Requirements
 
 - Go 1.26.x
 - Git
 
-Clone the repository and validate the reference TwinSpec:
+### 1. Clone and validate the reference TwinSpec
 
 ```bash
+git clone https://github.com/augety121/MCP-State-Twin.git
+cd MCP-State-Twin
+
 go mod download
+
 go run ./cmd/statetwin validate \
   --spec examples/issue-tracker/twin.yaml
 ```
 
-Create an isolated database and base snapshot:
+### 2. Initialize a world and create the base snapshot
 
 ```bash
 go run ./cmd/statetwin init \
@@ -139,14 +207,14 @@ go run ./cmd/statetwin init \
   --snapshot base
 ```
 
-Fork the same world twice:
+### 3. Fork the same snapshot twice
 
 ```bash
 go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-a
 go run ./cmd/statetwin fork --db demo.db --snapshot base --branch run-b
 ```
 
-Take different valid trajectories:
+### 4. Take different valid trajectories
 
 ```bash
 go run ./cmd/statetwin call \
@@ -164,7 +232,7 @@ go run ./cmd/statetwin call \
   --input '{"owner":"octo","repository":"demo","number":1}'
 ```
 
-Compare terminal worlds:
+### 5. Compare terminal worlds
 
 ```bash
 go run ./cmd/statetwin diff \
@@ -173,13 +241,22 @@ go run ./cmd/statetwin diff \
   --after run-b
 ```
 
-The diff uses stable JSON Pointer paths. Object keys containing `/` are escaped
-according to JSON Pointer rules, so a key such as `octo/demo#1` appears as
-`octo~1demo#1`.
+The diff uses stable JSON Pointer paths. Object keys containing `/` are escaped according to JSON Pointer rules, so `octo/demo#1` appears as `octo~1demo#1`.
+
+### What this demo proves
+
+It does not prove that two agents take the same path. It demonstrates that:
+
+- both runs can start from the same world state;
+- branch mutations remain isolated;
+- tool calls produce real cross-call state transitions;
+- terminal worlds can be compared through a canonical diff.
+
+---
 
 ## Run a reproducible scenario
 
-Execute the bundled state-scored scenario:
+Execute the bundled state-scored bounded scenario:
 
 ```bash
 go run ./cmd/statetwin scenario \
@@ -188,19 +265,26 @@ go run ./cmd/statetwin scenario \
   --scenario examples/issue-tracker/scenario-close-issue.yaml
 ```
 
-The command exits non-zero on an unexpected error class or failed assertion.
-Its JSON report includes the environment digest, ordered tool trace, initial and
-terminal state digests, assertion evidence, and canonical state diff. The
-current runner identifies itself as `scripted-scenario`; this is deliberately
-not presented as a live Codex, OpenAI, Claude, or other model evaluation.
+The command exits non-zero on an unexpected error class or failed assertion. Its JSON report includes:
 
-Scenario reports contain tool inputs and results. Use synthetic fixtures only;
-do not commit reports containing credentials, production traces, or personal
-data.
+- environment digest;
+- ordered tool trace;
+- initial and terminal state digests;
+- assertion evidence;
+- canonical state diff.
+
+The current runner identifies itself as `scripted-scenario`. **It is not presented as a live Codex, OpenAI, Claude, or other model evaluation.**
+
+> [!WARNING]
+> Scenario reports contain tool inputs and results. Use synthetic fixtures only; do not commit reports containing credentials, production traces, or personal data.
+
+---
 
 ## Run the MCP server
 
-Set a control-plane token. Do not commit it.
+### Set the control-plane token
+
+Bash / zsh:
 
 ```bash
 export STATETWIN_CONTROL_TOKEN='replace-with-a-local-secret'
@@ -212,7 +296,7 @@ PowerShell:
 $env:STATETWIN_CONTROL_TOKEN = 'replace-with-a-local-secret'
 ```
 
-Start the runtime:
+### Start the runtime
 
 ```bash
 go run ./cmd/statetwin serve \
@@ -225,40 +309,39 @@ Default endpoints:
 
 | Plane | Endpoint | Visible operations |
 |---|---|---|
-| Agent data plane | `http://127.0.0.1:8090/mcp/main` | Only modeled business tools |
+| Agent data plane | `http://127.0.0.1:8090/mcp/main` | Modeled business tools only |
 | Private control plane | `http://127.0.0.1:8091/v1` | Branch state, snapshot, fork, reset, diff |
 
-The branch ID is part of the MCP URL, not an extra model-visible tool argument.
-This keeps the tool input schema identical across branches.
+The branch ID is part of the MCP URL rather than an extra model-visible tool argument, keeping tool input schemas identical across branches.
 
 > [!WARNING]
-> The current data plane has no authentication or TLS. Both servers bind to
-> loopback by default and should remain local. The control token is only one
-> development safeguard; it does not make this build safe for Internet
-> exposure.
+> **The current data plane has no authentication or TLS.** Both servers bind to loopback by default and should remain local. The control token is only one development safeguard; it does not make this build safe for Internet exposure.
+
+---
 
 ## Reference twin
 
-The included issue-tracker world exposes these agent-visible tools:
+The bundled issue-tracker world exposes six agent-visible business tools:
 
-- `get_repository`
-- `list_issues`
-- `get_issue`
-- `create_issue`
-- `add_comment`
-- `close_issue`
+| Tool | Purpose |
+|---|---|
+| `get_repository` | Read repository state |
+| `list_issues` | List issues |
+| `get_issue` | Read one issue |
+| `create_issue` | Create an issue |
+| `add_comment` | Add a comment |
+| `close_issue` | Close an existing open issue |
 
-Snapshot, fork, reset, diff, state inspection, and future fault controls are
-not MCP tools and do not appear in `tools/list`. An integration test connects
-with the official MCP Go client and verifies this boundary.
+Snapshot, fork, reset, diff, state inspection, and future fault controls **are not MCP tools** and do not appear in `tools/list`. Evaluation controls belong to the separate control plane rather than hidden agent-visible tools.
 
-The reference twin is synthetic, `L1`, `unverified`, and `unbound` to an
-upstream service. It must not be described as a GitHub-equivalent environment.
+> [!CAUTION]
+> The current reference twin uses synthetic data, has fidelity `L1`, status `unverified`, and is `unbound` to any upstream service. **It must not be described as a GitHub-equivalent environment.**
+
+---
 
 ## TwinSpec
 
-TwinSpec is the versioned, reviewable contract for a modeled tool world. A tool
-is more than `function(args) -> JSON`:
+TwinSpec is a versioned, reviewable, executable contract for a modeled tool world. A tool is more than `function(args) -> JSON`:
 
 ```text
 tool behavior = input contract
@@ -310,32 +393,30 @@ tools:
         value: "{'state': 'closed', 'closedAt': clock}"
 ```
 
-The complete file is
-[examples/issue-tracker/twin.yaml](examples/issue-tracker/twin.yaml).
+See [examples/issue-tracker/twin.yaml](examples/issue-tracker/twin.yaml) for the complete file.
 
-### Expression boundary
+<details>
+<summary><strong>Expression boundary</strong></summary>
 
-TwinSpec expressions use `cel-go`. Source text is limited to 4,096 UTF-8 bytes,
-compiled at load time, and evaluated with a cost limit of 10,000. Expressions
-receive only JSON-shaped variables:
+TwinSpec expressions use `cel-go`:
 
-- `input`
-- `state`
-- `vars`
-- `item`
-- `clock`
-- `call_index`
+- source text is limited to 4,096 UTF-8 bytes;
+- expressions are compiled at load time;
+- evaluation uses a cost limit of 10,000;
+- expressions receive only JSON-shaped `input`, `state`, `vars`, `item`, `clock`, and `call_index` variables;
+- no filesystem, process, network, reflection, or arbitrary Go functions are registered;
+- native extensions are not supported in `v1alpha1`.
 
-No filesystem, process, network, reflection, or arbitrary Go functions are
-registered. Native extensions are not supported in `v1alpha1`.
+</details>
 
-### JSON Schema boundary
+<details>
+<summary><strong>JSON Schema boundary</strong></summary>
 
-Tool inputs and successful outputs are compiled and validated as JSON Schema
-Draft 2020-12. Format assertions are enabled. Local `$defs` and fragments are
-supported, while references that require an external network or filesystem
-resource fail at startup. An invalid declared output rolls back the transition
-and returns `INTERNAL_TWIN_ERROR`.
+Tool inputs and successful outputs are compiled and validated as JSON Schema Draft 2020-12 with format assertions enabled. Local `$defs` and fragments are supported; `$ref` values that require external network or filesystem resources fail at startup.
+
+An invalid declared successful output rolls back the transition and returns `INTERNAL_TWIN_ERROR`.
+
+</details>
 
 ### Current effect operations
 
@@ -346,9 +427,11 @@ and returns `INTERNAL_TWIN_ERROR`.
 | `update` | Replace or merge one keyed entity; fail if missing |
 | `delete` | Delete one keyed entity; fail if missing |
 
+---
+
 ## Determinism contract
 
-The environment—not the language model—is deterministic:
+The environment identity can be conceptualized as:
 
 ```text
 E = (runtime version,
@@ -360,13 +443,22 @@ E = (runtime version,
 execute(E) -> (ordered structured results, final state digest)
 ```
 
-Current code virtualizes state allocation and time exposed to expressions. A
-test replays a 1,000-call corpus on two branches and checks equality after
-every transition and at the final state.
+Current code virtualizes state allocation and time exposed to expressions. Deterministic replay tests execute the same call corpus on separate branches and compare transition results and final state.
 
-The model can still choose different calls. That is expected. Each comparison
-run starts from the same immutable snapshot, while success is evaluated from
-terminal state and declared invariants rather than exact trajectory equality.
+### What “deterministic” means
+
+- the same controlled environment plus the same ordered tool calls should produce replayable environment results;
+- multiple evaluation runs can start from the same immutable snapshot;
+- branch state, terminal state, and canonical digests can be compared consistently.
+
+### What it does not mean
+
+- the LLM must select the same tools;
+- different models or prompts must produce the same trajectory;
+- an L1 twin is behaviorally equivalent to the real upstream service;
+- an untested host is automatically compatible.
+
+---
 
 ## Error and transaction semantics
 
@@ -381,8 +473,7 @@ load branch head
   -> commit state and audit record atomically
 ```
 
-Failed domain outcomes keep the prior state digest and still append a tool-call
-audit record. The implemented canonical error classes include:
+Failed domain outcomes keep the prior state digest and still append a tool-call audit record. Implemented canonical error classes include:
 
 - `INVALID_INPUT`
 - `PRECONDITION_FAILED`
@@ -392,57 +483,69 @@ audit record. The implemented canonical error classes include:
 - `UNMODELED_BEHAVIOR`
 - `INTERNAL_TWIN_ERROR`
 
-Timeout-before-effect, timeout-after-effect, partial-effect, rate-limit, and
-eventual-consistency faults remain specified but are not implemented yet.
+Timeout-before-effect, timeout-after-effect, partial-effect, rate-limit, and eventual-consistency faults remain **specified but not implemented**.
 
-SQLite files carry the State Twin application ID and an explicit schema
-version. Snapshots persist that storage schema version and bind it into their
-IDs. Foreign databases and versions newer than the runtime are rejected.
-Snapshot, fork, and reset write a separate control-audit row in the same
-transaction as the privileged mutation; bearer tokens and HTTP headers are not
-recorded.
+SQLite files carry the State Twin application ID and an explicit schema version. Snapshots persist that storage schema version and bind it into their IDs; foreign databases and versions newer than the runtime are rejected.
+
+---
 
 ## Fidelity levels
 
-“Twin” does not mean “perfect copy.” Fidelity must be declared, bounded, and
-supported by evidence.
+“Twin” does not mean “perfect copy.” Fidelity must be **declared, bounded, and supported by evidence**.
 
 | Level | Meaning | Intended use |
 |---|---|---|
-| L0 — Cassette replay | Match recorded interactions | Exact-path smoke/regression tests |
-| L1 — Stateful template | Explicit entities and reviewed basic transitions | Development and exploratory workflow tests |
-| L2 — Contract-backed | Human-reviewed rules, invariants, differential tests, upstream fingerprint | CI/evaluation within declared coverage |
-| L3 — Native/reference | Shared or domain-provided reference logic | High-fidelity domain simulation |
+| `L0` — Cassette replay | Match recorded interactions | Exact-path smoke / regression tests |
+| `L1` — Stateful template | Explicit entities and reviewed basic transitions | Development and exploratory workflow tests |
+| `L2` — Contract-backed | Human-reviewed rules, invariants, differential tests, upstream fingerprint | CI/evaluation within declared coverage |
+| `L3` — Native/reference | Shared or domain-provided reference logic | High-fidelity domain simulation |
 
-Generated or inferred behavior cannot promote itself to L2/L3. The current
-reference twin is L1 and unverified.
+Generated or inferred behavior cannot promote itself to L2/L3. **The current reference twin is `L1 + unverified`.**
+
+---
+
+## Architecture and security boundaries
+
+The project intentionally separates two trust domains:
+
+| | Agent Data Plane | Simulation Control Plane |
+|---|---|---|
+| Used by | Agent under test | Test harness / human operator |
+| Default address | `127.0.0.1:8090` | `127.0.0.1:8091` |
+| Purpose | MCP business tools | Branch state / snapshot / fork / reset / diff |
+| Branch selection | MCP URL | Control operation parameters |
+| Authentication | **None currently** | Independent bearer token |
+| Evaluation controls visible to agent | No | N/A |
+
+Key boundaries:
+
+- the agent sees only business tools declared by TwinSpec;
+- expected state, snapshot, fork, reset, and diff are not disguised as MCP tools;
+- prompt instructions are **not** an authorization boundary;
+- privileged control operations write a separate control-audit row transactionally with the mutation;
+- bearer tokens and HTTP headers are not recorded in that audit data;
+- the current build should remain loopback-local and use synthetic fixtures.
+
+---
 
 ## MCP and model providers
 
-The core integrates with MCP, not with model-provider SDKs. This is deliberate:
-the project can provide one tool surface without claiming different models will
-select the same tools or follow the same trajectory.
+The core integrates with **MCP**, not with model-provider SDKs. This is deliberate: the project can provide one tool world without claiming that different models select the same tools or follow the same trajectory.
 
-The automated integration test covers the official Go SDK as both server and
-client over stateless Streamable HTTP. Linux CI also runs the official MCP
-conformance framework `v0.1.16` for initialize, ping, tools-list, and JSON
-Schema 2020-12. That framework currently exercises protocol versions through
-`2025-11-25`; it does not prove every feature of the design baseline
-`2026-07-28`.
+The automated integration test uses the official Go SDK as server and client over stateless Streamable HTTP. Linux CI also runs the pinned official MCP conformance framework `v0.1.16` for initialize, ping, tools-list, and JSON Schema 2020-12. That framework currently exercises protocol versions through `2025-11-25`; this does **not** prove every feature of the `2026-07-28` design baseline.
 
-OpenAI documents remote MCP
-servers and ChatGPT Developer mode read/write tools; Anthropic documents remote
-MCP tool calls and currently limits its Messages API connector to the tool-call
-subset. Those external capabilities motivated the tools-first design, but this
-repository has **not** run live provider smoke tests yet.
+> [!NOTE]
+> The repository has **not completed live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests**. The README therefore does not present provider-specific integrations as verified. A host should be listed as verified only after a versioned smoke run produces the evidence required by [SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md).
 
-Design-source links:
+Design references:
 
 - [MCP Specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)
 - [Official MCP Go SDK](https://github.com/modelcontextprotocol/go-sdk)
 - [OpenAI: ChatGPT Developer mode](https://developers.openai.com/api/docs/guides/developer-mode)
 - [OpenAI: MCP servers for plugins and API integrations](https://developers.openai.com/api/docs/mcp)
 - [Anthropic: MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector)
+
+---
 
 ## CLI
 
@@ -454,11 +557,14 @@ statetwin state      inspect canonical branch state
 statetwin snapshot   create an immutable logical snapshot
 statetwin fork       create an isolated branch from a snapshot
 statetwin diff       compare two branch states
+statetwin scenario   execute a bounded scripted scenario and assertions
 statetwin serve      run separate MCP data and HTTP control planes
 statetwin version    print the development version
 ```
 
 CLI output is structured JSON except for server logs and fatal diagnostics.
+
+---
 
 ## Test and build
 
@@ -470,94 +576,132 @@ go test -race ./...
 go build ./cmd/statetwin
 ```
 
-The latest local verification was performed on Windows amd64 with Go 1.26.5.
-GitHub Actions runs formatting, vet, race-enabled tests, coverage collection,
-and build on Linux after the repository is published.
+Environment and CI status can change as development continues. Prefer CI, [Implementation Status](docs/IMPLEMENTATION-STATUS.md), and the corresponding executable tests over stale prose when evaluating current evidence.
 
-## Architecture boundaries
+---
 
-The project intentionally separates two trust domains:
+## Documentation map
 
-### Agent data plane
+For a first read, the suggested path is:
 
-- exposes only business tools declared by TwinSpec;
-- binds a branch through the URL;
-- never advertises hidden expected state or test controls;
-- returns typed domain failures as MCP tool errors the model can observe.
+1. **[Implementation Status](docs/IMPLEMENTATION-STATUS.md)** — what is actually implemented now;
+2. **[RFC-0001](docs/RFC-0001.md)** — product boundary, hard invariants, and architecture;
+3. **[TwinSpec Core](docs/SPEC-0001-TWINSPEC-CORE.md)** — TwinSpec `v1alpha1` data model;
+4. **[Runtime Semantics](docs/SPEC-0002-RUNTIME-SEMANTICS.md)** — determinism, transactions, snapshots, and errors;
+5. **[Roadmap](docs/ROADMAP.md)** — ordered next steps and exit criteria.
 
-### Simulation control plane
+### Specifications
 
-- requires an independent bearer token;
-- supports branch state, snapshot, fork, reset, and diff;
-- binds to a different loopback address/port by default;
-- is operated by a test harness or human, not the agent under test.
+- [SPEC-0001 — TwinSpec Core](docs/SPEC-0001-TWINSPEC-CORE.md)
+- [SPEC-0002 — Runtime Semantics](docs/SPEC-0002-RUNTIME-SEMANTICS.md)
+- [SPEC-0003 — MCP Boundaries and Compatibility](docs/SPEC-0003-MCP-BOUNDARIES-AND-COMPATIBILITY.md)
+- [SPEC-0004 — Evidence, Fidelity and Release](docs/SPEC-0004-EVIDENCE-FIDELITY-AND-RELEASE.md)
+- [SPEC-0005 — Scenario and Report](docs/SPEC-0005-SCENARIO-AND-REPORT.md)
+- [SPEC-0006 — Host Compatibility and Model Evaluation](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md)
 
-Prompt instructions are not an authorization boundary.
+<details>
+<summary><strong>Complete RFC / ADR / evidence index</strong></summary>
 
-## Documentation
+### RFCs
 
-| Document | Purpose |
-|---|---|
-| [Implementation Status](docs/IMPLEMENTATION-STATUS.md) | Evidence-backed implemented/partial/missing matrix |
-| [RFC-0001](docs/RFC-0001.md) | Product boundary, hard invariants, architecture, semantics, and release gates |
-| [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) | Normative first-release profile, limits, traceability, and gates |
-| [SPEC-0001](docs/SPEC-0001-TWINSPEC-CORE.md) | TwinSpec v1alpha1 data model and admission rules |
-| [SPEC-0002](docs/SPEC-0002-RUNTIME-SEMANTICS.md) | Determinism, transactions, snapshots, errors, and limits |
-| [SPEC-0003](docs/SPEC-0003-MCP-BOUNDARIES-AND-COMPATIBILITY.md) | MCP data/control planes, hermetic mode, and provider neutrality |
-| [SPEC-0004](docs/SPEC-0004-EVIDENCE-FIDELITY-AND-RELEASE.md) | Evidence, provenance, fidelity, and release gates |
-| [SPEC-0005](docs/SPEC-0005-SCENARIO-AND-REPORT.md) | Bounded scenarios, state assertions, environment identity, and evidence report |
-| [SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md) | Host profiles, model-evaluation isolation, compatibility evidence, and claim language |
-| [ADR-0001](docs/ADR-0001-PROTOCOL-BASELINE.md) | MCP protocol baseline and provider neutrality |
-| [ADR-0002](docs/ADR-0002-CONTROL-PLANE-ISOLATION.md) | Data/control-plane isolation |
-| [ADR-0003](docs/ADR-0003-EXPRESSION-ENGINE.md) | Bounded CEL expressions |
-| [ADR-0004](docs/ADR-0004-STORAGE-AND-SNAPSHOTS.md) | SQLite and logical snapshot strategy |
-| [ADR-0005](docs/ADR-0005-CANONICAL-JSON.md) | Alpha canonical digest contract |
-| [ADR-0006](docs/ADR-0006-JSON-SCHEMA-VALIDATION.md) | Hermetic JSON Schema 2020-12 validation |
-| [ADR-0007](docs/ADR-0007-STORAGE-IDENTITY-AND-CONTROL-AUDIT.md) | SQLite identity/version and privileged-operation audit |
-| [ADR-0008](docs/ADR-0008-MCP-TOOL-SURFACE-DIGEST.md) | Canonical model-facing MCP surface and fail-closed binding |
-| [ADR-0009](docs/ADR-0009-OPERATIONAL-LOGGING-BOUNDARY.md) | Operational log redaction boundary |
-| [ADR-0010](docs/ADR-0010-SCENARIO-ARTIFACTS.md) | Bounded scenario artifacts and scripted evidence reports |
-| [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md) | Design risks and required responses—not a test-completion report |
-| [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md) | P0-by-P0 evidence, exclusions, and stable-release blockers |
-| [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) | Dated prior-art screen and rejected directions |
-| [Roadmap](docs/ROADMAP.md) | Ordered phases and exit criteria |
+- [RFC-0001](docs/RFC-0001.md) — product boundary, hard invariants, architecture, semantics, and release gates
+- [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) — v0.1 normative release profile, limits, traceability, and gates
 
-The RFC and accepted ADRs define intended semantics. Implementation Status and
-executable tests define what the current development build can honestly claim.
+### ADRs
+
+- [ADR-0001](docs/ADR-0001-PROTOCOL-BASELINE.md) — MCP protocol baseline and provider neutrality
+- [ADR-0002](docs/ADR-0002-CONTROL-PLANE-ISOLATION.md) — data/control-plane isolation
+- [ADR-0003](docs/ADR-0003-EXPRESSION-ENGINE.md) — bounded CEL expressions
+- [ADR-0004](docs/ADR-0004-STORAGE-AND-SNAPSHOTS.md) — SQLite and logical snapshot strategy
+- [ADR-0005](docs/ADR-0005-CANONICAL-JSON.md) — alpha canonical digest contract
+- [ADR-0006](docs/ADR-0006-JSON-SCHEMA-VALIDATION.md) — hermetic JSON Schema 2020-12 validation
+- [ADR-0007](docs/ADR-0007-STORAGE-IDENTITY-AND-CONTROL-AUDIT.md) — SQLite identity/version and privileged-operation audit
+- [ADR-0008](docs/ADR-0008-MCP-TOOL-SURFACE-DIGEST.md) — canonical model-facing MCP surface and fail-closed binding
+- [ADR-0009](docs/ADR-0009-OPERATIONAL-LOGGING-BOUNDARY.md) — operational log redaction boundary
+- [ADR-0010](docs/ADR-0010-SCENARIO-ARTIFACTS.md) — bounded scenario artifacts and scripted evidence reports
+
+### Evidence / research
+
+- [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md) — design risks and required responses; not a test-completion report
+- [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md) — P0-by-P0 evidence, exclusions, and stable-release blockers
+- [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) — dated prior-art screen and rejected directions
+- [Roadmap](docs/ROADMAP.md) — ordered phases and exit criteria
+
+</details>
+
+The RFCs and accepted ADRs define **intended semantics**. Implementation Status and executable tests define what the current development build can **honestly claim today**.
+
+---
 
 ## Roadmap to the first tagged release
 
-The next release-critical work is:
+Current release-critical work includes:
 
 1. virtual-time advancement and deterministic scheduled faults;
-2. crash kill-point and tagged-database migration fixtures;
-3. upstream surface inspector and automated refresh (canonical local binding is implemented);
-4. prove the new egress-deny hermetic integration gate on Linux CI;
+2. crash kill-points and tagged-database migration fixtures;
+3. upstream surface inspector and automated refresh;
+4. continued proof of hermetic / egress-deny integration gates;
 5. pinned official MCP conformance scenarios for the tools-first subset;
 6. live OpenAI/ChatGPT and Anthropic/Claude smoke-test matrix;
-7. recorder redaction tests if recorder enters v0.1 scope; repository secret
-   scanning is configured separately;
+7. recorder redaction tests if recorder enters v0.1 scope;
 8. differential validation and an honest L2 coverage report;
 9. a second independent stateful reference domain;
 10. complete P0/P1 failure-mode traceability.
 
-Cloud hosting, registries, marketplaces, and automatic production mirroring are
-not release priorities.
+Cloud hosting, registries, marketplaces, and automatic production mirroring are **not first-release priorities**.
+
+---
+
+## FAQ
+
+<details>
+<summary><strong>Is this a full GitHub simulator?</strong></summary>
+
+No. The current issue-tracker reference twin is synthetic, `L1`, `unverified`, and `unbound`. It represents explicitly modeled behavior only and must not be described as GitHub-equivalent.
+
+</details>
+
+<details>
+<summary><strong>Does “deterministic” mean the model gives the same answer every time?</strong></summary>
+
+No. Determinism describes the controlled tool world. The model can still choose different tools, arguments, and trajectories. Evaluation starts from the same snapshot and compares terminal state and declared invariants.
+
+</details>
+
+<details>
+<summary><strong>Can I claim verified ChatGPT or Claude compatibility today?</strong></summary>
+
+Not from the current README baseline. The design is provider-neutral, but live provider smoke tests have not been completed, so those hosts should not be presented as verified.
+
+</details>
+
+<details>
+<summary><strong>Can I expose the current server to the public Internet?</strong></summary>
+
+It should not be exposed publicly in its current form. The data plane has no authentication or TLS; the intended safety posture is loopback-local use with synthetic fixtures.
+
+</details>
+
+---
 
 ## Contributing and security
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing protocol, TwinSpec,
-canonicalization, or trust-boundary semantics.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing protocol, TwinSpec, canonicalization, or trust-boundary semantics.
 
-Read [SECURITY.md](SECURITY.md) before using the runtime with anything other
-than synthetic local fixtures. Do not commit credentials, production traces,
-personal data, or third-party recordings that cannot legally be redistributed.
+Read [SECURITY.md](SECURITY.md) before using anything other than synthetic local fixtures. Do not commit:
+
+- credentials or secrets;
+- production traces;
+- personal data;
+- third-party recordings you do not have the right to redistribute.
+
+---
 
 ## Positioning and research caveat
 
-The project does not claim to be the first mock server, stateful sandbox,
-service-virtualization system, or digital twin. The narrower hypothesis is that
-agent engineering benefits from a reusable combination of:
+The project does **not** claim to be the first mock server, stateful sandbox, service-virtualization system, or digital twin.
+
+The narrower hypothesis is that agent engineering benefits from a reusable combination of:
 
 - an MCP-compatible agent-facing surface;
 - explicit state-transition contracts;
@@ -565,10 +709,9 @@ agent engineering benefits from a reusable combination of:
 - strict control-plane isolation;
 - declared fidelity and differential validation.
 
-The prior-art search is documented in
-[Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md). A dated public search
-cannot prove that no similar public, private, or unindexed project exists. The
-positioning should change if stronger prior art appears.
+The prior-art search is documented in [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md). A dated public search cannot prove that no similar public, private, or unindexed project exists. Positioning should change if stronger prior art appears.
+
+---
 
 ## License
 
