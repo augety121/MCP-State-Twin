@@ -7,9 +7,11 @@ import (
 )
 
 func TestRedactsOperationalSecretsAndIdentifiers(t *testing.T) {
-	message := "Authorization: Bearer abc123 token=secret-value api_key=sk-12345678901234567890 provider sk-abcdefghijklmnop1234 contact=alice@example.com\n-----BEGIN PRIVATE KEY-----secret-----END PRIVATE KEY-----"
+	fakeAPIKey := "sk-" + strings.Repeat("a", 20)
+	fakeProviderKey := "sk-" + strings.Repeat("b", 20)
+	message := "Authorization: Bearer abc123 token=secret-value api_key=" + fakeAPIKey + " provider " + fakeProviderKey + " contact=alice@example.com\n-----BEGIN PRIVATE KEY-----secret-----END PRIVATE KEY-----"
 	redacted := Redact(message)
-	for _, value := range []string{"abc123", "secret-value", "sk-12345678901234567890", "sk-abcdefghijklmnop1234", "alice@example.com", "BEGIN PRIVATE KEY"} {
+	for _, value := range []string{"abc123", "secret-value", fakeAPIKey, fakeProviderKey, "alice@example.com", "BEGIN PRIVATE KEY"} {
 		if strings.Contains(redacted, value) {
 			t.Fatalf("redacted message still contains %q: %s", value, redacted)
 		}
