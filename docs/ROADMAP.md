@@ -5,13 +5,16 @@
 
 ## Phase 0 — Design freeze
 
-Progress: protocol, control-plane isolation, expression engine, storage, and
-canonicalization decisions now have ADRs. RFC-0001 remains Draft for
-implementation and still requires review before a tagged v0.1.
+Progress: protocol, control-plane isolation, expression engine, storage,
+canonicalization, and operational logging decisions have ADRs. RFC-0001 remains
+the umbrella Draft; SPEC-0001 through SPEC-0004 now define the proposed
+normative layers and still require maintainer review before a tagged v0.1.
 
 Deliverables:
 
-- RFC-0001 accepted.
+- RFC-0001 umbrella reviewed and reconciled with RFC-0002.
+- SPEC-0001 through SPEC-0004 prepared as the proposed v0.1 normative set;
+  maintainer acceptance remains a governance gate.
 - Failure matrix P0/P1 reviewed.
 - ADRs for expression engine, storage snapshot strategy, MCP protocol support, and artifact format.
 - Two reference domains selected.
@@ -26,8 +29,7 @@ Exit criteria:
 
 Progress: implemented in the development preview. A 1,000-call two-branch
 deterministic replay test currently passes. Bounded TwinSpec and CEL fuzz
-targets pass locally; Linux CI evidence and crash kill-point coverage remain
-incomplete.
+targets pass in Linux CI run #6; crash kill-point coverage remains incomplete.
 
 Build:
 

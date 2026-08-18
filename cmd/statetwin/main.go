@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/augety121/mcp-state-twin/internal/engine"
+	"github.com/augety121/mcp-state-twin/internal/logging"
 	"github.com/augety121/mcp-state-twin/internal/server"
 	"github.com/augety121/mcp-state-twin/internal/spec"
 	"github.com/augety121/mcp-state-twin/internal/store"
@@ -57,7 +58,7 @@ func main() {
 		os.Exit(2)
 	}
 	if err != nil {
-		log.Printf("error: %v", err)
+		log.Printf("error: %s", logging.SafeError(err))
 		os.Exit(1)
 	}
 }

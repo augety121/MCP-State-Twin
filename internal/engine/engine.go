@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/augety121/mcp-state-twin/internal/canonical"
 	"github.com/augety121/mcp-state-twin/internal/spec"
 	"github.com/augety121/mcp-state-twin/internal/store"
 	"github.com/augety121/mcp-state-twin/internal/world"
@@ -15,6 +16,8 @@ import (
 )
 
 const MaxExpressionBytes = 4096
+
+const MaxToolResultBytes = 1 << 20
 
 type Runtime struct {
 	spec     *spec.TwinSpec
@@ -324,6 +327,13 @@ func (r *Runtime) apply(tool spec.ToolSpec, state *world.State, clock time.Time,
 			return failure("INTERNAL_TWIN_ERROR", "result evaluation failed: "+err.Error())
 		}
 		result = value
+	}
+	canonicalResult, err := canonical.JSON(result)
+	if err != nil {
+		return failure("INTERNAL_TWIN_ERROR", "declared result is not canonical JSON: "+err.Error())
+	}
+	if len(canonicalResult) > MaxToolResultBytes {
+		return failure("INTERNAL_TWIN_ERROR", fmt.Sprintf("declared result exceeds %d bytes", MaxToolResultBytes))
 	}
 	if err := validateJSON(result, toolSchemas.output); err != nil {
 		return failure("INTERNAL_TWIN_ERROR", "declared outputSchema rejected tool result: "+err.Error())

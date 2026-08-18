@@ -15,9 +15,15 @@ import (
 )
 
 const (
-	APIVersion       = "statetwin.dev/v1alpha1"
-	Kind             = "Twin"
-	MaxTwinSpecBytes = 1 << 20
+	APIVersion          = "statetwin.dev/v1alpha1"
+	Kind                = "Twin"
+	MaxTwinSpecBytes    = 1 << 20
+	MaxEntities         = 256
+	MaxTools            = 256
+	MaxInvariants       = 512
+	MaxSchemaBytes      = 256 << 10
+	MaxSchemaDepth      = 32
+	MaxDescriptionBytes = 32 << 10
 )
 
 var (
@@ -240,6 +246,15 @@ func (s *TwinSpec) Validate() error {
 	if len(s.State.Entities) == 0 {
 		problems = append(problems, "state.entities must not be empty")
 	}
+	if len(s.State.Entities) > MaxEntities {
+		problems = append(problems, fmt.Sprintf("state.entities exceeds limit %d", MaxEntities))
+	}
+	if len(s.Tools) > MaxTools {
+		problems = append(problems, fmt.Sprintf("tools exceeds limit %d", MaxTools))
+	}
+	if len(s.Invariants) > MaxInvariants {
+		problems = append(problems, fmt.Sprintf("invariants exceeds limit %d", MaxInvariants))
+	}
 
 	toolNames := make(map[string]struct{}, len(s.Tools))
 	for i, tool := range s.Tools {
@@ -253,9 +268,18 @@ func (s *TwinSpec) Validate() error {
 		toolNames[tool.Name] = struct{}{}
 		if strings.TrimSpace(tool.Description) == "" {
 			problems = append(problems, prefix+".description is required")
+		} else if len(tool.Description) > MaxDescriptionBytes {
+			problems = append(problems, fmt.Sprintf("%s.description exceeds limit %d", prefix, MaxDescriptionBytes))
 		}
 		if tool.InputSchema == nil {
 			problems = append(problems, prefix+".inputSchema is required")
+		} else if err := validateSchemaBudget(tool.InputSchema); err != nil {
+			problems = append(problems, prefix+".inputSchema "+err.Error())
+		}
+		if tool.OutputSchema != nil {
+			if err := validateSchemaBudget(tool.OutputSchema); err != nil {
+				problems = append(problems, prefix+".outputSchema "+err.Error())
+			}
 		}
 		for j, effect := range tool.Effects {
 			ep := fmt.Sprintf("%s.effects[%d]", prefix, j)
@@ -306,4 +330,37 @@ func (s *TwinSpec) Validate() error {
 		return errors.New("invalid TwinSpec:\n- " + strings.Join(problems, "\n- "))
 	}
 	return nil
+}
+
+func validateSchemaBudget(schema map[string]any) error {
+	data, err := canonical.JSON(schema)
+	if err != nil {
+		return fmt.Errorf("is not canonical JSON: %w", err)
+	}
+	if len(data) > MaxSchemaBytes {
+		return fmt.Errorf("exceeds canonical size limit %d", MaxSchemaBytes)
+	}
+	if depth := schemaDepth(schema, 0); depth > MaxSchemaDepth {
+		return fmt.Errorf("exceeds nesting limit %d", MaxSchemaDepth)
+	}
+	return nil
+}
+
+func schemaDepth(value any, depth int) int {
+	maxDepth := depth
+	switch typed := value.(type) {
+	case map[string]any:
+		for _, child := range typed {
+			if childDepth := schemaDepth(child, depth+1); childDepth > maxDepth {
+				maxDepth = childDepth
+			}
+		}
+	case []any:
+		for _, child := range typed {
+			if childDepth := schemaDepth(child, depth+1); childDepth > maxDepth {
+				maxDepth = childDepth
+			}
+		}
+	}
+	return maxDepth
 }

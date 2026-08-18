@@ -113,6 +113,34 @@ Severity:
 | F-099 | Legal | 录制第三方 SaaS 数据违反条款/隐私政策 | P0 | docs + user responsibility | 推荐 synthetic/test account；不默认 crawl/record arbitrary services |
 | F-100 | Product | 试图“一键自动 twin 任意 SaaS”导致不可兑现 | P0 product trust | scope review | marketing 明确 trace-assisted bootstrap + human validation，而非 universal auto-equivalence |
 
+## Extended hazards for the next release profile
+
+These rows are design requirements, not evidence that the current preview has
+implemented the corresponding feature.
+
+| ID | Category | Hazard | Priority | Required control |
+|---|---|---|---|---|
+| F-101 | Parser | YAML alias or deeply nested input exhausts memory | P0 | document/depth/alias limits and fuzz corpus |
+| F-102 | Canonicalization | Unicode confusable names create identity collisions | P1 | identifier policy, normalization tests, collision rejection |
+| F-103 | Canonicalization | JSON integer/float edge values change digest across runtimes | P1 | supported JSON value domain and golden vectors |
+| F-104 | Storage | disk-full or SQLite corruption produces a false success | P0 | fail-closed commit/recovery tests and integrity checks |
+| F-105 | Control | bearer token replay or rotation leaves an old operator authorized | P1 | token lifecycle, rotation semantics, and audit coverage |
+| F-106 | Control | path traversal reads a fixture or export outside its root | P0 | canonical-path confinement tests |
+| F-107 | Runtime | cancellation or client disconnect leaves a live transaction | P1 | context cancellation and kill-point tests |
+| F-108 | Runtime | recursive/reentrant tool calls deadlock or exceed limits | P1 | explicit no-reentrancy rule or bounded call depth |
+| F-109 | Runtime | collection query creates unbounded CPU or result amplification | P1 | cardinality, output-byte, and cost budgets |
+| F-110 | Protocol | backpressure/stream cancellation leaks resources | P1 | transport cancellation and bounded-body tests |
+| F-111 | Scheduler | starvation or livelock makes a scenario non-terminating | P1 | step/time/call budgets and termination report |
+| F-112 | Audit | log injection or mutable audit rows falsify evidence | P1 | canonical fields, escaping, append-only/tamper checks |
+| F-113 | Export | retention/deletion policy leaves sensitive snapshots behind | P0 | deletion tests and documented recovery/retention semantics |
+| F-114 | Surface | host injects instructions or schemas not present in the digest | P1 | host metadata capture and compatibility report |
+| F-115 | Provider | tools-first success is mistaken for model behavior equivalence | P1 | separate protocol and agent-trajectory claims |
+| F-116 | Supply chain | transitive dependency or action tag drifts after review | P1 | immutable pins, SBOM, dependency update review |
+| F-117 | Build | binary cannot be reproduced from the declared source/version | P1 | reproducible-build metadata and checksums |
+| F-118 | Upgrade | old TwinSpec is silently reinterpreted by a new evaluator | P0 | semantic versioning, golden vectors, explicit migration |
+| F-119 | Benchmark | an easy twin inflates agent scores through missing constraints | P1 | fidelity report, negative cases, differential coverage |
+| F-120 | Legal | third-party trace or schema is redistributed without permission | P0 | synthetic fixtures by default, consent/license gate |
+
 ## Release interpretation
 
 “考虑所有可能性”在工程上不能理解为穷举未来所有未知事故；合理标准是：

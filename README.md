@@ -2,12 +2,17 @@
 
 > Fork the tool world, not production.
 
-MCP State Twin is an experimental open-source runtime for deterministic,
-forkable, stateful test worlds behind Model Context Protocol (MCP) tools.
+MCP State Twin is an experimental open-source environment layer for agent
+evaluation: deterministic, forkable, stateful test worlds behind Model Context
+Protocol (MCP) tools.
 
 It lets agent engineers start multiple runs from the same world snapshot,
 allow each run to take a different valid tool trajectory, and compare terminal
 state without writing to a production service.
+
+It is not an AGI system, agent framework, memory system, RAG service, or model
+runtime. The intended AGI-facing primitive is a reproducible external world in
+which agents can act, fail, and be compared without production side effects.
 
 ```text
                          immutable snapshot S0
@@ -54,7 +59,7 @@ Implemented and exercised locally:
 - pinned official MCP conformance checks for initialize, ping, tools-list, and
   JSON Schema 2020-12 on Linux CI;
 - bounded TwinSpec/CEL fuzz targets plus pinned secret-policy and loopback-only
-  hermetic CI gates (the new gates still require a passing main-branch run);
+  hermetic CI gates (all passed in Linux CI run #6);
 - a tested CLI loop: initialize → snapshot → fork twice → mutate each fork →
   diff terminal state.
 
@@ -459,6 +464,10 @@ Prompt instructions are not an authorization boundary.
 | [Implementation Status](docs/IMPLEMENTATION-STATUS.md) | Evidence-backed implemented/partial/missing matrix |
 | [RFC-0001](docs/RFC-0001.md) | Product boundary, hard invariants, architecture, semantics, and release gates |
 | [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) | Normative first-release profile, limits, traceability, and gates |
+| [SPEC-0001](docs/SPEC-0001-TWINSPEC-CORE.md) | TwinSpec v1alpha1 data model and admission rules |
+| [SPEC-0002](docs/SPEC-0002-RUNTIME-SEMANTICS.md) | Determinism, transactions, snapshots, errors, and limits |
+| [SPEC-0003](docs/SPEC-0003-MCP-BOUNDARIES-AND-COMPATIBILITY.md) | MCP data/control planes, hermetic mode, and provider neutrality |
+| [SPEC-0004](docs/SPEC-0004-EVIDENCE-FIDELITY-AND-RELEASE.md) | Evidence, provenance, fidelity, and release gates |
 | [ADR-0001](docs/ADR-0001-PROTOCOL-BASELINE.md) | MCP protocol baseline and provider neutrality |
 | [ADR-0002](docs/ADR-0002-CONTROL-PLANE-ISOLATION.md) | Data/control-plane isolation |
 | [ADR-0003](docs/ADR-0003-EXPRESSION-ENGINE.md) | Bounded CEL expressions |
@@ -467,7 +476,8 @@ Prompt instructions are not an authorization boundary.
 | [ADR-0006](docs/ADR-0006-JSON-SCHEMA-VALIDATION.md) | Hermetic JSON Schema 2020-12 validation |
 | [ADR-0007](docs/ADR-0007-STORAGE-IDENTITY-AND-CONTROL-AUDIT.md) | SQLite identity/version and privileged-operation audit |
 | [ADR-0008](docs/ADR-0008-MCP-TOOL-SURFACE-DIGEST.md) | Canonical model-facing MCP surface and fail-closed binding |
-| [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md) | 100 design risks and required responses—not a test-completion report |
+| [ADR-0009](docs/ADR-0009-OPERATIONAL-LOGGING-BOUNDARY.md) | Operational log redaction boundary |
+| [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md) | Design risks and required responses—not a test-completion report |
 | [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md) | P0-by-P0 evidence, exclusions, and stable-release blockers |
 | [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) | Dated prior-art screen and rejected directions |
 | [Roadmap](docs/ROADMAP.md) | Ordered phases and exit criteria |

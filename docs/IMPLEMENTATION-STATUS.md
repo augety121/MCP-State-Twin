@@ -1,9 +1,10 @@
 # Implementation Status
 
 **Build status:** development preview, no tagged release  
-**Last verified:** 2026-08-17  
-**Authority:** this file reports implementation evidence; RFC-0001 remains the
-design target.
+**Last verified:** 2026-08-18
+**Authority:** this file reports implementation evidence. RFC-0001 is the
+umbrella design; RFC-0002 and SPEC-0001 through SPEC-0004 define the proposed
+v0.1 normative profile.
 
 ## Implemented and tested
 
@@ -32,6 +33,7 @@ design target.
 | Control-plane isolation | MCP `tools/list` test rejects all control functions |
 | Control authentication | independent bearer-token HTTP test |
 | Control auth grammar | missing scheme and raw-token negative tests; constant-time token comparison |
+| Operational log boundary | CLI errors pass through secret/identifier redaction; redaction unit tests |
 | Reference environment | six-tool issue-tracker TwinSpec with synthetic fixture |
 | CLI closed loop | init → snapshot → two forks → different calls → canonical diff run locally |
 
@@ -42,8 +44,8 @@ design target.
 | Virtual time | every branch has a fixed virtual clock used by CEL; clock advancement and scheduled effects are not implemented |
 | Migration coverage | schema v1 snapshot and untagged legacy audit layouts are upgraded; no tagged historical database fixture exists yet |
 | Upstream surface discovery | local canonicalization and binding enforcement work; upstream inspection and automatic refresh are not implemented |
-| Hermeticity | there is no upstream connector or passthrough code; an only-loopback Linux CI job is configured and awaits first-main-run evidence |
-| Secret/fixture policy | pinned Gitleaks history scan and a synthetic-fixture heuristic are configured and await first-main-run evidence |
+| Hermeticity | there is no upstream connector or passthrough code; only-loopback Linux CI job passed in run #6 |
+| Secret/fixture policy | pinned Gitleaks history scan and synthetic-fixture heuristic passed in run #6 |
 | Snapshot storage | immutable logical snapshots work; copy-on-write/delta optimization and GC are not implemented |
 | MCP protocol coverage | tested conformance scenarios cover versions through `2025-11-25`; the complete `2026-07-28` design baseline is not covered by that framework |
 | HTTP resource bounds | 1 MiB bodies/headers and read/write/idle timeouts are configured; oversize/config tests pass, direct slow-client test remains incomplete |

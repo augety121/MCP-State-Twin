@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/augety121/mcp-state-twin/internal/spec"
 	"github.com/augety121/mcp-state-twin/internal/store"
@@ -71,6 +72,26 @@ func TestUnknownAndDriftedSurfaceCannotStart(t *testing.T) {
 		if _, err := New(twin, nil); err == nil || !strings.Contains(err.Error(), "SPEC_DRIFT") {
 			t.Fatalf("status %s should fail closed, got %v", status, err)
 		}
+	}
+}
+
+func TestToolResultSizeLimitFailsClosed(t *testing.T) {
+	twin := testSpec()
+	twin.Tools[0].Result = "{'payload': input.payload}"
+	twin.Tools[0].Effects = nil
+	twin.Tools[0].Query = nil
+	twin.Invariants = nil
+	twin.Tools[0].InputSchema = map[string]any{
+		"type": "object", "required": []any{"payload"}, "additionalProperties": false,
+		"properties": map[string]any{"payload": map[string]any{"type": "string"}},
+	}
+	runtime, err := New(twin, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := runtime.apply(twin.Tools[0], world.New(), time.Unix(0, 0).UTC(), 1, map[string]any{"payload": strings.Repeat("x", MaxToolResultBytes)})
+	if result.ErrorClass != "INTERNAL_TWIN_ERROR" || !strings.Contains(result.Result.(map[string]any)["error"].(map[string]any)["message"].(string), "exceeds") {
+		t.Fatalf("expected bounded result failure, got %#v", result)
 	}
 }
 

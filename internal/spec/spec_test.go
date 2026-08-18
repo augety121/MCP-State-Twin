@@ -86,6 +86,24 @@ func TestValidateRejectsMalformedSurfaceDigest(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsOversizedAndDeepSchemas(t *testing.T) {
+	tooLarge := minimalSpec()
+	tooLarge.Tools[0].InputSchema["description"] = strings.Repeat("x", MaxSchemaBytes)
+	if err := tooLarge.Validate(); err == nil || !strings.Contains(err.Error(), "canonical size limit") {
+		t.Fatalf("expected schema size rejection, got %v", err)
+	}
+
+	tooDeep := minimalSpec()
+	var nested any = "leaf"
+	for i := 0; i < MaxSchemaDepth+2; i++ {
+		nested = map[string]any{"nested": nested}
+	}
+	tooDeep.Tools[0].InputSchema["nested"] = nested
+	if err := tooDeep.Validate(); err == nil || !strings.Contains(err.Error(), "nesting limit") {
+		t.Fatalf("expected schema depth rejection, got %v", err)
+	}
+}
+
 func TestValidateMinimal(t *testing.T) {
 	if err := minimalSpec().Validate(); err != nil {
 		t.Fatal(err)
