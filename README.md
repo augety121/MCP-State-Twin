@@ -740,5 +740,3 @@ Prior-art 调研记录在 [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md)
 ## License
 
 MCP State Twin 使用 **MIT License**。完整、具有约束力的许可证文本见 [LICENSE](LICENSE)。
-
-README 中对许可证的任何说明仅用于帮助阅读；若存在差异，以 `LICENSE` 文件中的标准 MIT 文本为准。
