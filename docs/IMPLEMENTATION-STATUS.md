@@ -73,8 +73,9 @@ SPEC-0007 and SPEC-0012; the full vNext pack remains proposal material.
 - OpenTelemetry integration.
 
 The vNext proposal adoption boundary is documented in
-[VNEXT-ADOPTION.md](VNEXT-ADOPTION.md); proposal text is not implementation
-evidence.
+[VNEXT-ADOPTION.md](VNEXT-ADOPTION.md), with the complete file-level matrix in
+[VNEXT-TRACEABILITY.md](VNEXT-TRACEABILITY.md); proposal text is not
+implementation evidence.
 
 ## Verification commands
 

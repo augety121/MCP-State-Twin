@@ -19,3 +19,8 @@ The authoritative implementation status is
 accepted implementation only after an ADR, executable tests, evidence, and a
 status update land together. “Compatible with ChatGPT/Claude/all agents” is
 never inferred from protocol support alone.
+
+The complete file-by-file disposition of the uploaded archive is maintained in
+[`VNEXT-TRACEABILITY.md`](VNEXT-TRACEABILITY.md). That matrix is the review
+index for the pack: it records every proposal item, its current boundary, and
+the evidence required before promotion.
