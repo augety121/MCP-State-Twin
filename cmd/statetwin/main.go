@@ -56,6 +56,8 @@ func main() {
 		err = runServe(os.Args[2:])
 	case "version":
 		fmt.Println(server.Version)
+	case "protocols":
+		err = printJSON(server.CurrentProtocolEvidence())
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -82,6 +84,7 @@ Usage:
   statetwin diff --db twin.db --before run-a --after run-b
   statetwin scenario --spec twin.yaml --fixture state.json --scenario scenario.yaml
   statetwin serve --spec twin.yaml --fixture state.json --db twin.db
+  statetwin protocols
 
 Control-plane authentication is read from STATETWIN_CONTROL_TOKEN.`)
 }

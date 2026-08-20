@@ -18,13 +18,17 @@ import (
 var (
 	ErrBranchNotFound   = errors.New("branch not found")
 	ErrSnapshotNotFound = errors.New("snapshot not found")
+	ErrBranchConflict   = errors.New("branch head conflict")
+	ErrClockRegression  = errors.New("virtual clock must move forward")
+	ErrClockLimit       = errors.New("virtual clock advance exceeds limit")
 )
 
 var idPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`)
 
 const (
-	applicationID = 0x5354574e // ASCII "STWN"
-	schemaVersion = 2
+	applicationID   = 0x5354574e // ASCII "STWN"
+	schemaVersion   = 3
+	MaxClockAdvance = 10 * 365 * 24 * time.Hour
 )
 
 type Store struct {
@@ -38,6 +42,7 @@ type Branch struct {
 	StateDigest string       `json:"stateDigest"`
 	Clock       time.Time    `json:"clock"`
 	CallCount   int64        `json:"callCount"`
+	HeadVersion int64        `json:"headVersion"`
 }
 
 type Snapshot struct {
@@ -47,6 +52,7 @@ type Snapshot struct {
 	State                *world.State `json:"state"`
 	StateDigest          string       `json:"stateDigest"`
 	Clock                time.Time    `json:"clock"`
+	SourceHeadVersion    int64        `json:"sourceHeadVersion"`
 	StorageSchemaVersion int          `json:"storageSchemaVersion"`
 }
 
@@ -131,7 +137,8 @@ CREATE TABLE IF NOT EXISTS branches (
   state_json BLOB NOT NULL,
   state_digest TEXT NOT NULL,
   clock TEXT NOT NULL,
-  call_count INTEGER NOT NULL DEFAULT 0
+  call_count INTEGER NOT NULL DEFAULT 0,
+  head_version INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS snapshots (
   id TEXT PRIMARY KEY,
@@ -140,6 +147,7 @@ CREATE TABLE IF NOT EXISTS snapshots (
   state_json BLOB NOT NULL,
   state_digest TEXT NOT NULL,
   clock TEXT NOT NULL,
+  source_head_version INTEGER NOT NULL DEFAULT 0,
   storage_schema_version INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL
 );
@@ -168,33 +176,31 @@ CREATE TABLE IF NOT EXISTS control_audit (
 	if _, err := tx.Exec(schema); err != nil {
 		return fmt.Errorf("migrate SQLite schema: %w", err)
 	}
-	rows, err := tx.Query(`PRAGMA table_info(snapshots)`)
+	hasStorageSchemaVersion, err := tableHasColumn(tx, "snapshots", "storage_schema_version")
 	if err != nil {
-		return fmt.Errorf("inspect snapshot schema: %w", err)
-	}
-	hasStorageSchemaVersion := false
-	for rows.Next() {
-		var cid, notNull, primaryKey int
-		var name, columnType string
-		var defaultValue any
-		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &primaryKey); err != nil {
-			rows.Close()
-			return fmt.Errorf("scan snapshot schema: %w", err)
-		}
-		if name == "storage_schema_version" {
-			hasStorageSchemaVersion = true
-		}
-	}
-	if err := rows.Err(); err != nil {
-		rows.Close()
-		return fmt.Errorf("iterate snapshot schema: %w", err)
-	}
-	if err := rows.Close(); err != nil {
-		return fmt.Errorf("close snapshot schema rows: %w", err)
+		return err
 	}
 	if !hasStorageSchemaVersion {
 		if _, err := tx.Exec(`ALTER TABLE snapshots ADD COLUMN storage_schema_version INTEGER NOT NULL DEFAULT 1`); err != nil {
 			return fmt.Errorf("add snapshot storage schema version: %w", err)
+		}
+	}
+	hasSourceHeadVersion, err := tableHasColumn(tx, "snapshots", "source_head_version")
+	if err != nil {
+		return err
+	}
+	if !hasSourceHeadVersion {
+		if _, err := tx.Exec(`ALTER TABLE snapshots ADD COLUMN source_head_version INTEGER NOT NULL DEFAULT 0`); err != nil {
+			return fmt.Errorf("add snapshot source head version: %w", err)
+		}
+	}
+	hasBranchHeadVersion, err := tableHasColumn(tx, "branches", "head_version")
+	if err != nil {
+		return err
+	}
+	if !hasBranchHeadVersion {
+		if _, err := tx.Exec(`ALTER TABLE branches ADD COLUMN head_version INTEGER NOT NULL DEFAULT 0`); err != nil {
+			return fmt.Errorf("add branch head version: %w", err)
 		}
 	}
 	// Early development databases briefly used a uniqueness constraint on
@@ -240,6 +246,29 @@ DROP TABLE audit_legacy;`); err != nil {
 	return nil
 }
 
+func tableHasColumn(tx *sql.Tx, table, column string) (bool, error) {
+	rows, err := tx.Query(`PRAGMA table_info(` + table + `)`)
+	if err != nil {
+		return false, fmt.Errorf("inspect %s schema: %w", table, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid, notNull, primaryKey int
+		var name, columnType string
+		var defaultValue any
+		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &primaryKey); err != nil {
+			return false, fmt.Errorf("scan %s schema: %w", table, err)
+		}
+		if name == column {
+			return true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, fmt.Errorf("iterate %s schema: %w", table, err)
+	}
+	return false, nil
+}
+
 func validateID(kind, value string) error {
 	if !idPattern.MatchString(value) {
 		return fmt.Errorf("invalid %s %q", kind, value)
@@ -261,8 +290,8 @@ func (s *Store) InitializeBranch(ctx context.Context, id, specDigest string, sta
 		return err
 	}
 	_, err = s.db.ExecContext(ctx, `
-INSERT INTO branches(id, spec_digest, state_json, state_digest, clock, call_count)
-VALUES(?, ?, ?, ?, ?, 0)
+INSERT INTO branches(id, spec_digest, state_json, state_digest, clock, call_count, head_version)
+VALUES(?, ?, ?, ?, ?, 0, 0)
 ON CONFLICT(id) DO NOTHING`, id, specDigest, stateJSON, stateDigest, clock.UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return fmt.Errorf("initialize branch: %w", err)
@@ -271,7 +300,7 @@ ON CONFLICT(id) DO NOTHING`, id, specDigest, stateJSON, stateDigest, clock.UTC()
 }
 
 func (s *Store) Branch(ctx context.Context, id string) (*Branch, error) {
-	row := s.db.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count FROM branches WHERE id = ?`, id)
+	row := s.db.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count, head_version FROM branches WHERE id = ?`, id)
 	return scanBranch(id, row)
 }
 
@@ -282,8 +311,8 @@ type rowScanner interface {
 func scanBranch(id string, row rowScanner) (*Branch, error) {
 	var specDigest, stateDigest, clockRaw string
 	var stateJSON []byte
-	var callCount int64
-	if err := row.Scan(&specDigest, &stateJSON, &stateDigest, &clockRaw, &callCount); err != nil {
+	var callCount, headVersion int64
+	if err := row.Scan(&specDigest, &stateJSON, &stateDigest, &clockRaw, &callCount, &headVersion); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrBranchNotFound
 		}
@@ -298,7 +327,7 @@ func scanBranch(id string, row rowScanner) (*Branch, error) {
 		return nil, fmt.Errorf("decode branch state: %w", err)
 	}
 	state.Normalize()
-	return &Branch{ID: id, SpecDigest: specDigest, State: &state, StateDigest: stateDigest, Clock: clock, CallCount: callCount}, nil
+	return &Branch{ID: id, SpecDigest: specDigest, State: &state, StateDigest: stateDigest, Clock: clock, CallCount: callCount, HeadVersion: headVersion}, nil
 }
 
 func (s *Store) ApplyCall(
@@ -313,7 +342,7 @@ func (s *Store) ApplyCall(
 	}
 	defer tx.Rollback()
 
-	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count FROM branches WHERE id = ?`, branchID))
+	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count, head_version FROM branches WHERE id = ?`, branchID))
 	if err != nil {
 		return nil, err
 	}
@@ -350,8 +379,19 @@ func (s *Store) ApplyCall(
 		return nil, fmt.Errorf("canonicalize tool input: %w", err)
 	}
 
-	if _, err := tx.ExecContext(ctx, `UPDATE branches SET state_json = ?, state_digest = ?, call_count = ? WHERE id = ?`, stateJSON, afterDigest, callIndex, branchID); err != nil {
+	update, err := tx.ExecContext(ctx, `
+UPDATE branches
+SET state_json = ?, state_digest = ?, call_count = ?, head_version = head_version + 1
+WHERE id = ? AND head_version = ?`, stateJSON, afterDigest, callIndex, branchID, branch.HeadVersion)
+	if err != nil {
 		return nil, fmt.Errorf("commit branch head: %w", err)
+	}
+	updated, err := update.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("read branch head update count: %w", err)
+	}
+	if updated != 1 {
+		return nil, fmt.Errorf("%w: branch %s expected head %d", ErrBranchConflict, branchID, branch.HeadVersion)
 	}
 	if _, err := tx.ExecContext(ctx, `
 INSERT INTO audit(branch_id, call_index, tool_name, input_json, result_json, error_class, before_digest, after_digest, created_at)
@@ -373,7 +413,7 @@ func (s *Store) CreateSnapshot(ctx context.Context, name, branchID string) (*Sna
 		return nil, fmt.Errorf("begin snapshot transaction: %w", err)
 	}
 	defer tx.Rollback()
-	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count FROM branches WHERE id = ?`, branchID))
+	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count, head_version FROM branches WHERE id = ?`, branchID))
 	if err != nil {
 		return nil, err
 	}
@@ -382,6 +422,7 @@ func (s *Store) CreateSnapshot(ctx context.Context, name, branchID string) (*Sna
 		"specDigest":           branch.SpecDigest,
 		"stateDigest":          branch.StateDigest,
 		"clock":                branch.Clock.UTC().Format(time.RFC3339Nano),
+		"sourceHeadVersion":    branch.HeadVersion,
 		"storageSchemaVersion": schemaVersion,
 	})
 	if err != nil {
@@ -392,8 +433,8 @@ func (s *Store) CreateSnapshot(ctx context.Context, name, branchID string) (*Sna
 		return nil, err
 	}
 	_, err = tx.ExecContext(ctx, `
-INSERT INTO snapshots(id, name, spec_digest, state_json, state_digest, clock, storage_schema_version, created_at)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?)`, id, name, branch.SpecDigest, stateJSON, branch.StateDigest, branch.Clock.UTC().Format(time.RFC3339Nano), schemaVersion, time.Now().UTC().Format(time.RFC3339Nano))
+INSERT INTO snapshots(id, name, spec_digest, state_json, state_digest, clock, source_head_version, storage_schema_version, created_at)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`, id, name, branch.SpecDigest, stateJSON, branch.StateDigest, branch.Clock.UTC().Format(time.RFC3339Nano), branch.HeadVersion, schemaVersion, time.Now().UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return nil, fmt.Errorf("create snapshot: %w", err)
 	}
@@ -403,18 +444,18 @@ VALUES(?, ?, ?, ?, ?, ?, ?, ?)`, id, name, branch.SpecDigest, stateJSON, branch.
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit snapshot transaction: %w", err)
 	}
-	return &Snapshot{ID: id, Name: name, SpecDigest: branch.SpecDigest, State: branch.State, StateDigest: branch.StateDigest, Clock: branch.Clock, StorageSchemaVersion: schemaVersion}, nil
+	return &Snapshot{ID: id, Name: name, SpecDigest: branch.SpecDigest, State: branch.State, StateDigest: branch.StateDigest, Clock: branch.Clock, SourceHeadVersion: branch.HeadVersion, StorageSchemaVersion: schemaVersion}, nil
 }
 
 func (s *Store) snapshotByName(ctx context.Context, name string) (*Snapshot, error) {
-	return scanSnapshot(name, s.db.QueryRowContext(ctx, `SELECT id, spec_digest, state_json, state_digest, clock, storage_schema_version FROM snapshots WHERE name = ?`, name))
+	return scanSnapshot(name, s.db.QueryRowContext(ctx, `SELECT id, spec_digest, state_json, state_digest, clock, source_head_version, storage_schema_version FROM snapshots WHERE name = ?`, name))
 }
 
 func scanSnapshot(name string, row rowScanner) (*Snapshot, error) {
 	var result Snapshot
 	var stateJSON []byte
 	var clockRaw string
-	err := row.Scan(&result.ID, &result.SpecDigest, &stateJSON, &result.StateDigest, &clockRaw, &result.StorageSchemaVersion)
+	err := row.Scan(&result.ID, &result.SpecDigest, &stateJSON, &result.StateDigest, &clockRaw, &result.SourceHeadVersion, &result.StorageSchemaVersion)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrSnapshotNotFound
@@ -444,7 +485,7 @@ func (s *Store) Fork(ctx context.Context, snapshotName, branchID string) error {
 		return fmt.Errorf("begin fork transaction: %w", err)
 	}
 	defer tx.Rollback()
-	snapshot, err := scanSnapshot(snapshotName, tx.QueryRowContext(ctx, `SELECT id, spec_digest, state_json, state_digest, clock, storage_schema_version FROM snapshots WHERE name = ?`, snapshotName))
+	snapshot, err := scanSnapshot(snapshotName, tx.QueryRowContext(ctx, `SELECT id, spec_digest, state_json, state_digest, clock, source_head_version, storage_schema_version FROM snapshots WHERE name = ?`, snapshotName))
 	if err != nil {
 		return err
 	}
@@ -453,8 +494,8 @@ func (s *Store) Fork(ctx context.Context, snapshotName, branchID string) error {
 		return err
 	}
 	_, err = tx.ExecContext(ctx, `
-INSERT INTO branches(id, spec_digest, state_json, state_digest, clock, call_count)
-VALUES(?, ?, ?, ?, ?, 0)`, branchID, snapshot.SpecDigest, stateJSON, snapshot.StateDigest, snapshot.Clock.UTC().Format(time.RFC3339Nano))
+INSERT INTO branches(id, spec_digest, state_json, state_digest, clock, call_count, head_version)
+VALUES(?, ?, ?, ?, ?, 0, 0)`, branchID, snapshot.SpecDigest, stateJSON, snapshot.StateDigest, snapshot.Clock.UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return fmt.Errorf("fork snapshot: %w", err)
 	}
@@ -476,11 +517,11 @@ func (s *Store) Reset(ctx context.Context, snapshotName, branchID string) error 
 		return fmt.Errorf("begin reset transaction: %w", err)
 	}
 	defer tx.Rollback()
-	snapshot, err := scanSnapshot(snapshotName, tx.QueryRowContext(ctx, `SELECT id, spec_digest, state_json, state_digest, clock, storage_schema_version FROM snapshots WHERE name = ?`, snapshotName))
+	snapshot, err := scanSnapshot(snapshotName, tx.QueryRowContext(ctx, `SELECT id, spec_digest, state_json, state_digest, clock, source_head_version, storage_schema_version FROM snapshots WHERE name = ?`, snapshotName))
 	if err != nil {
 		return err
 	}
-	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count FROM branches WHERE id = ?`, branchID))
+	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count, head_version FROM branches WHERE id = ?`, branchID))
 	if err != nil {
 		return err
 	}
@@ -489,7 +530,9 @@ func (s *Store) Reset(ctx context.Context, snapshotName, branchID string) error 
 		return err
 	}
 	result, err := tx.ExecContext(ctx, `
-UPDATE branches SET spec_digest = ?, state_json = ?, state_digest = ?, clock = ?, call_count = 0 WHERE id = ?`, snapshot.SpecDigest, stateJSON, snapshot.StateDigest, snapshot.Clock.UTC().Format(time.RFC3339Nano), branchID)
+UPDATE branches
+SET spec_digest = ?, state_json = ?, state_digest = ?, clock = ?, call_count = 0, head_version = head_version + 1
+WHERE id = ? AND head_version = ?`, snapshot.SpecDigest, stateJSON, snapshot.StateDigest, snapshot.Clock.UTC().Format(time.RFC3339Nano), branchID, branch.HeadVersion)
 	if err != nil {
 		return fmt.Errorf("reset branch: %w", err)
 	}
@@ -498,13 +541,59 @@ UPDATE branches SET spec_digest = ?, state_json = ?, state_digest = ?, clock = ?
 		return err
 	}
 	if count == 0 {
-		return ErrBranchNotFound
+		return fmt.Errorf("%w: branch %s expected head %d", ErrBranchConflict, branchID, branch.HeadVersion)
 	}
 	if err := appendControlAudit(ctx, tx, "branch.reset", branchID, snapshotName, branch.StateDigest, snapshot.StateDigest); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit reset transaction: %w", err)
+	}
+	return nil
+}
+
+// AdvanceClock moves a branch's virtual clock forward and records the
+// privileged mutation. Host wall time is never used as the new world time.
+// expectedHeadVersion, when non-nil, provides an optimistic concurrency check
+// for a control-plane caller that read the branch first.
+func (s *Store) AdvanceClock(ctx context.Context, branchID string, target time.Time, expectedHeadVersion *int64) error {
+	target = target.UTC()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin clock transaction: %w", err)
+	}
+	defer tx.Rollback()
+	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count, head_version FROM branches WHERE id = ?`, branchID))
+	if err != nil {
+		return err
+	}
+	if expectedHeadVersion != nil && *expectedHeadVersion != branch.HeadVersion {
+		return fmt.Errorf("%w: branch %s expected head %d, current %d", ErrBranchConflict, branchID, *expectedHeadVersion, branch.HeadVersion)
+	}
+	if !target.After(branch.Clock) {
+		return fmt.Errorf("%w: current=%s target=%s", ErrClockRegression, branch.Clock.UTC().Format(time.RFC3339Nano), target.Format(time.RFC3339Nano))
+	}
+	if target.Sub(branch.Clock) > MaxClockAdvance {
+		return fmt.Errorf("%w: maximum advance is %s", ErrClockLimit, MaxClockAdvance)
+	}
+	result, err := tx.ExecContext(ctx, `
+UPDATE branches SET clock = ?, head_version = head_version + 1
+WHERE id = ? AND head_version = ?`, target.Format(time.RFC3339Nano), branchID, branch.HeadVersion)
+	if err != nil {
+		return fmt.Errorf("advance virtual clock: %w", err)
+	}
+	updated, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read clock update count: %w", err)
+	}
+	if updated != 1 {
+		return fmt.Errorf("%w: branch %s expected head %d", ErrBranchConflict, branchID, branch.HeadVersion)
+	}
+	if err := appendControlAudit(ctx, tx, "clock.advance", branchID, "", branch.StateDigest, branch.StateDigest); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit clock transaction: %w", err)
 	}
 	return nil
 }

@@ -157,6 +157,98 @@ func TestControlPlaneRejectsOversizeBody(t *testing.T) {
 	}
 }
 
+func TestControlPlaneAdvancesVirtualClockWithHeadAndAudit(t *testing.T) {
+	_, stateStore := referenceRuntime(t)
+	httpServer := httptest.NewServer(NewControlPlane(stateStore, "test-secret"))
+	t.Cleanup(httpServer.Close)
+
+	request, _ := http.NewRequest(http.MethodPost, httpServer.URL+"/v1/clock/advance", bytes.NewBufferString(`{"branch":"main","by":"1h","expectedHeadVersion":0}`))
+	request.Header.Set("Authorization", "Bearer test-secret")
+	request.Header.Set("Content-Type", "application/json")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("advance status = %d", response.StatusCode)
+	}
+	branch, err := stateStore.Branch(context.Background(), "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.HeadVersion != 1 || branch.Clock.Hour() != 1 {
+		t.Fatalf("branch after advance = head %d clock %s", branch.HeadVersion, branch.Clock)
+	}
+	entries, err := stateStore.ControlAudit(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Operation != "clock.advance" {
+		t.Fatalf("clock audit = %#v", entries)
+	}
+
+	request, _ = http.NewRequest(http.MethodPost, httpServer.URL+"/v1/clock/advance", bytes.NewBufferString(`{"branch":"main","by":"1h","expectedHeadVersion":0}`))
+	request.Header.Set("Authorization", "Bearer test-secret")
+	request.Header.Set("Content-Type", "application/json")
+	response, err = http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusConflict {
+		t.Fatalf("stale clock advance status = %d, want 409", response.StatusCode)
+	}
+
+	request, _ = http.NewRequest(http.MethodPost, httpServer.URL+"/v1/clock/advance", bytes.NewBufferString(`{"branch":"main","by":"-1h"}`))
+	request.Header.Set("Authorization", "Bearer test-secret")
+	request.Header.Set("Content-Type", "application/json")
+	response, err = http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("backward clock status = %d, want 400", response.StatusCode)
+	}
+}
+
+func TestControlPlaneClockValidationIsBounded(t *testing.T) {
+	_, stateStore := referenceRuntime(t)
+	httpServer := httptest.NewServer(NewControlPlane(stateStore, "test-secret"))
+	t.Cleanup(httpServer.Close)
+
+	tests := []string{
+		`{"branch":"main"}`,
+		`{"branch":"main","by":"1h","to":"2026-08-02T00:00:00Z"}`,
+		`{"branch":"main","by":"3650d"}`,
+		`{"branch":"main","to":"not-a-time"}`,
+	}
+	for _, body := range tests {
+		request, err := http.NewRequest(http.MethodPost, httpServer.URL+"/v1/clock/advance", bytes.NewBufferString(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Authorization", "Bearer test-secret")
+		request.Header.Set("Content-Type", "application/json")
+		response, err := http.DefaultClient.Do(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		response.Body.Close()
+		if response.StatusCode != http.StatusBadRequest {
+			t.Fatalf("clock body %s status = %d, want 400", body, response.StatusCode)
+		}
+	}
+	branch, err := stateStore.Branch(context.Background(), "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.HeadVersion != 0 {
+		t.Fatalf("invalid clock requests changed head to %d", branch.HeadVersion)
+	}
+}
+
 func TestMCPBranchComesOnlyFromURLAndForksStayIsolated(t *testing.T) {
 	runtime, stateStore := referenceRuntime(t)
 	ctx := context.Background()

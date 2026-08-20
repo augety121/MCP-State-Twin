@@ -1,10 +1,11 @@
 # Implementation Status
 
 **Build status:** development preview, no tagged release  
-**Last verified:** 2026-08-18
+**Last verified:** 2026-08-20
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 and SPEC-0001 through SPEC-0006 define the proposed
-v0.1 normative profile.
+v0.1 normative profile. ADR-0011 accepts only the bounded preview subsets of
+SPEC-0007 and SPEC-0012; the full vNext pack remains proposal material.
 
 ## Implemented and tested
 
@@ -38,26 +39,28 @@ v0.1 normative profile.
 | Reference environment | six-tool issue-tracker TwinSpec with synthetic fixture |
 | CLI closed loop | init → snapshot → two forks → different calls → canonical diff run locally |
 | Scripted scenario runner | bounded Scenario v1alpha1 parser, expected error classes, JSON Pointer assertions, deterministic environment/report digests, ordered trace, and state diff |
+| MCP 2026 wire evidence | raw `server/discover`, direct modern `tools/list`, result discriminator, header/body mismatch, and 2025-11-25 initialize compatibility tests; pinned SDK evidence CLI |
+| Monotonic branch head | SQLite schema v3 `head_version`, CAS updates for calls/reset/clock, snapshot source-head binding, migration tests |
+| Private virtual-clock advance | bounded forward-only `/v1/clock/advance`, expected-head conflict, and transactional `clock.advance` audit tests |
 
 ## Partially implemented
 
 | Capability | Current boundary |
 |---|---|
-| Virtual time | every branch has a fixed virtual clock used by CEL; clock advancement and scheduled effects are not implemented |
+| Virtual time | private forward-only clock advancement is implemented; scheduler, entropy, due events, and scheduled effects are not implemented |
 | Migration coverage | schema v1 snapshot and untagged legacy audit layouts are upgraded; no tagged historical database fixture exists yet |
 | Upstream surface discovery | local canonicalization and binding enforcement work; upstream inspection and automatic refresh are not implemented |
 | Hermeticity | there is no upstream connector or passthrough code; only-loopback Linux CI job passed in run #6 |
 | Secret/fixture policy | pinned Gitleaks history scan and synthetic-fixture heuristic passed in run #6 |
 | Snapshot storage | immutable logical snapshots work; copy-on-write/delta optimization and GC are not implemented |
-| MCP protocol coverage | tested conformance scenarios cover versions through `2025-11-25`; the complete `2026-07-28` design baseline is not covered by that framework |
+| MCP protocol coverage | direct 2026-07-28 wire smoke tests pass; the pinned conformance framework still covers legacy-era scenarios and does not establish every modern optional feature |
 | HTTP resource bounds | 1 MiB bodies/headers and read/write/idle timeouts are configured; oversize/config tests pass, direct slow-client test remains incomplete |
 
 ## Not implemented
 
 - recorder and trace redaction;
 - L0 cassette replay;
-- deterministic fault injection;
-- virtual-clock advancement and eventual consistency;
+- deterministic fault injection and eventual consistency;
 - provider/model harnesses and live-agent trajectory capture;
 - official MCP conformance-suite execution;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
@@ -68,6 +71,10 @@ v0.1 normative profile.
 - data-plane authentication, TLS, remote multi-tenancy, or cloud deployment;
 - native/reference L3 adapters;
 - OpenTelemetry integration.
+
+The vNext proposal adoption boundary is documented in
+[VNEXT-ADOPTION.md](VNEXT-ADOPTION.md); proposal text is not implementation
+evidence.
 
 ## Verification commands
 

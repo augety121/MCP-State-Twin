@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/augety121/mcp-state-twin/internal/store"
 )
@@ -23,6 +24,7 @@ func NewControlPlane(stateStore *store.Store, token string) *ControlPlane {
 	c.mux.HandleFunc("POST /v1/snapshots", c.createSnapshot)
 	c.mux.HandleFunc("POST /v1/forks", c.fork)
 	c.mux.HandleFunc("POST /v1/resets", c.reset)
+	c.mux.HandleFunc("POST /v1/clock/advance", c.advanceClock)
 	c.mux.HandleFunc("GET /v1/diff", c.diff)
 	return c
 }
@@ -102,6 +104,52 @@ func (c *ControlPlane) reset(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"branch": request.Branch, "resetTo": request.Snapshot})
 }
 
+func (c *ControlPlane) advanceClock(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		Branch              string `json:"branch"`
+		By                  string `json:"by"`
+		To                  string `json:"to"`
+		ExpectedHeadVersion *int64 `json:"expectedHeadVersion"`
+	}
+	if !decodeJSON(w, r, &request) {
+		return
+	}
+	if (request.By == "") == (request.To == "") {
+		writeError(w, http.StatusBadRequest, "CLOCK_INVALID", "exactly one of by or to is required")
+		return
+	}
+	branch, err := c.store.Branch(r.Context(), request.Branch)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	target := branch.Clock
+	if request.By != "" {
+		duration, parseErr := time.ParseDuration(request.By)
+		if parseErr != nil || duration <= 0 {
+			writeError(w, http.StatusBadRequest, "CLOCK_INVALID", "by must be a positive Go duration")
+			return
+		}
+		target = target.Add(duration)
+	} else {
+		target, err = time.Parse(time.RFC3339Nano, request.To)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "CLOCK_INVALID", "to must be RFC3339")
+			return
+		}
+	}
+	if err := c.store.AdvanceClock(r.Context(), request.Branch, target, request.ExpectedHeadVersion); err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	updated, err := c.store.Branch(r.Context(), request.Branch)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"branch": request.Branch, "clock": updated.Clock, "headVersion": updated.HeadVersion})
+}
+
 func (c *ControlPlane) diff(w http.ResponseWriter, r *http.Request) {
 	changes, err := c.store.DiffBranches(r.Context(), r.URL.Query().Get("before"), r.URL.Query().Get("after"))
 	if err != nil {
@@ -130,6 +178,10 @@ func writeStoreError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, store.ErrBranchNotFound), errors.Is(err, store.ErrSnapshotNotFound):
 		writeError(w, http.StatusNotFound, "NOT_FOUND", err.Error())
+	case errors.Is(err, store.ErrBranchConflict):
+		writeError(w, http.StatusConflict, "BRANCH_CONFLICT", err.Error())
+	case errors.Is(err, store.ErrClockRegression), errors.Is(err, store.ErrClockLimit):
+		writeError(w, http.StatusBadRequest, "CLOCK_INVALID", err.Error())
 	default:
 		writeError(w, http.StatusBadRequest, "CONTROL_ERROR", err.Error())
 	}

@@ -51,6 +51,9 @@ func TestFailedOutcomeDoesNotCommitState(t *testing.T) {
 	if branch.CallCount != 1 {
 		t.Fatalf("call count = %d, want 1", branch.CallCount)
 	}
+	if branch.HeadVersion != 1 {
+		t.Fatalf("head version = %d, want 1", branch.HeadVersion)
+	}
 }
 
 func TestSnapshotForkIsolationAndDiff(t *testing.T) {
@@ -61,8 +64,12 @@ func TestSnapshotForkIsolationAndDiff(t *testing.T) {
 	if err := s.InitializeBranch(ctx, "main", "sha256:spec", initial, time.Unix(0, 0)); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.CreateSnapshot(ctx, "base", "main"); err != nil {
+	snapshot, err := s.CreateSnapshot(ctx, "base", "main")
+	if err != nil {
 		t.Fatal(err)
+	}
+	if snapshot.SourceHeadVersion != 0 {
+		t.Fatalf("snapshot source head = %d, want 0", snapshot.SourceHeadVersion)
 	}
 	if err := s.Fork(ctx, "base", "run-a"); err != nil {
 		t.Fatal(err)
@@ -70,7 +77,7 @@ func TestSnapshotForkIsolationAndDiff(t *testing.T) {
 	if err := s.Fork(ctx, "base", "run-b"); err != nil {
 		t.Fatal(err)
 	}
-	_, err := s.ApplyCall(ctx, "run-a", "sha256:spec", "close", map[string]any{}, func(state *world.State, _ time.Time, _ int64) (CallOutcome, error) {
+	_, err = s.ApplyCall(ctx, "run-a", "sha256:spec", "close", map[string]any{}, func(state *world.State, _ time.Time, _ int64) (CallOutcome, error) {
 		state.Entities["item"]["a"]["state"] = "closed"
 		return CallOutcome{Result: map[string]any{"ok": true}, CommitState: true}, nil
 	})
@@ -139,11 +146,21 @@ func TestResetRestoresSnapshotAndAllowsFurtherCalls(t *testing.T) {
 	if branch.CallCount != 0 {
 		t.Fatalf("call count after reset = %d, want 0", branch.CallCount)
 	}
+	if branch.HeadVersion != 2 {
+		t.Fatalf("head version after call+reset = %d, want 2", branch.HeadVersion)
+	}
 
 	// The reset rewinds the branch call index. A later call must still be
 	// accepted while the pre-reset audit history remains append-only.
 	if _, err := s.ApplyCall(ctx, "main", "sha256:spec", "close", map[string]any{}, closeItem); err != nil {
 		t.Fatalf("call after reset: %v", err)
+	}
+	branch, err = s.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.HeadVersion != 3 {
+		t.Fatalf("head version after post-reset call = %d, want 3", branch.HeadVersion)
 	}
 	entries, err := s.ControlAudit(ctx)
 	if err != nil {
@@ -249,7 +266,7 @@ VALUES('legacy-id', 'legacy', 'sha256:spec', '{"entities":{},"sequences":{}}', '
 	if err != nil {
 		t.Fatal(err)
 	}
-	if legacy.ID != "legacy-id" || legacy.StorageSchemaVersion != 1 {
+	if legacy.ID != "legacy-id" || legacy.StorageSchemaVersion != 1 || legacy.SourceHeadVersion != 0 {
 		t.Fatalf("migrated snapshot = %#v", legacy)
 	}
 	var gotVersion int
@@ -258,6 +275,65 @@ VALUES('legacy-id', 'legacy', 'sha256:spec', '{"entities":{},"sequences":{}}', '
 	}
 	if gotVersion != schemaVersion {
 		t.Fatalf("migrated schema version = %d, want %d", gotVersion, schemaVersion)
+	}
+}
+
+func TestVersionTwoBranchMigratesWithMonotonicHead(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.db")
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(fmt.Sprintf(`PRAGMA application_id = %d`, applicationID)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`PRAGMA user_version = 2`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`
+CREATE TABLE branches (
+  id TEXT PRIMARY KEY,
+  spec_digest TEXT NOT NULL,
+  state_json BLOB NOT NULL,
+  state_digest TEXT NOT NULL,
+  clock TEXT NOT NULL,
+  call_count INTEGER NOT NULL DEFAULT 0
+);
+INSERT INTO branches(id, spec_digest, state_json, state_digest, clock, call_count)
+VALUES('main', 'sha256:spec', '{"entities":{},"sequences":{}}', 'sha256:state', '2026-08-01T00:00:00Z', 7);`); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	branch, err := s.Branch(context.Background(), "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.HeadVersion != 0 || branch.CallCount != 7 {
+		t.Fatalf("migrated branch = %#v", branch)
+	}
+	result, err := s.ApplyCall(context.Background(), "main", "sha256:spec", "read", map[string]any{}, func(state *world.State, _ time.Time, _ int64) (CallOutcome, error) {
+		return CallOutcome{Result: map[string]any{"ok": true}, CommitState: true}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.CallIndex != 8 {
+		t.Fatalf("migrated call index = %d, want 8", result.CallIndex)
+	}
+	branch, err = s.Branch(context.Background(), "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.HeadVersion != 1 {
+		t.Fatalf("migrated head version after call = %d, want 1", branch.HeadVersion)
 	}
 }
 

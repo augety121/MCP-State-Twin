@@ -7,8 +7,10 @@
 
 Progress: protocol, control-plane isolation, expression engine, storage,
 canonicalization, and operational logging decisions have ADRs. RFC-0001 remains
-the umbrella Draft; SPEC-0001 through SPEC-0006 now define the proposed
-normative layers and still require maintainer review before a tagged v0.1.
+the umbrella Draft; SPEC-0001 through SPEC-0006 define the proposed normative
+layers and still require maintainer review before a tagged v0.1. ADR-0011
+accepts only bounded preview slices of SPEC-0007 and SPEC-0012; the remaining
+vNext pack is not accepted or implemented.
 
 Deliverables:
 
