@@ -1,11 +1,12 @@
 # Implementation Status
 
 **Build status:** development preview, no tagged release  
-**Last verified:** 2026-08-20
+**Last verified:** 2026-08-21
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 and SPEC-0001 through SPEC-0006 define the proposed
-v0.1 normative profile. ADR-0011 accepts only the bounded preview subsets of
-SPEC-0007 and SPEC-0012; the full vNext pack remains proposal material.
+v0.1 normative profile. ADR-0011 and ADR-0012 accept only bounded preview
+subsets of SPEC-0007, SPEC-0008, and SPEC-0012; the rest of the vNext pack
+remains proposal material.
 
 ## Implemented and tested
 
@@ -25,7 +26,7 @@ SPEC-0007 and SPEC-0012; the full vNext pack remains proposal material.
 | Preconditions/postconditions/global invariants | engine tests and reference TwinSpec |
 | Immutable snapshots and isolated forks | sibling-fork isolation test |
 | Reset and canonical state diff | store implementation and diff tests |
-| Storage identity/version | SQLite application ID and schema-version/refusal tests |
+| Storage identity/version | SQLite application ID and schema-v4 migration/refusal tests |
 | Privileged control audit | snapshot/fork/reset audit written in mutation transaction |
 | Deterministic replay | 1,000-call corpus replayed on two branches with equal digest at every step |
 | Concurrent branch isolation | 100 forks mutated concurrently without sibling/base leakage |
@@ -40,14 +41,16 @@ SPEC-0007 and SPEC-0012; the full vNext pack remains proposal material.
 | CLI closed loop | init → snapshot → two forks → different calls → canonical diff run locally |
 | Scripted scenario runner | bounded Scenario v1alpha1 parser, expected error classes, JSON Pointer assertions, deterministic environment/report digests, ordered trace, and state diff |
 | MCP 2026 wire evidence | raw `server/discover`, direct modern `tools/list`, result discriminator, header/body mismatch, and 2025-11-25 initialize compatibility tests; pinned SDK evidence CLI |
-| Monotonic branch head | SQLite schema v3 `head_version`, CAS updates for calls/reset/clock, snapshot source-head binding, migration tests |
+| Monotonic branch head | SQLite schema v4 `head_version`, CAS updates for calls/reset/clock/fault configuration, snapshot source-head binding, migration tests |
 | Private virtual-clock advance | bounded forward-only `/v1/clock/advance`, expected-head conflict, and transactional `clock.advance` audit tests |
+| Deterministic fault preview | branch-local bounded plans; `before-validation` and `after-commit-before-response`; atomic counters/events; stable plan digest; private HTTP integration tests |
 
 ## Partially implemented
 
 | Capability | Current boundary |
 |---|---|
 | Virtual time | private forward-only clock advancement is implemented; scheduler, entropy, due events, and scheduled effects are not implemented |
+| Deterministic faults | two transaction phases and three canonical outcomes are implemented; latency, partial effects, idempotency collapse, crash/cancellation, scheduled visibility, and eventual consistency are not |
 | Migration coverage | schema v1 snapshot and untagged legacy audit layouts are upgraded; no tagged historical database fixture exists yet |
 | Upstream surface discovery | local canonicalization and binding enforcement work; upstream inspection and automatic refresh are not implemented |
 | Hermeticity | there is no upstream connector or passthrough code; only-loopback Linux CI job passed in run #6 |
@@ -60,7 +63,7 @@ SPEC-0007 and SPEC-0012; the full vNext pack remains proposal material.
 
 - recorder and trace redaction;
 - L0 cassette replay;
-- deterministic fault injection and eventual consistency;
+- remaining deterministic fault phases, idempotency semantics, crash/cancellation injection, and eventual consistency;
 - provider/model harnesses and live-agent trajectory capture;
 - official MCP conformance-suite execution;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;

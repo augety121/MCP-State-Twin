@@ -53,7 +53,7 @@
 ### 아직 구현되지 않았거나 검증되지 않은 항목
 
 - recorder, cassette replay, trace redaction, 자동 upstream surface inspection/refresh
-- deterministic fault injection, scheduler, deterministic entropy는 미구현(private forward-only clock advancement는 구현됨)
+- 나머지 deterministic fault phases, scheduler, deterministic entropy, idempotency, crash/cancellation, eventual consistency는 미구현(private clock과 두 fault phases는 구현됨)
 - 실제 ChatGPT / OpenAI API / Claude / Claude Code smoke test
 - evidence-derived host compatibility report, provider harness
 - differential validation, L2 fidelity promotion workflow
@@ -347,7 +347,7 @@ go build ./cmd/statetwin
 - [SPEC-0004](docs/SPEC-0004-EVIDENCE-FIDELITY-AND-RELEASE.md) / [SPEC-0005](docs/SPEC-0005-SCENARIO-AND-REPORT.md) / [SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md)
 - [Phase 0 MCP 2026 Gap Matrix](docs/PHASE-0-MCP-2026-GAP-MATRIX.md) / [vNext Adoption Record](docs/VNEXT-ADOPTION.md)
 - [vNext SPEC Pack Traceability Matrix](docs/VNEXT-TRACEABILITY.md)
-- [SPEC-0007](docs/SPEC-0007-VIRTUAL-TIME-ENTROPY-SCHEDULER.md) / [SPEC-0012](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md) / [ADR-0011](docs/ADR-0011-HEAD-VERSION-AND-VIRTUAL-CLOCK.md)
+- [SPEC-0007](docs/SPEC-0007-VIRTUAL-TIME-ENTROPY-SCHEDULER.md) / [SPEC-0008](docs/SPEC-0008-DETERMINISTIC-FAULTS.md) / [SPEC-0012](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md) / [ADR-0011](docs/ADR-0011-HEAD-VERSION-AND-VIRTUAL-CLOCK.md) / [ADR-0012](docs/ADR-0012-DETERMINISTIC-FAULT-PREVIEW.md)
 - [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md)
 - [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md)
 - [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md)

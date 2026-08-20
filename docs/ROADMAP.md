@@ -223,6 +223,10 @@ Exit criteria:
 
 Build deterministic faults:
 
+Current evidence: ADR-0012 implements and tests `before-validation` rate-limit/
+timeout and `after-commit-before-response` timeout plans with branch-local
+persistence. The remainder of this phase is open.
+
 - rate limit.
 - timeout before effect.
 - timeout after effect.

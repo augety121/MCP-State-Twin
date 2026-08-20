@@ -8,9 +8,10 @@ the following bounded slice in this change:
 2. MCP 2026-07-28 tools-first wire evidence is recorded in
    `PHASE-0-MCP-2026-GAP-MATRIX.md`;
 3. the private virtual-clock advancement subset is implemented;
-4. schema-v3 monotonic branch heads and snapshot source-head identity are
-   implemented;
-5. scheduler, entropy, deterministic faults, recorder/replay, differential
+4. schema-v4 monotonic branch heads, snapshot source-head identity, and
+   branch-local fault tables are implemented;
+5. the bounded deterministic-fault preview in ADR-0012 is implemented; all
+   other fault phases, scheduler, entropy, recorder/replay, differential
    fidelity, remote security, bundles, and host adapters remain proposals with
    explicit gates.
 

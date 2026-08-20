@@ -13,20 +13,97 @@ import (
 )
 
 type ControlPlane struct {
-	store *store.Store
-	token string
-	mux   *http.ServeMux
+	store        *store.Store
+	token        string
+	allowedTools map[string]struct{}
+	mux          *http.ServeMux
 }
 
-func NewControlPlane(stateStore *store.Store, token string) *ControlPlane {
-	c := &ControlPlane{store: stateStore, token: token, mux: http.NewServeMux()}
+func NewControlPlane(stateStore *store.Store, token string, allowedTools ...string) *ControlPlane {
+	c := &ControlPlane{store: stateStore, token: token, allowedTools: make(map[string]struct{}, len(allowedTools)), mux: http.NewServeMux()}
+	for _, tool := range allowedTools {
+		c.allowedTools[tool] = struct{}{}
+	}
 	c.mux.HandleFunc("GET /v1/branches/{branch}", c.getBranch)
 	c.mux.HandleFunc("POST /v1/snapshots", c.createSnapshot)
 	c.mux.HandleFunc("POST /v1/forks", c.fork)
 	c.mux.HandleFunc("POST /v1/resets", c.reset)
 	c.mux.HandleFunc("POST /v1/clock/advance", c.advanceClock)
+	c.mux.HandleFunc("POST /v1/faults", c.installFault)
+	c.mux.HandleFunc("GET /v1/faults", c.listFaults)
+	c.mux.HandleFunc("POST /v1/faults/remove", c.removeFault)
+	c.mux.HandleFunc("GET /v1/fault-events", c.listFaultEvents)
 	c.mux.HandleFunc("GET /v1/diff", c.diff)
 	return c
+}
+
+func (c *ControlPlane) installFault(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		ID                  string `json:"id"`
+		Branch              string `json:"branch"`
+		Tool                string `json:"tool"`
+		Phase               string `json:"phase"`
+		ErrorClass          string `json:"errorClass"`
+		Message             string `json:"message"`
+		RepeatCount         int64  `json:"repeatCount"`
+		ExpectedHeadVersion *int64 `json:"expectedHeadVersion"`
+	}
+	if !decodeJSON(w, r, &request) {
+		return
+	}
+	if _, ok := c.allowedTools[request.Tool]; !ok {
+		writeError(w, http.StatusBadRequest, "FAULT_INVALID", "tool is not present in the loaded TwinSpec")
+		return
+	}
+	plan, err := c.store.InstallFault(r.Context(), store.FaultPlan{
+		ID: request.ID, BranchID: request.Branch, ToolName: request.Tool,
+		Phase: request.Phase, ErrorClass: request.ErrorClass,
+		Message: request.Message, RemainingCount: request.RepeatCount,
+	}, request.ExpectedHeadVersion)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, plan)
+}
+
+func (c *ControlPlane) listFaults(w http.ResponseWriter, r *http.Request) {
+	plans, err := c.store.FaultPlans(r.Context(), r.URL.Query().Get("branch"))
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	digest, err := c.store.FaultPlanDigest(r.Context(), r.URL.Query().Get("branch"))
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"format": "statetwin.dev/fault-plan/v1alpha1", "digest": digest, "plans": plans})
+}
+
+func (c *ControlPlane) removeFault(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		ID                  string `json:"id"`
+		Branch              string `json:"branch"`
+		ExpectedHeadVersion *int64 `json:"expectedHeadVersion"`
+	}
+	if !decodeJSON(w, r, &request) {
+		return
+	}
+	if err := c.store.RemoveFault(r.Context(), request.Branch, request.ID, request.ExpectedHeadVersion); err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"branch": request.Branch, "removed": request.ID})
+}
+
+func (c *ControlPlane) listFaultEvents(w http.ResponseWriter, r *http.Request) {
+	events, err := c.store.FaultEvents(r.Context(), r.URL.Query().Get("branch"))
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"events": events})
 }
 
 func (c *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -182,6 +259,10 @@ func writeStoreError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusConflict, "BRANCH_CONFLICT", err.Error())
 	case errors.Is(err, store.ErrClockRegression), errors.Is(err, store.ErrClockLimit):
 		writeError(w, http.StatusBadRequest, "CLOCK_INVALID", err.Error())
+	case errors.Is(err, store.ErrFaultNotFound):
+		writeError(w, http.StatusNotFound, "FAULT_NOT_FOUND", err.Error())
+	case errors.Is(err, store.ErrFaultInvalid):
+		writeError(w, http.StatusBadRequest, "FAULT_INVALID", err.Error())
 	default:
 		writeError(w, http.StatusBadRequest, "CONTROL_ERROR", err.Error())
 	}

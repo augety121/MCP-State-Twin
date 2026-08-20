@@ -30,6 +30,7 @@ var (
 	errorClasses  = map[string]struct{}{
 		"INVALID_INPUT": {}, "PRECONDITION_FAILED": {}, "NOT_FOUND": {},
 		"CONFLICT": {}, "INVARIANT_VIOLATION": {}, "UNMODELED_BEHAVIOR": {},
+		"RATE_LIMITED": {}, "TIMEOUT_BEFORE_EFFECT": {}, "TIMEOUT_AFTER_EFFECT": {},
 		"INTERNAL_TWIN_ERROR": {},
 	}
 )

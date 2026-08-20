@@ -236,7 +236,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 | Issue-tracker reference Twin | ✅ | 6 tools；synthetic；`L1/unverified/unbound` |
 | Scenario `v1alpha1` runner | ✅ | 有界 scripted scenario；不是 live model evaluation |
 | Live OpenAI / ChatGPT / Claude smoke tests | ❌ 尚未验证 | 不声明 host compatibility |
-| Deterministic fault injection / virtual-clock advancement | ⏳ | 私有 forward-only clock 已实现；scheduler/fault 尚未实现 |
+| Deterministic fault injection / virtual-clock advancement | 🧪 部分实现 | 私有 clock；两个 fault transaction phases；其余 scheduler/fault semantics 未实现 |
 | Recorder / cassette replay / trace redaction | ⏳ | 尚未实现 |
 | Differential validation / L2 promotion | ⏳ | 尚未完成 |
 | Data-plane auth / TLS / remote multi-tenancy | ⏳ | 当前仅适合本地 loopback 使用 |
@@ -259,6 +259,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 - bounded TwinSpec/CEL fuzz targets，以及 secret-policy / loopback-only hermetic CI gates；
 - 已测试 CLI 主链路：initialize → snapshot → fork ×2 → mutate → terminal diff；
 - bounded Scenario `v1alpha1` runner：deterministic environment identity、ordered tool trace、JSON Pointer state assertion 与 canonical state diff。
+- bounded branch-local fault plans：`before-validation` 与 `after-commit-before-response`，带稳定 plan digest、事务内计数和 fault-event audit。
 
 </details>
 
@@ -266,7 +267,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 <summary><strong>展开：尚未实现或尚未验证</strong></summary>
 
 - recorder、cassette replay、trace redaction、自动 upstream surface inspection/refresh；
-- deterministic fault injection、scheduler、deterministic entropy；private forward-only clock advancement 已实现；
+- 其余 deterministic fault phases、scheduler、deterministic entropy、idempotency collapse、crash/cancellation 与 eventual consistency；private clock 和两个 fault phases 已实现；
 - live ChatGPT、OpenAI API、Claude、Claude Code smoke tests；
 - evidence-derived host compatibility report 或 provider harness；
 - differential validation 或 L2 fidelity promotion workflow；
@@ -334,9 +335,26 @@ go run ./cmd/statetwin serve \
 | Plane | Endpoint | 可见操作 |
 |---|---|---|
 | Agent data plane | `http://127.0.0.1:8090/mcp/main` | 仅已建模 business tools |
-| Private control plane | `http://127.0.0.1:8091/v1` | branch state、snapshot、fork、reset、diff、forward-only clock advance |
+| Private control plane | `http://127.0.0.1:8091/v1` | branch state、snapshot、fork、reset、diff、forward-only clock、bounded fault plans/events |
 
 Branch ID 是 MCP URL 的一部分，不是额外暴露给模型的 tool argument，因此不同 branch 可以保持相同的 tool input schema。
+
+当前 fault preview 仅支持两个经过事务测试的 phase。以下请求必须发送到私有 control plane，并携带 `Authorization: Bearer $STATETWIN_CONTROL_TOKEN`：
+
+```json
+{
+  "id": "lose-close-response",
+  "branch": "main",
+  "tool": "close_issue",
+  "phase": "after-commit-before-response",
+  "errorClass": "TIMEOUT_AFTER_EFFECT",
+  "message": "synthetic response loss",
+  "repeatCount": 1,
+  "expectedHeadVersion": 0
+}
+```
+
+提交到 `POST /v1/faults` 后，匹配调用会先提交业务状态，再向 Agent 返回确定性错误。另一个受支持组合是 `before-validation` + `RATE_LIMITED`/`TIMEOUT_BEFORE_EFFECT`，它不会执行 transition callback。完整边界见 [SPEC-0008](docs/SPEC-0008-DETERMINISTIC-FAULTS.md)。
 
 > [!WARNING]
 > **当前 data plane 没有 authentication 或 TLS。** 两个服务默认绑定 loopback，并应保持本地使用。Control token 只是开发期保护措施之一，不能让当前构建安全地暴露到 Internet。
@@ -627,6 +645,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [vNext Adoption Record](docs/VNEXT-ADOPTION.md)
 - [vNext SPEC Pack Traceability Matrix](docs/VNEXT-TRACEABILITY.md)
 - [SPEC-0007 — Virtual Time Boundary](docs/SPEC-0007-VIRTUAL-TIME-ENTROPY-SCHEDULER.md)
+- [SPEC-0008 — Deterministic Fault Preview](docs/SPEC-0008-DETERMINISTIC-FAULTS.md)
 - [SPEC-0012 — Storage/Concurrency/Recovery](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md)
 
 <details>
@@ -650,6 +669,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [ADR-0009](docs/ADR-0009-OPERATIONAL-LOGGING-BOUNDARY.md) — operational log redaction boundary
 - [ADR-0010](docs/ADR-0010-SCENARIO-ARTIFACTS.md) — bounded scenario artifacts 与 scripted evidence reports
 - [ADR-0011](docs/ADR-0011-HEAD-VERSION-AND-VIRTUAL-CLOCK.md) — monotonic branch head 与 private virtual clock
+- [ADR-0012](docs/ADR-0012-DETERMINISTIC-FAULT-PREVIEW.md) — branch-local bounded deterministic fault preview
 
 ### Evidence / Research
 

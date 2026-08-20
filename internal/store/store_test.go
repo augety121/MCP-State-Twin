@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -55,6 +56,241 @@ func TestFailedOutcomeDoesNotCommitState(t *testing.T) {
 		t.Fatalf("head version = %d, want 1", branch.HeadVersion)
 	}
 }
+
+func TestDeterministicFaultBeforeValidationDoesNotRunTransition(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	initial := world.New()
+	initial.Entities["item"] = map[string]map[string]any{"a": {"id": "a", "state": "open"}}
+	if err := s.InitializeBranch(ctx, "main", "sha256:spec", initial, time.Unix(0, 0)); err != nil {
+		t.Fatal(err)
+	}
+	plan, err := s.InstallFault(ctx, FaultPlan{
+		ID: "timeout-next", BranchID: "main", ToolName: "close",
+		Phase: FaultPhaseBeforeValidation, ErrorClass: "TIMEOUT_BEFORE_EFFECT",
+		Message: "synthetic request timeout", RemainingCount: 1,
+	}, int64Pointer(0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.FiredCount != 0 || plan.RemainingCount != 1 {
+		t.Fatalf("installed plan = %#v", plan)
+	}
+	planDigest, err := s.FaultPlanDigest(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	called := false
+	result, err := s.ApplyCall(ctx, "main", "sha256:spec", "close", map[string]any{}, func(state *world.State, _ time.Time, _ int64) (CallOutcome, error) {
+		called = true
+		state.Entities["item"]["a"]["state"] = "closed"
+		return CallOutcome{Result: map[string]any{"ok": true}, CommitState: true}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if called {
+		t.Fatal("before-validation fault executed the transition callback")
+	}
+	if result.ErrorClass != "TIMEOUT_BEFORE_EFFECT" || result.FaultID != "timeout-next" || result.BeforeDigest != result.AfterDigest {
+		t.Fatalf("fault result = %#v", result)
+	}
+	branch, err := s.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.State.Entities["item"]["a"]["state"] != "open" || branch.CallCount != 1 || branch.HeadVersion != 2 {
+		t.Fatalf("branch after pre-effect fault = %#v", branch)
+	}
+	events, err := s.FaultEvents(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 1 || events[0].FaultID != "timeout-next" || events[0].BeforeDigest != events[0].AfterDigest {
+		t.Fatalf("fault events = %#v", events)
+	}
+	plans, err := s.FaultPlans(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plans) != 1 || plans[0].RemainingCount != 0 || plans[0].FiredCount != 1 {
+		t.Fatalf("consumed plans = %#v", plans)
+	}
+	afterDigest, err := s.FaultPlanDigest(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if afterDigest != planDigest {
+		t.Fatalf("fault plan identity changed when counter advanced: before %s after %s", planDigest, afterDigest)
+	}
+}
+
+func TestDeterministicFaultAfterCommitHidesSuccessfulResult(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	initial := world.New()
+	initial.Entities["item"] = map[string]map[string]any{"a": {"id": "a", "state": "open"}}
+	if err := s.InitializeBranch(ctx, "main", "sha256:spec", initial, time.Unix(0, 0)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.InstallFault(ctx, FaultPlan{
+		ID: "lost-response", BranchID: "main", ToolName: "close",
+		Phase: FaultPhaseAfterCommitBeforeResponse, ErrorClass: "TIMEOUT_AFTER_EFFECT",
+		Message: "synthetic response loss after commit", RemainingCount: 1,
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	result, err := s.ApplyCall(ctx, "main", "sha256:spec", "close", map[string]any{}, func(state *world.State, _ time.Time, _ int64) (CallOutcome, error) {
+		state.Entities["item"]["a"]["state"] = "closed"
+		return CallOutcome{Result: map[string]any{"ok": true}, CommitState: true}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ErrorClass != "TIMEOUT_AFTER_EFFECT" || result.FaultPhase != FaultPhaseAfterCommitBeforeResponse || result.BeforeDigest == result.AfterDigest {
+		t.Fatalf("post-commit fault result = %#v", result)
+	}
+	branch, err := s.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.State.Entities["item"]["a"]["state"] != "closed" {
+		t.Fatal("after-commit fault rolled back the committed business state")
+	}
+	second, err := s.ApplyCall(ctx, "main", "sha256:spec", "close", map[string]any{}, func(state *world.State, _ time.Time, _ int64) (CallOutcome, error) {
+		return CallOutcome{Result: map[string]any{"ok": true}, CommitState: true}, nil
+	})
+	if err != nil || second.ErrorClass != "" || second.FaultID != "" {
+		t.Fatalf("exhausted one-shot fault fired again: result=%#v err=%v", second, err)
+	}
+}
+
+func TestFaultPlanValidationDigestAndBranchLocality(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	initial := world.New()
+	initial.Entities["item"] = map[string]map[string]any{}
+	for _, branch := range []string{"main", "sibling"} {
+		if err := s.InitializeBranch(ctx, branch, "sha256:spec", initial, time.Unix(0, 0)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	before, err := s.FaultPlanDigest(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.InstallFault(ctx, FaultPlan{
+		ID: "limited", BranchID: "main", ToolName: "create",
+		Phase: FaultPhaseBeforeValidation, ErrorClass: "RATE_LIMITED",
+		Message: "synthetic quota", RemainingCount: 2,
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	after, err := s.FaultPlanDigest(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before == after {
+		t.Fatal("fault plan digest did not bind installed configuration")
+	}
+	sibling, err := s.FaultPlans(ctx, "sibling")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sibling) != 0 {
+		t.Fatalf("fault plan leaked to sibling: %#v", sibling)
+	}
+	if _, err := s.InstallFault(ctx, FaultPlan{
+		ID: "invalid", BranchID: "main", ToolName: "create",
+		Phase: "random", ErrorClass: "MADE_UP", Message: "bad", RemainingCount: MaxFaultRepeats + 1,
+	}, nil); !errors.Is(err, ErrFaultInvalid) {
+		t.Fatalf("invalid plan error = %v", err)
+	}
+	if _, err := s.db.Exec(`
+INSERT INTO fault_plans(id, branch_id, tool_name, phase, error_class, message, remaining_count, fired_count, created_at)
+VALUES('tampered', 'main', 'create', 'before-validation', 'TIMEOUT_AFTER_EFFECT', 'invalid combination', 1, 0, '2026-08-21T00:00:00Z')`); err == nil {
+		t.Fatal("SQLite constraints accepted an invalid phase/error combination")
+	}
+}
+
+func TestFaultPlanAndCountersPersistAcrossReopen(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "faults.db")
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	initial := world.New()
+	initial.Entities["item"] = map[string]map[string]any{}
+	if err := s.InitializeBranch(ctx, "main", "sha256:spec", initial, time.Unix(0, 0)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.InstallFault(ctx, FaultPlan{
+		ID: "durable", BranchID: "main", ToolName: "create",
+		Phase: FaultPhaseBeforeValidation, ErrorClass: "RATE_LIMITED",
+		Message: "persisted synthetic quota", RemainingCount: 2,
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	s, err = Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	result, err := s.ApplyCall(ctx, "main", "sha256:spec", "create", map[string]any{}, func(*world.State, time.Time, int64) (CallOutcome, error) {
+		t.Fatal("persisted pre-validation fault did not fire")
+		return CallOutcome{}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.FaultID != "durable" || result.ErrorClass != "RATE_LIMITED" {
+		t.Fatalf("reopened fault result = %#v", result)
+	}
+	plans, err := s.FaultPlans(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plans) != 1 || plans[0].RemainingCount != 1 || plans[0].FiredCount != 1 {
+		t.Fatalf("reopened fault counters = %#v", plans)
+	}
+}
+
+func TestFaultSelectionUsesStablePlanIDOrder(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	initial := world.New()
+	initial.Entities["item"] = map[string]map[string]any{}
+	if err := s.InitializeBranch(ctx, "main", "sha256:spec", initial, time.Unix(0, 0)); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"z-last", "a-first"} {
+		if _, err := s.InstallFault(ctx, FaultPlan{
+			ID: id, BranchID: "main", ToolName: "create",
+			Phase: FaultPhaseBeforeValidation, ErrorClass: "RATE_LIMITED",
+			Message: id, RemainingCount: 1,
+		}, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for index, want := range []string{"a-first", "z-last"} {
+		result, err := s.ApplyCall(ctx, "main", "sha256:spec", "create", map[string]any{}, func(*world.State, time.Time, int64) (CallOutcome, error) {
+			t.Fatal("ordered pre-validation fault did not fire")
+			return CallOutcome{}, nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result.FaultID != want {
+			t.Fatalf("fault %d = %q, want %q", index, result.FaultID, want)
+		}
+	}
+}
+
+func int64Pointer(value int64) *int64 { return &value }
 
 func TestSnapshotForkIsolationAndDiff(t *testing.T) {
 	ctx := context.Background()
@@ -334,6 +570,13 @@ VALUES('main', 'sha256:spec', '{"entities":{},"sequences":{}}', 'sha256:state', 
 	}
 	if branch.HeadVersion != 1 {
 		t.Fatalf("migrated head version after call = %d, want 1", branch.HeadVersion)
+	}
+	if _, err := s.InstallFault(context.Background(), FaultPlan{
+		ID: "post-migration", BranchID: "main", ToolName: "read",
+		Phase: FaultPhaseBeforeValidation, ErrorClass: "RATE_LIMITED",
+		Message: "migration fixture", RemainingCount: 1,
+	}, int64Pointer(1)); err != nil {
+		t.Fatalf("schema-v4 fault tables unavailable after migration: %v", err)
 	}
 }
 

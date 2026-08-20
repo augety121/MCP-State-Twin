@@ -26,7 +26,7 @@ and fault injection remain separate proposals and are not implied by this ADR.
 
 ## Evidence
 
-- store schema-v3 migration tests;
+- migration tests for the schema-v3 head/clock columns (preserved after later schema upgrades);
 - monotonic head tests across call/reset/call;
 - private clock advance and stale-head HTTP tests;
 - snapshot source-head identity assertion.

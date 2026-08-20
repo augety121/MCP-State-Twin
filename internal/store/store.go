@@ -21,14 +21,24 @@ var (
 	ErrBranchConflict   = errors.New("branch head conflict")
 	ErrClockRegression  = errors.New("virtual clock must move forward")
 	ErrClockLimit       = errors.New("virtual clock advance exceeds limit")
+	ErrFaultNotFound    = errors.New("fault plan not found")
+	ErrFaultInvalid     = errors.New("invalid fault plan")
 )
 
 var idPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`)
 
 const (
 	applicationID   = 0x5354574e // ASCII "STWN"
-	schemaVersion   = 3
+	schemaVersion   = 4
 	MaxClockAdvance = 10 * 365 * 24 * time.Hour
+	MaxFaultPlans   = 128
+	MaxFaultRepeats = 1000
+	MaxFaultMessage = 4096
+)
+
+const (
+	FaultPhaseBeforeValidation          = "before-validation"
+	FaultPhaseAfterCommitBeforeResponse = "after-commit-before-response"
 )
 
 type Store struct {
@@ -68,6 +78,32 @@ type ApplyResult struct {
 	BeforeDigest string `json:"beforeDigest"`
 	AfterDigest  string `json:"afterDigest"`
 	CallIndex    int64  `json:"callIndex"`
+	FaultID      string `json:"faultId,omitempty"`
+	FaultPhase   string `json:"faultPhase,omitempty"`
+}
+
+type FaultPlan struct {
+	ID             string `json:"id"`
+	BranchID       string `json:"branchId"`
+	ToolName       string `json:"toolName"`
+	Phase          string `json:"phase"`
+	ErrorClass     string `json:"errorClass"`
+	Message        string `json:"message"`
+	RemainingCount int64  `json:"remainingCount"`
+	FiredCount     int64  `json:"firedCount"`
+	CreatedAt      string `json:"createdAt"`
+}
+
+type FaultEvent struct {
+	ID           int64  `json:"id"`
+	BranchID     string `json:"branchId"`
+	FaultID      string `json:"faultId"`
+	CallIndex    int64  `json:"callIndex"`
+	Phase        string `json:"phase"`
+	ErrorClass   string `json:"errorClass"`
+	BeforeDigest string `json:"beforeDigest"`
+	AfterDigest  string `json:"afterDigest"`
+	CreatedAt    string `json:"createdAt"`
 }
 
 type ControlAuditEntry struct {
@@ -172,6 +208,36 @@ CREATE TABLE IF NOT EXISTS control_audit (
   before_digest TEXT NOT NULL DEFAULT '',
   after_digest TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS fault_plans (
+  id TEXT NOT NULL,
+  branch_id TEXT NOT NULL,
+  tool_name TEXT NOT NULL,
+  phase TEXT NOT NULL,
+  error_class TEXT NOT NULL,
+  message TEXT NOT NULL,
+  remaining_count INTEGER NOT NULL CHECK(remaining_count >= 0 AND remaining_count <= 1000),
+  fired_count INTEGER NOT NULL DEFAULT 0 CHECK(fired_count >= 0 AND fired_count <= 1000),
+  created_at TEXT NOT NULL,
+  CHECK(remaining_count + fired_count >= 1 AND remaining_count + fired_count <= 1000),
+  CHECK(phase IN ('before-validation', 'after-commit-before-response')),
+  CHECK(error_class IN ('RATE_LIMITED', 'TIMEOUT_BEFORE_EFFECT', 'TIMEOUT_AFTER_EFFECT')),
+  CHECK((phase = 'after-commit-before-response' AND error_class = 'TIMEOUT_AFTER_EFFECT') OR
+        (phase = 'before-validation' AND error_class IN ('RATE_LIMITED', 'TIMEOUT_BEFORE_EFFECT'))),
+  PRIMARY KEY(branch_id, id),
+  FOREIGN KEY(branch_id) REFERENCES branches(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS fault_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  branch_id TEXT NOT NULL,
+  fault_id TEXT NOT NULL,
+  call_index INTEGER NOT NULL,
+  phase TEXT NOT NULL,
+  error_class TEXT NOT NULL,
+  before_digest TEXT NOT NULL,
+  after_digest TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY(branch_id) REFERENCES branches(id) ON DELETE CASCADE
 );`
 	if _, err := tx.Exec(schema); err != nil {
 		return fmt.Errorf("migrate SQLite schema: %w", err)
@@ -330,6 +396,251 @@ func scanBranch(id string, row rowScanner) (*Branch, error) {
 	return &Branch{ID: id, SpecDigest: specDigest, State: &state, StateDigest: stateDigest, Clock: clock, CallCount: callCount, HeadVersion: headVersion}, nil
 }
 
+func validateFaultPlan(plan FaultPlan) error {
+	if err := validateID("fault ID", plan.ID); err != nil {
+		return fmt.Errorf("%w: %v", ErrFaultInvalid, err)
+	}
+	if err := validateID("branch ID", plan.BranchID); err != nil {
+		return fmt.Errorf("%w: %v", ErrFaultInvalid, err)
+	}
+	if err := validateID("tool name", plan.ToolName); err != nil {
+		return fmt.Errorf("%w: %v", ErrFaultInvalid, err)
+	}
+	switch plan.Phase {
+	case FaultPhaseBeforeValidation, FaultPhaseAfterCommitBeforeResponse:
+	default:
+		return fmt.Errorf("%w: unsupported phase %q", ErrFaultInvalid, plan.Phase)
+	}
+	switch plan.ErrorClass {
+	case "RATE_LIMITED", "TIMEOUT_BEFORE_EFFECT", "TIMEOUT_AFTER_EFFECT":
+	default:
+		return fmt.Errorf("%w: unsupported error class %q", ErrFaultInvalid, plan.ErrorClass)
+	}
+	if plan.Phase == FaultPhaseBeforeValidation && plan.ErrorClass == "TIMEOUT_AFTER_EFFECT" {
+		return fmt.Errorf("%w: TIMEOUT_AFTER_EFFECT requires phase %s", ErrFaultInvalid, FaultPhaseAfterCommitBeforeResponse)
+	}
+	if plan.Phase == FaultPhaseAfterCommitBeforeResponse && plan.ErrorClass != "TIMEOUT_AFTER_EFFECT" {
+		return fmt.Errorf("%w: phase %s requires TIMEOUT_AFTER_EFFECT", ErrFaultInvalid, FaultPhaseAfterCommitBeforeResponse)
+	}
+	if plan.RemainingCount < 1 || plan.RemainingCount > MaxFaultRepeats {
+		return fmt.Errorf("%w: remainingCount must be between 1 and %d", ErrFaultInvalid, MaxFaultRepeats)
+	}
+	if strings.TrimSpace(plan.Message) == "" || len(plan.Message) > MaxFaultMessage {
+		return fmt.Errorf("%w: message must contain 1..%d bytes", ErrFaultInvalid, MaxFaultMessage)
+	}
+	return nil
+}
+
+// InstallFault installs a bounded, branch-local deterministic plan. Installing
+// a plan is a privileged environment mutation and therefore advances the
+// monotonic branch head even though it does not change world state.
+func (s *Store) InstallFault(ctx context.Context, plan FaultPlan, expectedHeadVersion *int64) (*FaultPlan, error) {
+	if err := validateFaultPlan(plan); err != nil {
+		return nil, err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin fault install transaction: %w", err)
+	}
+	defer tx.Rollback()
+	branch, err := scanBranch(plan.BranchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count, head_version FROM branches WHERE id = ?`, plan.BranchID))
+	if err != nil {
+		return nil, err
+	}
+	if expectedHeadVersion != nil && *expectedHeadVersion != branch.HeadVersion {
+		return nil, fmt.Errorf("%w: branch %s expected head %d, current %d", ErrBranchConflict, plan.BranchID, *expectedHeadVersion, branch.HeadVersion)
+	}
+	var count int
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM fault_plans WHERE branch_id = ?`, plan.BranchID).Scan(&count); err != nil {
+		return nil, fmt.Errorf("count fault plans: %w", err)
+	}
+	if count >= MaxFaultPlans {
+		return nil, fmt.Errorf("%w: branch fault plan limit is %d", ErrFaultInvalid, MaxFaultPlans)
+	}
+	var exists int
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM fault_plans WHERE branch_id = ? AND id = ?`, plan.BranchID, plan.ID).Scan(&exists); err != nil {
+		return nil, fmt.Errorf("check fault plan identity: %w", err)
+	}
+	if exists != 0 {
+		return nil, fmt.Errorf("%w: fault ID %q already exists on branch %s", ErrFaultInvalid, plan.ID, plan.BranchID)
+	}
+	plan.CreatedAt = time.Now().UTC().Format(time.RFC3339Nano)
+	_, err = tx.ExecContext(ctx, `
+INSERT INTO fault_plans(id, branch_id, tool_name, phase, error_class, message, remaining_count, fired_count, created_at)
+VALUES(?, ?, ?, ?, ?, ?, ?, 0, ?)`, plan.ID, plan.BranchID, plan.ToolName, plan.Phase, plan.ErrorClass, plan.Message, plan.RemainingCount, plan.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("install fault plan: %w", err)
+	}
+	updated, err := tx.ExecContext(ctx, `UPDATE branches SET head_version = head_version + 1 WHERE id = ? AND head_version = ?`, plan.BranchID, branch.HeadVersion)
+	if err != nil {
+		return nil, fmt.Errorf("advance branch head for fault install: %w", err)
+	}
+	rows, err := updated.RowsAffected()
+	if err != nil || rows != 1 {
+		return nil, fmt.Errorf("%w: branch %s expected head %d", ErrBranchConflict, plan.BranchID, branch.HeadVersion)
+	}
+	if err := appendControlAudit(ctx, tx, "fault.install", plan.BranchID, plan.ID, branch.StateDigest, branch.StateDigest); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit fault install: %w", err)
+	}
+	return &plan, nil
+}
+
+func (s *Store) RemoveFault(ctx context.Context, branchID, faultID string, expectedHeadVersion *int64) error {
+	if err := validateID("branch ID", branchID); err != nil {
+		return err
+	}
+	if err := validateID("fault ID", faultID); err != nil {
+		return err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin fault removal transaction: %w", err)
+	}
+	defer tx.Rollback()
+	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count, head_version FROM branches WHERE id = ?`, branchID))
+	if err != nil {
+		return err
+	}
+	if expectedHeadVersion != nil && *expectedHeadVersion != branch.HeadVersion {
+		return fmt.Errorf("%w: branch %s expected head %d, current %d", ErrBranchConflict, branchID, *expectedHeadVersion, branch.HeadVersion)
+	}
+	result, err := tx.ExecContext(ctx, `DELETE FROM fault_plans WHERE branch_id = ? AND id = ?`, branchID, faultID)
+	if err != nil {
+		return fmt.Errorf("remove fault plan: %w", err)
+	}
+	removed, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if removed != 1 {
+		return ErrFaultNotFound
+	}
+	result, err = tx.ExecContext(ctx, `UPDATE branches SET head_version = head_version + 1 WHERE id = ? AND head_version = ?`, branchID, branch.HeadVersion)
+	if err != nil {
+		return fmt.Errorf("advance branch head for fault removal: %w", err)
+	}
+	updated, err := result.RowsAffected()
+	if err != nil || updated != 1 {
+		return fmt.Errorf("%w: branch %s expected head %d", ErrBranchConflict, branchID, branch.HeadVersion)
+	}
+	if err := appendControlAudit(ctx, tx, "fault.remove", branchID, faultID, branch.StateDigest, branch.StateDigest); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit fault removal: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) FaultPlans(ctx context.Context, branchID string) ([]FaultPlan, error) {
+	if _, err := s.Branch(ctx, branchID); err != nil {
+		return nil, err
+	}
+	rows, err := s.db.QueryContext(ctx, `
+SELECT id, branch_id, tool_name, phase, error_class, message, remaining_count, fired_count, created_at
+FROM fault_plans WHERE branch_id = ? ORDER BY id`, branchID)
+	if err != nil {
+		return nil, fmt.Errorf("query fault plans: %w", err)
+	}
+	defer rows.Close()
+	plans := make([]FaultPlan, 0)
+	for rows.Next() {
+		var plan FaultPlan
+		if err := rows.Scan(&plan.ID, &plan.BranchID, &plan.ToolName, &plan.Phase, &plan.ErrorClass, &plan.Message, &plan.RemainingCount, &plan.FiredCount, &plan.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan fault plan: %w", err)
+		}
+		plans = append(plans, plan)
+	}
+	return plans, rows.Err()
+}
+
+func (s *Store) FaultPlanDigest(ctx context.Context, branchID string) (string, error) {
+	plans, err := s.FaultPlans(ctx, branchID)
+	if err != nil {
+		return "", err
+	}
+	type identity struct {
+		ID          string `json:"id"`
+		ToolName    string `json:"toolName"`
+		Phase       string `json:"phase"`
+		ErrorClass  string `json:"errorClass"`
+		Message     string `json:"message"`
+		RepeatCount int64  `json:"repeatCount"`
+	}
+	identities := make([]identity, 0, len(plans))
+	for _, plan := range plans {
+		identities = append(identities, identity{
+			ID: plan.ID, ToolName: plan.ToolName, Phase: plan.Phase,
+			ErrorClass: plan.ErrorClass, Message: plan.Message,
+			RepeatCount: plan.RemainingCount + plan.FiredCount,
+		})
+	}
+	return canonical.Digest(map[string]any{"format": "statetwin.dev/fault-plan/v1alpha1", "plans": identities})
+}
+
+func (s *Store) FaultEvents(ctx context.Context, branchID string) ([]FaultEvent, error) {
+	if _, err := s.Branch(ctx, branchID); err != nil {
+		return nil, err
+	}
+	rows, err := s.db.QueryContext(ctx, `
+SELECT id, branch_id, fault_id, call_index, phase, error_class, before_digest, after_digest, created_at
+FROM fault_events WHERE branch_id = ? ORDER BY id`, branchID)
+	if err != nil {
+		return nil, fmt.Errorf("query fault events: %w", err)
+	}
+	defer rows.Close()
+	events := make([]FaultEvent, 0)
+	for rows.Next() {
+		var event FaultEvent
+		if err := rows.Scan(&event.ID, &event.BranchID, &event.FaultID, &event.CallIndex, &event.Phase, &event.ErrorClass, &event.BeforeDigest, &event.AfterDigest, &event.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan fault event: %w", err)
+		}
+		events = append(events, event)
+	}
+	return events, rows.Err()
+}
+
+func takeFault(ctx context.Context, tx *sql.Tx, branchID, toolName, phase string) (*FaultPlan, error) {
+	var plan FaultPlan
+	err := tx.QueryRowContext(ctx, `
+SELECT id, branch_id, tool_name, phase, error_class, message, remaining_count, fired_count, created_at
+FROM fault_plans
+WHERE branch_id = ? AND tool_name = ? AND phase = ? AND remaining_count > 0
+ORDER BY id LIMIT 1`, branchID, toolName, phase).Scan(
+		&plan.ID, &plan.BranchID, &plan.ToolName, &plan.Phase, &plan.ErrorClass,
+		&plan.Message, &plan.RemainingCount, &plan.FiredCount, &plan.CreatedAt,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("select fault plan: %w", err)
+	}
+	result, err := tx.ExecContext(ctx, `
+UPDATE fault_plans SET remaining_count = remaining_count - 1, fired_count = fired_count + 1
+WHERE branch_id = ? AND id = ? AND remaining_count = ?`, branchID, plan.ID, plan.RemainingCount)
+	if err != nil {
+		return nil, fmt.Errorf("consume fault plan: %w", err)
+	}
+	updated, err := result.RowsAffected()
+	if err != nil || updated != 1 {
+		return nil, fmt.Errorf("consume fault plan %s atomically", plan.ID)
+	}
+	plan.RemainingCount--
+	plan.FiredCount++
+	return &plan, nil
+}
+
+func faultOutcome(plan *FaultPlan, commit bool) CallOutcome {
+	return CallOutcome{
+		Result:     map[string]any{"error": map[string]any{"code": plan.ErrorClass, "message": plan.Message}},
+		ErrorClass: plan.ErrorClass, CommitState: commit,
+	}
+}
+
 func (s *Store) ApplyCall(
 	ctx context.Context,
 	branchID, expectedSpecDigest, toolName string,
@@ -354,9 +665,27 @@ func (s *Store) ApplyCall(
 		return nil, err
 	}
 	callIndex := branch.CallCount + 1
-	outcome, err := apply(working, branch.Clock, callIndex)
+	fired, err := takeFault(ctx, tx, branchID, toolName, FaultPhaseBeforeValidation)
+	var outcome CallOutcome
 	if err != nil {
 		return nil, err
+	}
+	if fired != nil {
+		outcome = faultOutcome(fired, false)
+	} else {
+		outcome, err = apply(working, branch.Clock, callIndex)
+		if err != nil {
+			return nil, err
+		}
+		if outcome.ErrorClass == "" {
+			fired, err = takeFault(ctx, tx, branchID, toolName, FaultPhaseAfterCommitBeforeResponse)
+			if err != nil {
+				return nil, err
+			}
+			if fired != nil {
+				outcome = faultOutcome(fired, true)
+			}
+		}
 	}
 	if !outcome.CommitState {
 		working = branch.State
@@ -398,10 +727,22 @@ INSERT INTO audit(branch_id, call_index, tool_name, input_json, result_json, err
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`, branchID, callIndex, toolName, inputJSON, resultJSON, outcome.ErrorClass, branch.StateDigest, afterDigest, time.Now().UTC().Format(time.RFC3339Nano)); err != nil {
 		return nil, fmt.Errorf("append audit record: %w", err)
 	}
+	if fired != nil {
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO fault_events(branch_id, fault_id, call_index, phase, error_class, before_digest, after_digest, created_at)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?)`, branchID, fired.ID, callIndex, fired.Phase, fired.ErrorClass, branch.StateDigest, afterDigest, time.Now().UTC().Format(time.RFC3339Nano)); err != nil {
+			return nil, fmt.Errorf("append fault event: %w", err)
+		}
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit transition: %w", err)
 	}
-	return &ApplyResult{Result: outcome.Result, ErrorClass: outcome.ErrorClass, BeforeDigest: branch.StateDigest, AfterDigest: afterDigest, CallIndex: callIndex}, nil
+	result := &ApplyResult{Result: outcome.Result, ErrorClass: outcome.ErrorClass, BeforeDigest: branch.StateDigest, AfterDigest: afterDigest, CallIndex: callIndex}
+	if fired != nil {
+		result.FaultID = fired.ID
+		result.FaultPhase = fired.Phase
+	}
+	return result, nil
 }
 
 func (s *Store) CreateSnapshot(ctx context.Context, name, branchID string) (*Snapshot, error) {

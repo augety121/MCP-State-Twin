@@ -24,14 +24,14 @@ state_digest
 world_time
 ```
 
-Every committed tool call and privileged clock/reset mutation updates
+Every committed tool call and privileged clock/reset/fault-configuration mutation updates
 `head_version` with a compare-and-swap predicate. A stale update returns the
 typed `BRANCH_CONFLICT` condition and cannot silently merge or recompute work.
 Business-domain `CONFLICT` remains a separate error class.
 
-## 3. Schema v3 migration
+## 3. Schema v4 migration
 
-SQLite `user_version` is now `3`. Opening an older supported database adds
+SQLite `user_version` is now `4`. Opening an older supported database adds
 `branches.head_version`, `snapshots.source_head_version`, and any missing
 legacy columns inside the migration transaction. A database with a newer
 schema or foreign application ID is rejected. Historical snapshots without a
@@ -41,6 +41,11 @@ strong concurrency evidence.
 New snapshot identity includes the source branch head version. A fork starts a
 new branch at head `0`; reset preserves monotonic head history while rewinding
 the call index and world state to the selected snapshot.
+
+Schema v4 adds branch-local `fault_plans` and append-only `fault_events`.
+Consumption of a fault counter and insertion of its event occur in the same
+transaction as the affected call. Fault configuration is not silently copied
+through snapshot/fork operations.
 
 ## 4. Recovery boundary
 

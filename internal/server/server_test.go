@@ -249,6 +249,87 @@ func TestControlPlaneClockValidationIsBounded(t *testing.T) {
 	}
 }
 
+func TestPrivateFaultControlCommitsThenReturnsDeterministicFailure(t *testing.T) {
+	runtime, stateStore := referenceRuntime(t)
+	controlServer := httptest.NewServer(NewControlPlane(stateStore, "test-secret", "close_issue"))
+	t.Cleanup(controlServer.Close)
+	dataServer := httptest.NewServer(NewDataPlane(runtime))
+	t.Cleanup(dataServer.Close)
+
+	unknown := `{"id":"unknown-tool","branch":"main","tool":"reset_world","phase":"before-validation","errorClass":"RATE_LIMITED","message":"must fail","repeatCount":1}`
+	request, err := http.NewRequest(http.MethodPost, controlServer.URL+"/v1/faults", bytes.NewBufferString(unknown))
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.Header.Set("Authorization", "Bearer test-secret")
+	request.Header.Set("Content-Type", "application/json")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("unknown fault tool status = %d, want 400", response.StatusCode)
+	}
+
+	body := `{"id":"lose-close-response","branch":"main","tool":"close_issue","phase":"after-commit-before-response","errorClass":"TIMEOUT_AFTER_EFFECT","message":"synthetic response loss","repeatCount":1,"expectedHeadVersion":0}`
+	request, err = http.NewRequest(http.MethodPost, controlServer.URL+"/v1/faults", bytes.NewBufferString(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.Header.Set("Authorization", "Bearer test-secret")
+	request.Header.Set("Content-Type", "application/json")
+	response, err = http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusCreated {
+		t.Fatalf("fault install status = %d", response.StatusCode)
+	}
+
+	ctx := context.Background()
+	client := mcp.NewClient(&mcp.Implementation{Name: "statetwin-fault-test", Version: "v0.1.0"}, nil)
+	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{Endpoint: dataServer.URL + "/mcp/main"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { session.Close() })
+	result, err := session.CallTool(ctx, &mcp.CallToolParams{
+		Name: "close_issue", Arguments: map[string]any{"owner": "octo", "repository": "demo", "number": 1},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.IsError {
+		t.Fatal("post-commit response-loss fault was not visible to MCP caller")
+	}
+	branch, err := stateStore.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.State.Entities["issue"]["octo/demo#1"]["state"] != "closed" {
+		t.Fatal("business effect was not committed before synthetic response loss")
+	}
+
+	request, _ = http.NewRequest(http.MethodGet, controlServer.URL+"/v1/fault-events?branch=main", nil)
+	request.Header.Set("Authorization", "Bearer test-secret")
+	response, err = http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	var events struct {
+		Events []store.FaultEvent `json:"events"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&events); err != nil {
+		t.Fatal(err)
+	}
+	if response.StatusCode != http.StatusOK || len(events.Events) != 1 || events.Events[0].FaultID != "lose-close-response" {
+		t.Fatalf("fault events response = status %d body %#v", response.StatusCode, events)
+	}
+}
+
 func TestMCPBranchComesOnlyFromURLAndForksStayIsolated(t *testing.T) {
 	runtime, stateStore := referenceRuntime(t)
 	ctx := context.Background()

@@ -236,7 +236,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 | Issue-tracker reference twin | ✅ | 6 tools; synthetic; `L1/unverified/unbound` |
 | Scenario `v1alpha1` runner | ✅ | Bounded scripted scenario; not live model evaluation |
 | Live OpenAI / ChatGPT / Claude smoke tests | ❌ not verified | No host-compatibility claim |
-| Deterministic fault injection / virtual-clock advancement | ⏳ | Private forward-only clock implemented; scheduler/faults are not implemented |
+| Deterministic fault injection / virtual-clock advancement | 🧪 Partial | Private clock and two fault transaction phases implemented; remaining scheduler/fault semantics are not |
 | Recorder / cassette replay / trace redaction | ⏳ | Not implemented |
 | Differential validation / L2 promotion | ⏳ | Not complete |
 | Data-plane auth / TLS / remote multi-tenancy | ⏳ | Current build should remain local/loopback |
@@ -259,6 +259,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - bounded TwinSpec/CEL fuzz targets plus secret-policy and loopback-only hermetic CI gates;
 - a tested CLI loop: initialize → snapshot → fork twice → mutate → terminal diff;
 - bounded Scenario `v1alpha1` runner with deterministic environment identity, ordered tool traces, JSON Pointer state assertions, and canonical state diff.
+- bounded branch-local fault plans for `before-validation` and `after-commit-before-response`, with a stable plan digest, transactional counters, and fault-event audit.
 
 </details>
 
@@ -266,7 +267,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 <summary><strong>Expand: not implemented or not verified</strong></summary>
 
 - recorder, cassette replay, trace redaction, or automatic upstream surface inspection/refresh;
-- deterministic fault injection, scheduler, and deterministic entropy; private forward-only clock advancement is implemented;
+- remaining deterministic fault phases, scheduler, deterministic entropy, idempotency collapse, crash/cancellation, and eventual consistency; the private clock and two fault phases are implemented;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
 - evidence-derived host compatibility reports or a provider harness;
 - differential validation or an L2 fidelity promotion workflow;
@@ -334,9 +335,26 @@ Default endpoints:
 | Plane | Endpoint | Visible operations |
 |---|---|---|
 | Agent data plane | `http://127.0.0.1:8090/mcp/main` | Modeled business tools only |
-| Private control plane | `http://127.0.0.1:8091/v1` | Branch state, snapshot, fork, reset, diff, forward-only clock advance |
+| Private control plane | `http://127.0.0.1:8091/v1` | Branch state, snapshot, fork, reset, diff, forward-only clock, bounded fault plans/events |
 
 The branch ID is part of the MCP URL rather than an extra model-visible tool argument, keeping tool input schemas identical across branches.
+
+The current fault preview supports only two transaction-tested phases. Send the following body to the private control plane with `Authorization: Bearer $STATETWIN_CONTROL_TOKEN`:
+
+```json
+{
+  "id": "lose-close-response",
+  "branch": "main",
+  "tool": "close_issue",
+  "phase": "after-commit-before-response",
+  "errorClass": "TIMEOUT_AFTER_EFFECT",
+  "message": "synthetic response loss",
+  "repeatCount": 1,
+  "expectedHeadVersion": 0
+}
+```
+
+After `POST /v1/faults`, a matching call commits its business state before returning the deterministic error to the agent. The other supported combination is `before-validation` with `RATE_LIMITED` or `TIMEOUT_BEFORE_EFFECT`; it does not invoke the transition callback. See [SPEC-0008](docs/SPEC-0008-DETERMINISTIC-FAULTS.md) for the exact boundary.
 
 > [!WARNING]
 > **The current data plane has no authentication or TLS.** Both servers bind to loopback by default and should remain local. The control token is only one development safeguard; it does not make this build safe for Internet exposure.
@@ -627,6 +645,7 @@ For a first read, the suggested path is:
 - [vNext Adoption Record](docs/VNEXT-ADOPTION.md)
 - [vNext SPEC Pack Traceability Matrix](docs/VNEXT-TRACEABILITY.md)
 - [SPEC-0007 — Virtual Time Boundary](docs/SPEC-0007-VIRTUAL-TIME-ENTROPY-SCHEDULER.md)
+- [SPEC-0008 — Deterministic Fault Preview](docs/SPEC-0008-DETERMINISTIC-FAULTS.md)
 - [SPEC-0012 — Storage/Concurrency/Recovery](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md)
 
 <details>
@@ -650,6 +669,7 @@ For a first read, the suggested path is:
 - [ADR-0009](docs/ADR-0009-OPERATIONAL-LOGGING-BOUNDARY.md) — operational log redaction boundary
 - [ADR-0010](docs/ADR-0010-SCENARIO-ARTIFACTS.md) — bounded scenario artifacts and scripted evidence reports
 - [ADR-0011](docs/ADR-0011-HEAD-VERSION-AND-VIRTUAL-CLOCK.md) — monotonic branch heads and private virtual-clock preview
+- [ADR-0012](docs/ADR-0012-DETERMINISTIC-FAULT-PREVIEW.md) — branch-local bounded deterministic fault preview
 
 ### Evidence / research
 

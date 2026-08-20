@@ -326,7 +326,11 @@ func runServe(args []string) error {
 	}
 
 	dataServer := hardenedHTTPServer(*dataAddr, server.NewDataPlane(runtime))
-	controlServer := hardenedHTTPServer(*controlAddr, server.NewControlPlane(stateStore, token))
+	toolNames := make([]string, 0, len(runtime.Spec().Tools))
+	for _, tool := range runtime.Spec().Tools {
+		toolNames = append(toolNames, tool.Name)
+	}
+	controlServer := hardenedHTTPServer(*controlAddr, server.NewControlPlane(stateStore, token, toolNames...))
 	for name, addr := range map[string]string{"data": *dataAddr, "control": *controlAddr} {
 		host, _, err := net.SplitHostPort(addr)
 		if err != nil {
