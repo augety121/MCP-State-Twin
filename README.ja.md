@@ -26,12 +26,12 @@
 </div>
 
 > [!IMPORTANT]
-> **Development Preview · `0.1.0-dev` · tagged release なし · production-ready ではありません。**
+> **Development Preview · `0.1.0-dev` · latest prerelease `v0.1.0-alpha.1` · production-ready ではありません。**
 > 現在主張できる実装範囲は [Implementation Status](docs/IMPLEMENTATION-STATUS.md)、RFC、採用済み ADR、仕様、および実行可能なテスト証拠によって定義されます。
 
 ## ステータス
 
-**Development preview（`0.1.0-dev`）。タグ付きリリースはまだありません。** Go CLI とランタイムは動作しますが、production-ready ではなく、RFC が定める v0.1 release gate をまだ完了していません。
+**Development preview（`0.1.0-dev`）。最新の公開 prerelease は `v0.1.0-alpha.1` です。** Go CLI とランタイムは動作しますが、production-ready ではなく、RFC が定める v0.1 release gate をまだ完了していません。
 
 ### 実装済み・検証済みの主な機能
 

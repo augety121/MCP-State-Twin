@@ -26,12 +26,12 @@
 </div>
 
 > [!IMPORTANT]
-> **Development Preview · `0.1.0-dev` · tagged release 없음 · production-ready 아님.**
+> **Development Preview · `0.1.0-dev` · latest prerelease `v0.1.0-alpha.1` · production-ready 아님.**
 > 현재 주장 가능한 구현 범위는 [Implementation Status](docs/IMPLEMENTATION-STATUS.md), RFC, 승인된 ADR, 사양 및 실행 가능한 테스트 증거에 의해 정의됩니다.
 
 ## 상태
 
-**개발 프리뷰(`0.1.0-dev`)이며 아직 태그된 릴리스가 없습니다.** 동작하는 Go CLI와 런타임이 포함되어 있지만 production-ready가 아니며 RFC의 v0.1 release gate를 모두 통과하지 않았습니다.
+**개발 프리뷰(`0.1.0-dev`)이며 최신 공개 prerelease는 `v0.1.0-alpha.1`입니다.** 동작하는 Go CLI와 런타임이 포함되어 있지만 production-ready가 아니며 RFC의 v0.1 release gate를 모두 통과하지 않았습니다.
 
 ### 구현 및 검증된 주요 기능
 

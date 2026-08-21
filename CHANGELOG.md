@@ -1,7 +1,7 @@
 # Changelog
 
-All notable changes will be documented in this file. The project does not yet
-have a tagged release.
+All notable changes will be documented in this file. The project has a public
+alpha prerelease but no stable release yet.
 
 ## Unreleased
 

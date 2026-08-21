@@ -26,7 +26,7 @@
 </div>
 
 > [!IMPORTANT]
-> **Development Preview · `0.1.0-dev` · no tagged release · not production-ready.**
+> **Development Preview · `0.1.0-dev` · latest prerelease `v0.1.0-alpha.1` · not production-ready.**
 > Current claims are bounded by [Implementation Status](docs/IMPLEMENTATION-STATUS.md), the RFCs, accepted ADRs, specifications, and executable test evidence. Roadmap items are not presented as current features.
 
 <p align="center">
@@ -220,7 +220,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 
 ## Current status
 
-**Development preview (`0.1.0-dev`) · no tagged release · not production-ready.**
+**Development preview (`0.1.0-dev`) · latest public prerelease `v0.1.0-alpha.1` · not production-ready.**
 
 ### Capability overview
 

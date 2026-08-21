@@ -26,7 +26,7 @@
 </div>
 
 > [!IMPORTANT]
-> **Development Preview · `0.1.0-dev` · 无正式 tagged release · 非 production-ready。**
+> **Development Preview · `0.1.0-dev` · latest prerelease `v0.1.0-alpha.1` · 非 production-ready。**
 > 当前实现究竟可以声明什么，以 [Implementation Status](docs/IMPLEMENTATION-STATUS.md)、RFC、已接受 ADR、规范文档和可执行测试证据为准。Roadmap 中的能力不会被当作当前功能宣传。
 
 <p align="center">
@@ -220,7 +220,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 
 ## 当前状态
 
-**Development preview (`0.1.0-dev`) · 无 tagged release · 非 production-ready。**
+**Development preview (`0.1.0-dev`) · 最新公开预览版为 `v0.1.0-alpha.1` · 非 production-ready。**
 
 ### 能力概览
 

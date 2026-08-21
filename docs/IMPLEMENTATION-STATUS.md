@@ -1,6 +1,6 @@
 # Implementation Status
 
-**Build status:** development preview, no tagged release  
+**Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release  
 **Last verified:** 2026-08-21
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 and SPEC-0001 through SPEC-0006 define the proposed
@@ -46,7 +46,7 @@ remains proposal material.
 | Private virtual-clock advance | bounded forward-only `/v1/clock/advance`, expected-head conflict, and transactional `clock.advance` audit tests |
 | Deterministic fault preview | branch-local bounded plans; `before-validation` and `after-commit-before-response`; atomic counters/events; stable plan digest; private HTTP integration tests |
 | Versioned resource profile | `statetwin limits`; profile digest in Scenario environment identity; state/input/output/query/effect/diff/report/storage bounds; typed `RESOURCE_LIMIT` failures |
-| Maintainer/release automation | release checklist, docs authority map, PR/Issue templates, Dependabot, and tag-driven multi-platform release workflow are present; no tagged release has been published |
+| Maintainer/release automation | release checklist, docs authority map, PR/Issue templates, Dependabot, and tag-driven multi-platform release workflow are present; no stable release has been published |
 
 ## Partially implemented
 
