@@ -1,23 +1,24 @@
 name: Bug report
-description: Report reproducible incorrect or unsafe behavior
-title: "[Bug]: "
-labels: [bug]
+description: Report a reproducible runtime, storage, MCP or documentation defect.
+title: "bug: "
+labels: ["bug", "needs-triage"]
 body:
   - type: markdown
     attributes:
-      value: Do not attach credentials, production traces, or personal data. Prefer the synthetic issue-tracker fixture or a minimal replacement.
+      value: |
+        Please remove credentials, private traces and production data. Security issues belong in the advisory channel.
   - type: input
     id: version
     attributes:
       label: Version or commit
-      placeholder: c64dac8 or v0.x.y
+      placeholder: v0.1.0-alpha.1 or full SHA
     validations:
       required: true
   - type: textarea
     id: reproduction
     attributes:
       label: Minimal reproduction
-      description: Include commands and a synthetic TwinSpec/Scenario when relevant.
+      description: Include synthetic TwinSpec/fixture/scenario or a link to a public fixture.
     validations:
       required: true
   - type: textarea
@@ -29,7 +30,8 @@ body:
   - type: textarea
     id: actual
     attributes:
-      label: Actual behavior and sanitized evidence
+      label: Actual behavior and logs
+      description: Redact tokens and personal data.
     validations:
       required: true
   - type: dropdown
@@ -38,10 +40,19 @@ body:
       label: Affected boundary
       options:
         - TwinSpec or Scenario admission
-        - Deterministic runtime/state
-        - Snapshot/fork/control plane
+        - Deterministic runtime or state
+        - Snapshot, fork or control plane
         - MCP data plane
         - CLI or documentation
         - Unknown
     validations:
       required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submit checks
+      options:
+        - label: I searched existing issues.
+          required: true
+        - label: I used a synthetic, non-production reproduction.
+          required: true

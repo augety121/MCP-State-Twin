@@ -1,37 +1,35 @@
 name: Feature request
-description: Propose a concrete, evidence-backed capability
-title: "[Feature]: "
-labels: [enhancement]
+description: Propose a bounded, testable capability or documentation change.
+title: "feat: "
+labels: ["enhancement", "needs-triage"]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Engineering problem
-      description: Describe the user workflow or correctness gap, not only the proposed implementation.
+      label: Problem and user
+      description: Who needs this, and what failure does it address?
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Proposed boundary
+      description: Explain whether this belongs to the Twin, host adapter, agent, or upstream connector.
     validations:
       required: true
   - type: textarea
     id: evidence
     attributes:
-      label: Evidence and users
-      description: Link issues, benchmarks, integrations, or maintainers that demonstrate demand.
-    validations:
-      required: true
-  - type: textarea
-    id: proposal
-    attributes:
-      label: Proposed contract
-      description: Include failure semantics, limits, compatibility, and test strategy.
+      label: Acceptance evidence
+      description: Describe positive, negative, determinism and resource-bound tests.
     validations:
       required: true
   - type: checkboxes
-    id: invariants
+    id: checks
     attributes:
-      label: Invariants
+      label: Scope checks
       options:
-        - label: The proposal keeps hermetic mode free of upstream production writes.
+        - label: This does not require production passthrough in hermetic mode.
           required: true
-        - label: The proposal does not expose control-plane tools to agents.
-          required: true
-        - label: Unknown behavior fails explicitly instead of inventing success.
+        - label: This does not expose control-plane operations to agents.
           required: true

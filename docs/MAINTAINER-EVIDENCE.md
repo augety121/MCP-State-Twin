@@ -38,6 +38,11 @@ there is evidence.
 
 ## Active maintenance evidence
 
+Use the repository's [Release Management](RELEASE-MANAGEMENT.md) policy and
+the tag-driven [release workflow](../.github/workflows/release.yml) as the
+process baseline. The workflow is process evidence only; each published tag
+still needs a public CI run and release URL.
+
 Record links to real activity:
 
 - PR review: <PR URL(s)>

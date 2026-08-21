@@ -1,5 +1,8 @@
 # Release and Maintainer Operations
 
+The canonical release policy is [`docs/RELEASE-MANAGEMENT.md`](docs/RELEASE-MANAGEMENT.md).
+This file is the short pre-flight checklist for the current repository.
+
 MCP State Twin uses small, evidence-backed releases. A release must not turn
 proposal text into an implementation claim.
 
@@ -13,6 +16,13 @@ proposal text into an implementation claim.
 6. Update CHANGELOG.md with verified behavior and explicit limitations.
 7. Update the relevant ADR/SPEC and implementation status together.
 8. Create a GitHub release only from the reviewed commit.
+
+For a tagged release, use a SemVer tag such as `v0.1.0-alpha.1` or `v0.1.1`.
+The tag workflow in `.github/workflows/release.yml` reruns the release gates,
+builds Linux/macOS/Windows binaries, writes `SHA256SUMS`, and creates a draft
+GitHub release only if every step succeeds. A maintainer reviews and publishes
+the draft. Do not create the stable `v0.1.0` tag while an RFC-0002 required gate
+is open.
 
 ## Release notes must contain
 

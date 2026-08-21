@@ -341,6 +341,9 @@ go build ./cmd/statetwin
 ## 문서
 
 - [Implementation Status](docs/IMPLEMENTATION-STATUS.md)
+- [Project Map](docs/PROJECT-MAP.md) — 제품 경계, 아키텍처 및 수명주기
+- [Documentation Governance](docs/DOCS-GOVERNANCE.md) — 문서 권위와 증거 규칙
+- [Release Management](docs/RELEASE-MANAGEMENT.md) — 버전, CI, 태그 및 릴리스 증거
 - [RFC-0001](docs/RFC-0001.md)
 - [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md)
 - [SPEC-0001](docs/SPEC-0001-TWINSPEC-CORE.md) / [SPEC-0002](docs/SPEC-0002-RUNTIME-SEMANTICS.md) / [SPEC-0003](docs/SPEC-0003-MCP-BOUNDARIES-AND-COMPATIBILITY.md)

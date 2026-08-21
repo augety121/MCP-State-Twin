@@ -630,11 +630,14 @@ Environment and CI status can change as development continues. Prefer CI, [Imple
 
 For a first read, the suggested path is:
 
-1. **[Implementation Status](docs/IMPLEMENTATION-STATUS.md)** — what is actually implemented now;
-2. **[RFC-0001](docs/RFC-0001.md)** — product boundary, hard invariants, and architecture;
-3. **[TwinSpec Core](docs/SPEC-0001-TWINSPEC-CORE.md)** — TwinSpec `v1alpha1` data model;
-4. **[Runtime Semantics](docs/SPEC-0002-RUNTIME-SEMANTICS.md)** — determinism, transactions, snapshots, and errors;
-5. **[Roadmap](docs/ROADMAP.md)** — ordered next steps and exit criteria.
+1. **[Project Map](docs/PROJECT-MAP.md)** — product thesis, boundaries, lifecycle, and AGI-facing positioning;
+2. **[Implementation Status](docs/IMPLEMENTATION-STATUS.md)** — what is actually implemented now;
+3. **[Documentation Governance](docs/DOCS-GOVERNANCE.md)** — authority, statuses, and evidence rules;
+4. **[RFC-0001](docs/RFC-0001.md)** — product boundary, hard invariants, and architecture;
+5. **[TwinSpec Core](docs/SPEC-0001-TWINSPEC-CORE.md)** — TwinSpec `v1alpha1` data model;
+6. **[Runtime Semantics](docs/SPEC-0002-RUNTIME-SEMANTICS.md)** — determinism, transactions, snapshots, and errors;
+7. **[Release Management](docs/RELEASE-MANAGEMENT.md)** — versions, CI, tags, release evidence, and maintainer cadence;
+8. **[Roadmap](docs/ROADMAP.md)** — ordered next steps and exit criteria.
 
 ### Specifications
 
@@ -647,7 +650,7 @@ For a first read, the suggested path is:
 - [Phase 0 MCP 2026 Gap Matrix](docs/PHASE-0-MCP-2026-GAP-MATRIX.md)
 - [vNext Adoption Record](docs/VNEXT-ADOPTION.md)
 - [vNext SPEC Pack Traceability Matrix](docs/VNEXT-TRACEABILITY.md)
-- [Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md) / [Maintainer Evidence](docs/MAINTAINER-EVIDENCE.md) / [Release Operations](RELEASE.md)
+- [Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md) / [Maintainer Evidence](docs/MAINTAINER-EVIDENCE.md) / [Release Management](docs/RELEASE-MANAGEMENT.md) / [Release Checklist](RELEASE.md)
 - [SPEC-0007 — Virtual Time Boundary](docs/SPEC-0007-VIRTUAL-TIME-ENTROPY-SCHEDULER.md)
 - [SPEC-0008 — Deterministic Fault Preview](docs/SPEC-0008-DETERMINISTIC-FAULTS.md)
 - [SPEC-0015 — Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md)
@@ -683,6 +686,8 @@ For a first read, the suggested path is:
 - [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md) — P0-by-P0 evidence, exclusions, and stable-release blockers
 - [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) — dated prior-art screen and rejected directions
 - [Roadmap](docs/ROADMAP.md) — ordered phases and exit criteria
+- [Project Map](docs/PROJECT-MAP.md) — product thesis, boundaries, lifecycle and maturity levels
+- [Documentation Governance](docs/DOCS-GOVERNANCE.md) — authority and evidence rules
 
 </details>
 

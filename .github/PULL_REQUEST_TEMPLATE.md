@@ -1,21 +1,35 @@
-## What changed
+## Summary
 
-Describe the behavior and why it belongs in MCP State Twin.
+<!-- What changed and why? Link the issue or ADR. -->
 
-## Evidence
+## Scope and status
 
-- [ ] Added or updated executable tests, including a negative/failure case.
-- [ ] Ran `gofmt`, `go vet ./...`, and `go test -race ./...`.
-- [ ] Updated README/status/specification text for changed behavior.
-- [ ] Confirmed no credentials, production traces, or personal data are included.
+- [ ] This change is implementation, not proposal-only prose.
+- [ ] Any new capability has an accepted ADR/SPEC or explicitly updates one.
+- [ ] `IMPLEMENTATION-STATUS.md` is updated for public behavior changes.
+- [ ] README and changelog claims are consistent across language variants.
 
-## Compatibility and trust boundaries
+## Safety and determinism
 
-List changes to TwinSpec, Scenario/report formats, canonical digests, storage,
-MCP surfaces, error classes, data/control-plane isolation, or hermeticity. Link
-the required ADR/RFC when one of these contracts changes.
+- [ ] Hermetic mode has no upstream passthrough or production write path.
+- [ ] Control-plane tools remain unavailable to agents.
+- [ ] Unknown behavior fails explicitly; no invented success.
+- [ ] Inputs, outputs, expressions and state remain within resource budgets.
+- [ ] No credentials, private traces, or personal data were added.
 
-## Claims
+## Verification
 
-Link each new performance, fidelity, provider-compatibility, or conformance
-claim to reproducible evidence. Roadmap intent is not implementation evidence.
+```text
+go test ./...
+go vet ./...
+go test -race ./...  # Linux CI evidence required
+```
+
+Additional commands and CI links:
+
+## Release impact
+
+- [ ] No release impact.
+- [ ] Patch release candidate.
+- [ ] Minor release candidate.
+- [ ] RFC-0002 / migration notes updated.

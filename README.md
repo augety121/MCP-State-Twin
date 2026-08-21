@@ -630,11 +630,14 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 
 如果你是第一次阅读项目，建议按这个顺序：
 
-1. **[Implementation Status](docs/IMPLEMENTATION-STATUS.md)** — 现在真正实现了什么；
-2. **[RFC-0001](docs/RFC-0001.md)** — 产品边界、核心不变量与整体架构；
-3. **[TwinSpec Core](docs/SPEC-0001-TWINSPEC-CORE.md)** — TwinSpec `v1alpha1` 数据模型；
-4. **[Runtime Semantics](docs/SPEC-0002-RUNTIME-SEMANTICS.md)** — 确定性、事务、snapshot 与错误；
-5. **[Roadmap](docs/ROADMAP.md)** — 下一阶段工作与退出条件。
+1. **[Project Map](docs/PROJECT-MAP.md)** — 项目思路、边界、架构和 AGI-facing 定位；
+2. **[Implementation Status](docs/IMPLEMENTATION-STATUS.md)** — 现在真正实现了什么；
+3. **[Documentation Governance](docs/DOCS-GOVERNANCE.md)** — 哪些文档有权威、怎样把提案变成实现；
+4. **[RFC-0001](docs/RFC-0001.md)** — 产品边界、核心不变量与整体架构；
+5. **[TwinSpec Core](docs/SPEC-0001-TWINSPEC-CORE.md)** — TwinSpec `v1alpha1` 数据模型；
+6. **[Runtime Semantics](docs/SPEC-0002-RUNTIME-SEMANTICS.md)** — 确定性、事务、snapshot 与错误；
+7. **[Release Management](docs/RELEASE-MANAGEMENT.md)** — 版本、CI、tag、release evidence 与维护节奏；
+8. **[Roadmap](docs/ROADMAP.md)** — 下一阶段工作与退出条件。
 
 ### Specifications
 
@@ -647,7 +650,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [Phase 0 MCP 2026 Gap Matrix](docs/PHASE-0-MCP-2026-GAP-MATRIX.md)
 - [vNext Adoption Record](docs/VNEXT-ADOPTION.md)
 - [vNext SPEC Pack Traceability Matrix](docs/VNEXT-TRACEABILITY.md)
-- [Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md) / [Maintainer Evidence](docs/MAINTAINER-EVIDENCE.md) / [Release Operations](RELEASE.md)
+- [Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md) / [Maintainer Evidence](docs/MAINTAINER-EVIDENCE.md) / [Release Management](docs/RELEASE-MANAGEMENT.md) / [Release Checklist](RELEASE.md)
 - [SPEC-0007 — Virtual Time Boundary](docs/SPEC-0007-VIRTUAL-TIME-ENTROPY-SCHEDULER.md)
 - [SPEC-0008 — Deterministic Fault Preview](docs/SPEC-0008-DETERMINISTIC-FAULTS.md)
 - [SPEC-0015 — Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md)
@@ -683,6 +686,8 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md) — P0-by-P0 evidence、exclusions、stable-release blockers
 - [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) — 带日期 prior-art screen 与 rejected directions
 - [Roadmap](docs/ROADMAP.md) — ordered phases 与 exit criteria
+- [Project Map](docs/PROJECT-MAP.md) — product thesis, boundaries, lifecycle and maturity levels
+- [Documentation Governance](docs/DOCS-GOVERNANCE.md) — authority and evidence rules
 
 </details>
 

@@ -13,6 +13,10 @@ have a tagged release.
 - deterministic fault preview and resource-profile ADR/SPEC evidence;
 - maintainer evidence ledger, release operations checklist, and Dependabot
   configuration;
+- project map and documentation-governance rules separating accepted contracts
+  from the vendored vNext proposal pack;
+- pull-request/issue templates and a tag-driven release workflow that reruns
+  gates, builds multi-platform binaries, and publishes SHA256 checksums;
 - strict TwinSpec `v1alpha1` YAML decoding and validation;
 - canonical JSON digests for specs and state;
 - bounded CEL expression compilation;

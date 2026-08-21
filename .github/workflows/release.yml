@@ -1,0 +1,45 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-stage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.26.x"
+          cache: true
+      - name: Require a reviewed main ancestor
+        run: |
+          git fetch origin main --no-tags
+          git merge-base --is-ancestor "${GITHUB_SHA}" "origin/main"
+      - name: Verify format, vet and tests
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          go test -race ./...
+      - name: Verify release smoke paths
+        run: |
+          go run ./cmd/statetwin limits
+          go run ./cmd/statetwin scenario --spec examples/issue-tracker/twin.yaml --fixture examples/issue-tracker/state.json --scenario examples/issue-tracker/scenario-close-issue.yaml
+      - name: Build release artifacts
+        run: bash scripts/build-release.sh "${GITHUB_REF_NAME}"
+      - name: Create draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --verify-tag \
+            --generate-notes \
+            --draft \
+            --title "MCP State Twin ${GITHUB_REF_NAME}"

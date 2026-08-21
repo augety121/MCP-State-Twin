@@ -13,7 +13,9 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const Version = "0.1.0-dev"
+// Version is the development fallback. Release builds override it with
+// -ldflags so the CLI and MCP server report the immutable release tag.
+var Version = "0.1.0-dev"
 
 type DataPlane struct {
 	runtime *engine.Runtime

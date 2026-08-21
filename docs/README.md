@@ -1,3 +1,25 @@
+# MCP State Twin Documentation
+
+## Start here: current project, not the future pack
+
+If you are evaluating or contributing to the current repository, read these in
+order:
+
+1. [`PROJECT-MAP.md`](PROJECT-MAP.md) — product boundary, architecture and the
+   AGI-facing rationale without AGI claims;
+2. [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md) — the only current
+   implementation/evidence ledger;
+3. [`DOCS-GOVERNANCE.md`](DOCS-GOVERNANCE.md) — authority, status and claim
+   rules;
+4. [`RFC-0002-V0.1-RELEASE-PROFILE.md`](RFC-0002-V0.1-RELEASE-PROFILE.md) —
+   current release boundary and blockers;
+5. [`RELEASE-MANAGEMENT.md`](RELEASE-MANAGEMENT.md) and the root
+   [`RELEASE.md`](../RELEASE.md) — maintainer and publication workflow.
+
+The accepted normative documents are the ADRs and SPECs linked from the status
+ledger. The large pack below is deliberately preserved as proposal material so
+that design work remains reviewable without silently changing the runtime.
+
 # MCP State Twin Lifecycle SPEC Pack
 
 > **Status:** Proposal / Unverified  
