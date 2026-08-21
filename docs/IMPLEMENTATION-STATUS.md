@@ -1,6 +1,6 @@
 # Implementation Status
 
-**Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release  
+**Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
 **Last verified:** 2026-08-21
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 and SPEC-0001 through SPEC-0006 define the proposed
