@@ -1,0 +1,30 @@
+{
+  "entities": {
+    "package": {
+      "acme/cli": {
+        "name": "acme/cli",
+        "description": "Synthetic command-line package for deterministic agent evaluation.",
+        "defaultVersion": "1.0.0"
+      }
+    },
+    "release": {
+      "acme/cli#1.0.0": {
+        "package": "acme/cli",
+        "version": "1.0.0",
+        "publishedAt": "2026-08-01T00:00:00Z",
+        "yanked": false
+      }
+    },
+    "advisory": {
+      "1": {
+        "id": 1,
+        "package": "acme/cli",
+        "affectedVersion": "1.0.0",
+        "severity": "high",
+        "summary": "Synthetic advisory used to test dependency follow-up workflows."
+      }
+    },
+    "installation": {}
+  },
+  "sequences": {}
+}

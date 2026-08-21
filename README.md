@@ -234,6 +234,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 | Stateless Streamable HTTP MCP data plane | ✅ | 官方 Go SDK |
 | 独立 HTTP control plane | ✅ | bearer token；与数据面分离 |
 | Issue-tracker reference Twin | ✅ | 6 tools；synthetic；`L1/unverified/unbound` |
+| Package-registry reference Twin | ✅ | publish/yank/install/advisory flows；synthetic；`L1/unverified/unbound` |
 | Scenario `v1alpha1` runner | ✅ | 有界 scripted scenario；不是 live model evaluation |
 | Live OpenAI / ChatGPT / Claude smoke tests | ❌ 尚未验证 | 不声明 host compatibility |
 | Deterministic fault injection / virtual-clock advancement | 🧪 部分实现 | 私有 clock；两个 fault transaction phases；其余 scheduler/fault semantics 未实现 |
@@ -255,6 +256,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 - 基于官方 Go SDK 的 stateless Streamable HTTP MCP data plane；
 - 独立鉴权的 HTTP control plane；
 - 使用 synthetic state 的 6-tool issue-tracker reference Twin；
+- 使用 synthetic state 的 package-registry reference Twin，用于依赖发布、撤回、安装和 advisory 场景；
 - unit、deterministic replay、MCP HTTP、authorization、output rollback、migration refusal 与 100-fork isolation tests；
 - 固定版本的官方 MCP conformance checks，覆盖 initialize、ping、tools-list 与 JSON Schema 2020-12；
 - bounded TwinSpec/CEL fuzz targets，以及 secret-policy / loopback-only hermetic CI gates；
@@ -301,6 +303,19 @@ go run ./cmd/statetwin scenario \
 - canonical state diff。
 
 当前 runner 标识为 `scripted-scenario`。**它不是 live Codex、OpenAI、Claude 或其他模型评测结果。**
+
+第二个独立 reference domain 是 package registry：
+
+```bash
+go run ./cmd/statetwin scenario \
+  --spec examples/package-registry/twin.yaml \
+  --fixture examples/package-registry/state.json \
+  --scenario examples/package-registry/scenario-release-lifecycle.yaml
+```
+
+它覆盖 dependency release、yank、install 和 advisory 查询，并显式断言
+yanked release 不能被安装。该环境同样是 synthetic、`L1/unverified/unbound`，
+不是任何真实 package registry 的等价实现。
 
 > [!WARNING]
 > Scenario report 会包含工具输入与结果。请只使用 synthetic fixture；不要提交含 credential、production trace 或 personal data 的报告。
@@ -679,6 +694,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [ADR-0011](docs/ADR-0011-HEAD-VERSION-AND-VIRTUAL-CLOCK.md) — monotonic branch head 与 private virtual clock
 - [ADR-0012](docs/ADR-0012-DETERMINISTIC-FAULT-PREVIEW.md) — branch-local bounded deterministic fault preview
 - [ADR-0013](docs/ADR-0013-RESOURCE-GOVERNANCE-PROFILE.md) — versioned resource profile and fail-closed limits
+- [ADR-0014](docs/ADR-0014-SECOND-REFERENCE-DOMAIN.md) — synthetic package-registry reference domain
 
 ### Evidence / Research
 
@@ -707,7 +723,7 @@ RFC 和 accepted ADR 定义**设计意图**；Implementation Status 与 executab
 6. live OpenAI/ChatGPT 与 Anthropic/Claude smoke-test matrix；
 7. recorder redaction tests（如果 recorder 进入 v0.1 scope）；
 8. differential validation 与诚实的 L2 coverage report；
-9. 第二个独立 stateful reference domain；
+9. 扩展两个 reference domain 到 20+ 多步场景并补充差分 evidence；
 10. 完成 P0/P1 failure-mode traceability。
 
 Cloud hosting、registry、marketplace 与 automatic production mirroring **不是首个正式 release 的优先事项**。

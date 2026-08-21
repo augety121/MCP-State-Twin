@@ -1,0 +1,74 @@
+apiVersion: statetwin.dev/v1alpha1
+kind: Scenario
+
+metadata:
+  name: release-lifecycle
+
+steps:
+  - id: inspect-advisory
+    tool: check_advisories
+    input:
+      name: acme/cli
+      version: 1.0.0
+    expect:
+      errorClass: ""
+      assertions:
+        - path: /entities/advisory/1/severity
+          operator: equals
+          value: high
+
+  - id: install-safe-release
+    tool: install_dependency
+    input:
+      project: demo-app
+      name: acme/cli
+      version: 1.0.0
+    expect:
+      errorClass: ""
+      assertions:
+        - path: /entities/installation/demo-app#acme~1cli/version
+          operator: equals
+          value: 1.0.0
+
+  - id: publish-patch
+    tool: publish_release
+    input:
+      name: acme/cli
+      version: 1.0.1
+    expect:
+      errorClass: ""
+      assertions:
+        - path: /entities/release/acme~1cli#1.0.1/yanked
+          operator: equals
+          value: false
+
+  - id: yank-patch
+    tool: yank_release
+    input:
+      name: acme/cli
+      version: 1.0.1
+    expect:
+      errorClass: ""
+      assertions:
+        - path: /entities/release/acme~1cli#1.0.1/yanked
+          operator: equals
+          value: true
+
+  - id: reject-yanked-install
+    tool: install_dependency
+    input:
+      project: release-bot
+      name: acme/cli
+      version: 1.0.1
+    expect:
+      errorClass: CONFLICT
+      assertions:
+        - path: /entities/installation/release-bot#acme~1cli
+          operator: absent
+
+finalAssertions:
+  - path: /entities/release/acme~1cli#1.0.1/yankedAt
+    operator: equals
+    value: "2026-08-01T00:00:00Z"
+  - path: /entities/installation/demo-app#acme~1cli
+    operator: exists

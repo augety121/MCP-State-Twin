@@ -37,7 +37,8 @@ remains proposal material.
 | Control auth grammar | missing scheme and raw-token negative tests; constant-time token comparison |
 | Operational log boundary | CLI errors pass through secret/identifier redaction; redaction unit tests |
 | Strict YAML safety | shared decoder rejects multiple documents, unknown fields, explicit tags, anchors, and aliases |
-| Reference environment | six-tool issue-tracker TwinSpec with synthetic fixture |
+| Reference environment | six-tool issue-tracker TwinSpec with synthetic fixture; package-registry domain is recorded by ADR-0014 |
+| Second reference domain | package-registry TwinSpec with publish, yank, install, advisory-query flows and negative scenario assertions |
 | CLI closed loop | init → snapshot → two forks → different calls → canonical diff run locally |
 | Scripted scenario runner | bounded Scenario v1alpha1 parser, expected error classes, JSON Pointer assertions, deterministic environment/report digests, ordered trace, and state diff |
 | MCP 2026 wire evidence | raw `server/discover`, direct modern `tools/list`, result discriminator, header/body mismatch, and 2025-11-25 initialize compatibility tests; pinned SDK evidence CLI |

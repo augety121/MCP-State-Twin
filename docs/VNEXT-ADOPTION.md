@@ -15,6 +15,9 @@ the following bounded slice in this change:
    other fault phases, scheduler, entropy, recorder/replay, differential
    fidelity, remote security, bundles, and host adapters remain proposals with
    explicit gates.
+6. ADR-0014 accepts the synthetic package-registry reference domain as the
+   second stateful domain required by the v0.1 release profile; it does not
+   claim compatibility with any real package registry.
 
 The authoritative implementation status is
 [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md). A proposal becomes an

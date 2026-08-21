@@ -32,6 +32,7 @@ jobs:
         run: |
           go run ./cmd/statetwin limits
           go run ./cmd/statetwin scenario --spec examples/issue-tracker/twin.yaml --fixture examples/issue-tracker/state.json --scenario examples/issue-tracker/scenario-close-issue.yaml
+          go run ./cmd/statetwin scenario --spec examples/package-registry/twin.yaml --fixture examples/package-registry/state.json --scenario examples/package-registry/scenario-release-lifecycle.yaml
       - name: Build release artifacts
         run: bash scripts/build-release.sh "${GITHUB_REF_NAME}"
       - name: Create draft GitHub release

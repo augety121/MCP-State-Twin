@@ -25,6 +25,8 @@ jobs:
         run: go test -race -coverprofile=coverage.out ./...
       - name: Scenario smoke
         run: go run ./cmd/statetwin scenario --spec examples/issue-tracker/twin.yaml --fixture examples/issue-tracker/state.json --scenario examples/issue-tracker/scenario-close-issue.yaml
+      - name: Second reference domain smoke
+        run: go run ./cmd/statetwin scenario --spec examples/package-registry/twin.yaml --fixture examples/package-registry/state.json --scenario examples/package-registry/scenario-release-lifecycle.yaml
       - name: Resource profile smoke
         run: go run ./cmd/statetwin limits
       - name: MCP 2026 wire smoke

@@ -7,6 +7,8 @@ have a tagged release.
 
 ### Added
 
+- a synthetic package-registry reference Twin and release-lifecycle Scenario;
+- ADR-0014 recording the second-domain decision and its non-claims;
 - versioned local resource-governance profile and `statetwin limits` command;
 - fail-closed `RESOURCE_LIMIT` enforcement for JSON/state/query/diff/report and
   branch/snapshot budgets;

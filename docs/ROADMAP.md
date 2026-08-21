@@ -138,9 +138,17 @@ Exit criteria:
 - description-only tool change triggers surface drift.
 - L2 twin in DRIFTED state fails CI by default.
 
-## Phase 6 — First real reference twin
+## Phase 6 — Reference twins
 
-Recommended domain: **GitHub-like issue/repository workflow**, but do not copy GitHub private behavior or trademarks into the core abstraction.
+The repository now contains two independent synthetic reference domains:
+
+- **GitHub-like issue/repository workflow** for maintainer and coding-agent
+  scenarios;
+- **package-registry workflow** for publish, yank, install and advisory-aware
+  dependency scenarios.
+
+These are synthetic state models. They do not claim fidelity to GitHub,
+registries, package managers or any upstream production API.
 
 Minimum modeled workflow:
 

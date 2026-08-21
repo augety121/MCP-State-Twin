@@ -234,6 +234,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 | Stateless Streamable HTTP MCP data plane | ✅ | Official Go SDK |
 | Separate HTTP control plane | ✅ | Bearer token; isolated from the data plane |
 | Issue-tracker reference twin | ✅ | 6 tools; synthetic; `L1/unverified/unbound` |
+| Package-registry reference twin | ✅ | publish/yank/install/advisory flows; synthetic; `L1/unverified/unbound` |
 | Scenario `v1alpha1` runner | ✅ | Bounded scripted scenario; not live model evaluation |
 | Live OpenAI / ChatGPT / Claude smoke tests | ❌ not verified | No host-compatibility claim |
 | Deterministic fault injection / virtual-clock advancement | 🧪 Partial | Private clock and two fault transaction phases implemented; remaining scheduler/fault semantics are not |
@@ -255,6 +256,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - stateless Streamable HTTP MCP data plane through the official Go SDK;
 - separately authenticated HTTP control plane;
 - six-tool issue-tracker reference twin with synthetic state;
+- package-registry reference twin for dependency publish, yank, install, and advisory scenarios;
 - unit, deterministic replay, MCP HTTP, authorization, output-rollback, migration-refusal, and 100-fork isolation tests;
 - pinned official MCP conformance checks for initialize, ping, tools-list, and JSON Schema 2020-12;
 - bounded TwinSpec/CEL fuzz targets plus secret-policy and loopback-only hermetic CI gates;
@@ -301,6 +303,20 @@ The command exits non-zero on an unexpected error class or failed assertion. Its
 - canonical state diff.
 
 The current runner identifies itself as `scripted-scenario`. **It is not presented as a live Codex, OpenAI, Claude, or other model evaluation.**
+
+The second independent reference domain is a package registry:
+
+```bash
+go run ./cmd/statetwin scenario \
+  --spec examples/package-registry/twin.yaml \
+  --fixture examples/package-registry/state.json \
+  --scenario examples/package-registry/scenario-release-lifecycle.yaml
+```
+
+It covers dependency release, yank, install, and advisory lookup, including an
+explicit negative assertion that a yanked release cannot be installed. It is
+synthetic, `L1/unverified/unbound`, and not an equivalent implementation of any
+real package registry.
 
 > [!WARNING]
 > Scenario reports contain tool inputs and results. Use synthetic fixtures only; do not commit reports containing credentials, production traces, or personal data.
@@ -679,6 +695,7 @@ For a first read, the suggested path is:
 - [ADR-0011](docs/ADR-0011-HEAD-VERSION-AND-VIRTUAL-CLOCK.md) — monotonic branch heads and private virtual-clock preview
 - [ADR-0012](docs/ADR-0012-DETERMINISTIC-FAULT-PREVIEW.md) — branch-local bounded deterministic fault preview
 - [ADR-0013](docs/ADR-0013-RESOURCE-GOVERNANCE-PROFILE.md) — versioned resource profile and fail-closed limits
+- [ADR-0014](docs/ADR-0014-SECOND-REFERENCE-DOMAIN.md) — synthetic package-registry reference domain
 
 ### Evidence / research
 
@@ -707,7 +724,7 @@ Current release-critical work includes:
 6. live OpenAI/ChatGPT and Anthropic/Claude smoke-test matrix;
 7. recorder redaction tests if recorder enters v0.1 scope;
 8. differential validation and an honest L2 coverage report;
-9. a second independent stateful reference domain;
+9. expand both reference domains to 20+ multi-step scenarios and add differential evidence;
 10. complete P0/P1 failure-mode traceability.
 
 Cloud hosting, registries, marketplaces, and automatic production mirroring are **not first-release priorities**.
