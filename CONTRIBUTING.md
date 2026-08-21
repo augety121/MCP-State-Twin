@@ -4,6 +4,10 @@ MCP State Twin is currently an implementation-preview project. Contributions
 should preserve the hard invariants in [RFC-0001](docs/RFC-0001.md) and should
 not expand marketing claims beyond measured behavior.
 
+Maintainer workflows and release evidence are documented in
+[RELEASE.md](RELEASE.md) and
+[docs/MAINTAINER-EVIDENCE.md](docs/MAINTAINER-EVIDENCE.md).
+
 ## Development setup
 
 Requirements:
@@ -39,6 +43,7 @@ Open an ADR or RFC change before implementing anything that changes:
 - fidelity-level meaning;
 - supported MCP protocol behavior.
 - Scenario/report semantics or environment identity.
+- resource limits or profile/environment identity.
 
 ## Pull requests
 

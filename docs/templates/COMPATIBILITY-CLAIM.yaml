@@ -1,0 +1,33 @@
+schemaVersion: statetwin.dev/compatibility-claim/v1alpha1
+
+claim:
+  id: "<...>"
+  status: "<documented|adapter_ready|connected|scenario_verified|stale|blocked|unsupported|unknown>"
+
+host:
+  provider: "<...>"
+  product: "<...>"
+  version: "<...>"
+  profileDigest: "sha256:<...>"
+
+capabilitySet:
+  tools: []
+  optionalFeatures: []
+
+environment:
+  bundleDigest: "sha256:<...>"
+  runtimeVersion: "<...>"
+  protocolVersion: "<...>"
+
+verification:
+  scenarioIds: []
+  evidenceRefs: []
+  observedAt: "<RFC3339>"
+  stalePolicy: "<...>"
+
+limitations: []
+
+publicText:
+  allowed: "<precisely scoped claim>"
+  forbidden:
+    - "fully compatible"

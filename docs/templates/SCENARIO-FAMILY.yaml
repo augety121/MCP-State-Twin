@@ -1,0 +1,32 @@
+schemaVersion: statetwin.dev/scenario-family/v1alpha1
+
+family:
+  id: "<...>"
+  generatorVersion: "v1"
+  description: "<...>"
+
+parameters:
+  schema: {}
+
+partitions:
+  - id: "<...>"
+    description: "<...>"
+
+metamorphicTransforms:
+  - id: identifier-renaming
+    expectedProperty: semantic-invariance
+
+generation:
+  deterministic: true
+  seedRequired: true
+
+secrecy:
+  tier: "<public|validation|heldout>"
+
+assertionPolicy:
+  generatedFromAcceptedSemantics: true
+  exactTrajectoryRequired: false
+
+limits:
+  maxGeneratedEntities: null
+  maxScenarioSteps: null

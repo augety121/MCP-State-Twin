@@ -13,6 +13,7 @@ import (
 
 	"github.com/augety121/mcp-state-twin/internal/canonical"
 	"github.com/augety121/mcp-state-twin/internal/engine"
+	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/spec"
 	"github.com/augety121/mcp-state-twin/internal/store"
 	"github.com/augety121/mcp-state-twin/internal/strictyaml"
@@ -24,10 +25,10 @@ const (
 	Kind             = "Scenario"
 	ReportFormat     = "statetwin.dev/scenario-report/v1alpha1"
 	MaxScenarioBytes = 256 << 10
-	MaxSteps         = 256
+	MaxSteps         = limits.MaxScenarioSteps
 	MaxAssertions    = 1024
 	MaxPointerDepth  = 64
-	MaxValueDepth    = 64
+	MaxValueDepth    = limits.MaxJSONDepth
 	MaxTraceBytes    = 16 << 20
 )
 
@@ -74,6 +75,7 @@ type EnvironmentIdentity struct {
 	ClockInitial           string `json:"clockInitial"`
 	SchedulerPolicy        string `json:"schedulerPolicy"`
 	FaultProfile           string `json:"faultProfile"`
+	LimitProfileDigest     string `json:"limitProfileDigest"`
 }
 
 type TraceEntry struct {
@@ -309,6 +311,10 @@ func Run(ctx context.Context, twin *spec.TwinSpec, initial *world.State, scenari
 	if err != nil {
 		return nil, err
 	}
+	limitDigest, err := limits.Digest()
+	if err != nil {
+		return nil, err
+	}
 	environment := EnvironmentIdentity{
 		Format:                 "statetwin.dev/environment/v1alpha1",
 		RuntimeSemanticVersion: runtimeVersion,
@@ -320,6 +326,7 @@ func Run(ctx context.Context, twin *spec.TwinSpec, initial *world.State, scenari
 		ClockInitial:           twin.Clock.Initial,
 		SchedulerPolicy:        "serial-v0.1",
 		FaultProfile:           "none",
+		LimitProfileDigest:     limitDigest,
 	}
 	environmentDigest, err := canonical.Digest(environment)
 	if err != nil {
@@ -395,6 +402,9 @@ func Run(ctx context.Context, twin *spec.TwinSpec, initial *world.State, scenari
 	}
 	if report.StateDiff == nil {
 		report.StateDiff = []store.Change{}
+	}
+	if err := limits.ValidateJSON(report, limits.MaxReportBytes); err != nil {
+		return nil, fmt.Errorf("RESOURCE_LIMIT: scenario report: %w", err)
 	}
 	return report, nil
 }

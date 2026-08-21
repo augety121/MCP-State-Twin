@@ -9,18 +9,20 @@ import (
 	"strings"
 
 	"github.com/augety121/mcp-state-twin/internal/canonical"
+	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/strictyaml"
 )
 
 const (
 	APIVersion          = "statetwin.dev/v1alpha1"
 	Kind                = "Twin"
-	MaxTwinSpecBytes    = 1 << 20
-	MaxEntities         = 256
-	MaxTools            = 256
+	MaxTwinSpecBytes    = limits.MaxSpecBytes
+	MaxEntities         = limits.MaxEntityTypeCount
+	MaxTools            = limits.MaxToolCount
 	MaxInvariants       = 512
-	MaxSchemaBytes      = 256 << 10
-	MaxSchemaDepth      = 32
+	MaxSchemaBytes      = limits.MaxSchemaBytes
+	MaxSchemaDepth      = limits.MaxSchemaDepth
+	MaxEffectsPerCall   = limits.MaxEffectsPerCall
 	MaxDescriptionBytes = 32 << 10
 )
 
@@ -31,7 +33,7 @@ var (
 		"INVALID_INPUT": {}, "PRECONDITION_FAILED": {}, "NOT_FOUND": {},
 		"CONFLICT": {}, "INVARIANT_VIOLATION": {}, "UNMODELED_BEHAVIOR": {},
 		"RATE_LIMITED": {}, "TIMEOUT_BEFORE_EFFECT": {}, "TIMEOUT_AFTER_EFFECT": {},
-		"INTERNAL_TWIN_ERROR": {},
+		"RESOURCE_LIMIT": {}, "INTERNAL_TWIN_ERROR": {},
 	}
 )
 
@@ -277,6 +279,9 @@ func (s *TwinSpec) Validate() error {
 			if err := validateSchemaBudget(tool.OutputSchema); err != nil {
 				problems = append(problems, prefix+".outputSchema "+err.Error())
 			}
+		}
+		if len(tool.Effects) > limits.MaxEffectsPerCall {
+			problems = append(problems, fmt.Sprintf("%s.effects exceeds limit %d", prefix, limits.MaxEffectsPerCall))
 		}
 		for j, condition := range tool.Preconditions {
 			if condition.Code != "" && !IsCanonicalErrorClass(condition.Code) {

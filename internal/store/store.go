@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/augety121/mcp-state-twin/internal/canonical"
+	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/world"
 	_ "modernc.org/sqlite"
 )
@@ -23,6 +24,7 @@ var (
 	ErrClockLimit       = errors.New("virtual clock advance exceeds limit")
 	ErrFaultNotFound    = errors.New("fault plan not found")
 	ErrFaultInvalid     = errors.New("invalid fault plan")
+	ErrResourceLimit    = errors.New("resource limit exceeded")
 )
 
 var idPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`)
@@ -31,7 +33,7 @@ const (
 	applicationID   = 0x5354574e // ASCII "STWN"
 	schemaVersion   = 4
 	MaxClockAdvance = 10 * 365 * 24 * time.Hour
-	MaxFaultPlans   = 128
+	MaxFaultPlans   = limits.MaxFaultRules
 	MaxFaultRepeats = 1000
 	MaxFaultMessage = 4096
 )
@@ -346,7 +348,9 @@ func (s *Store) InitializeBranch(ctx context.Context, id, specDigest string, sta
 	if err := validateID("branch ID", id); err != nil {
 		return err
 	}
-	state.Normalize()
+	if err := state.ValidateBudget(); err != nil {
+		return fmt.Errorf("%w: %v", ErrResourceLimit, err)
+	}
 	stateJSON, err := canonical.JSON(state)
 	if err != nil {
 		return err
@@ -355,12 +359,33 @@ func (s *Store) InitializeBranch(ctx context.Context, id, specDigest string, sta
 	if err != nil {
 		return err
 	}
-	_, err = s.db.ExecContext(ctx, `
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin branch initialization: %w", err)
+	}
+	defer tx.Rollback()
+	var exists int
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM branches WHERE id = ?`, id).Scan(&exists); err != nil {
+		return fmt.Errorf("check branch identity: %w", err)
+	}
+	if exists != 0 {
+		return nil
+	}
+	var count int
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM branches`).Scan(&count); err != nil {
+		return fmt.Errorf("count branches: %w", err)
+	}
+	if count >= limits.MaxForks {
+		return fmt.Errorf("%w: branch limit is %d", ErrResourceLimit, limits.MaxForks)
+	}
+	_, err = tx.ExecContext(ctx, `
 INSERT INTO branches(id, spec_digest, state_json, state_digest, clock, call_count, head_version)
-VALUES(?, ?, ?, ?, ?, 0, 0)
-ON CONFLICT(id) DO NOTHING`, id, specDigest, stateJSON, stateDigest, clock.UTC().Format(time.RFC3339Nano))
+VALUES(?, ?, ?, ?, ?, 0, 0)`, id, specDigest, stateJSON, stateDigest, clock.UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return fmt.Errorf("initialize branch: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit branch initialization: %w", err)
 	}
 	return nil
 }
@@ -647,6 +672,9 @@ func (s *Store) ApplyCall(
 	input any,
 	apply func(state *world.State, clock time.Time, callIndex int64) (CallOutcome, error),
 ) (*ApplyResult, error) {
+	if err := limits.ValidateJSON(input, limits.MaxInputBytes); err != nil {
+		return nil, fmt.Errorf("%w: tool input: %v", ErrResourceLimit, err)
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("begin transition: %w", err)
@@ -690,6 +718,9 @@ func (s *Store) ApplyCall(
 	if !outcome.CommitState {
 		working = branch.State
 	}
+	if err := working.ValidateBudget(); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrResourceLimit, err)
+	}
 
 	stateJSON, err := canonical.JSON(working)
 	if err != nil {
@@ -706,6 +737,9 @@ func (s *Store) ApplyCall(
 	inputJSON, err := canonical.JSON(input)
 	if err != nil {
 		return nil, fmt.Errorf("canonicalize tool input: %w", err)
+	}
+	if len(inputJSON)+len(resultJSON) > limits.MaxAuditEventBytes {
+		return nil, fmt.Errorf("%w: audit payload bytes %d exceed limit %d", ErrResourceLimit, len(inputJSON)+len(resultJSON), limits.MaxAuditEventBytes)
 	}
 
 	update, err := tx.ExecContext(ctx, `
@@ -754,6 +788,13 @@ func (s *Store) CreateSnapshot(ctx context.Context, name, branchID string) (*Sna
 		return nil, fmt.Errorf("begin snapshot transaction: %w", err)
 	}
 	defer tx.Rollback()
+	var snapshotCount int
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM snapshots`).Scan(&snapshotCount); err != nil {
+		return nil, fmt.Errorf("count snapshots: %w", err)
+	}
+	if snapshotCount >= limits.MaxSnapshots {
+		return nil, fmt.Errorf("%w: snapshot limit is %d", ErrResourceLimit, limits.MaxSnapshots)
+	}
 	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count, head_version FROM branches WHERE id = ?`, branchID))
 	if err != nil {
 		return nil, err
@@ -826,6 +867,13 @@ func (s *Store) Fork(ctx context.Context, snapshotName, branchID string) error {
 		return fmt.Errorf("begin fork transaction: %w", err)
 	}
 	defer tx.Rollback()
+	var branchCount int
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM branches`).Scan(&branchCount); err != nil {
+		return fmt.Errorf("count branches: %w", err)
+	}
+	if branchCount >= limits.MaxForks {
+		return fmt.Errorf("%w: branch limit is %d", ErrResourceLimit, limits.MaxForks)
+	}
 	snapshot, err := scanSnapshot(snapshotName, tx.QueryRowContext(ctx, `SELECT id, spec_digest, state_json, state_digest, clock, source_head_version, storage_schema_version FROM snapshots WHERE name = ?`, snapshotName))
 	if err != nil {
 		return err

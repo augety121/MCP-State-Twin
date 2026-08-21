@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/world"
 )
 
@@ -287,6 +288,34 @@ func TestFaultSelectionUsesStablePlanIDOrder(t *testing.T) {
 		if result.FaultID != want {
 			t.Fatalf("fault %d = %q, want %q", index, result.FaultID, want)
 		}
+	}
+}
+
+func TestDiffFailsClosedAtEntryLimit(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	initial := world.New()
+	initial.Entities["item"] = map[string]map[string]any{}
+	if err := s.InitializeBranch(ctx, "main", "sha256:spec", initial, time.Unix(0, 0)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CreateSnapshot(ctx, "base", "main"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Fork(ctx, "base", "changed"); err != nil {
+		t.Fatal(err)
+	}
+	_, err := s.ApplyCall(ctx, "changed", "sha256:spec", "bulk", map[string]any{}, func(state *world.State, _ time.Time, _ int64) (CallOutcome, error) {
+		for i := 0; i <= limits.MaxDiffEntries; i++ {
+			state.Entities["item"][fmt.Sprintf("item-%05d", i)] = map[string]any{"id": i}
+		}
+		return CallOutcome{Result: map[string]any{"ok": true}, CommitState: true}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.DiffBranches(ctx, "main", "changed"); !errors.Is(err, ErrResourceLimit) {
+		t.Fatalf("diff limit error = %v", err)
 	}
 }
 

@@ -1,0 +1,58 @@
+schemaVersion: statetwin.dev/agent-compatibility/v1alpha1
+status: documented
+
+identity:
+  provider: "<...>"
+  product: "<...>"
+  hostVersion: "<...>"
+  observedAt: "<RFC3339>"
+  sourceRefs: []
+
+path:
+  class: "<native-mcp|mcp-via-agent-bridge|compatibility-bridge|unknown>"
+  intermediaryProtocols: []
+
+protocol:
+  mcpVersion: "<...|unknown>"
+  transports:
+    streamableHttp: unknown
+    stdio: unknown
+    legacySse: unknown
+  features:
+    tools: unknown
+    prompts: unknown
+    resources: unknown
+    roots: unknown
+    elicitation: unknown
+    tasks: unknown
+    mrtr: unknown
+
+surface:
+  canonicalDigest: null
+  authorizationScopedDigest: null
+  hostProjectedDigest: null
+  modelVisibleDigest: null
+  projectionRef: null
+  surfaceReadyPolicy: "<...>"
+
+host:
+  builtInTools: []
+  approvalPolicy: null
+  automaticRetry: unknown
+  parallelCalls: unknown
+  toolContextBudget: null
+  memoryResetGuaranteed: unknown
+  outputTransforms: []
+
+isolation:
+  recommendedProfile: "<mcp_only|declared_mixed|uncontrolled>"
+
+evidence:
+  documented: true
+  adapterReady: false
+  connectionVerified: false
+  scenarioVerified: false
+  lastEvidence: null
+  staleReason: null
+
+limitations: []

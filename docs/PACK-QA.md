@@ -1,0 +1,65 @@
+# Generated Pack QA — vNext
+
+- Markdown files: 39
+- YAML templates: 9
+- Markdown fence parity: PASS
+- Relative links: PASS (0 missing)
+- YAML parse: PASS
+
+## Markdown
+
+| File | Lines | Fence markers | Balanced |
+|---|---:|---:|---|
+| `00-MASTER-LIFECYCLE-SPEC.md` | 3288 | 226 | yes |
+| `01-SPEC-GOVERNANCE-CLAIMS-VERSIONING.md` | 214 | 8 | yes |
+| `02-PHASE-0-MCP-2026-REBASELINE.md` | 132 | 4 | yes |
+| `03-SPEC-0007-VIRTUAL-TIME-ENTROPY-SCHEDULER.md` | 110 | 2 | yes |
+| `04-SPEC-0008-DETERMINISTIC-FAULTS.md` | 95 | 2 | yes |
+| `05-SPEC-0009-RECORD-REPLAY-REDACTION.md` | 68 | 2 | yes |
+| `06-SPEC-0010-UPSTREAM-SURFACE-DRIFT.md` | 67 | 2 | yes |
+| `07-SPEC-0011-DIFFERENTIAL-FIDELITY.md` | 105 | 10 | yes |
+| `08-SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md` | 351 | 10 | yes |
+| `09-SPEC-0013-SECURITY-NETWORK-BOUNDARY.md` | 257 | 6 | yes |
+| `10-SPEC-0014-EVIDENCE-AUDIT-OBSERVABILITY.md` | 226 | 12 | yes |
+| `11-SPEC-0015-RESOURCE-GOVERNANCE.md` | 145 | 2 | yes |
+| `12-SPEC-0016-REPRODUCIBLE-EVALUATION-BUNDLE.md` | 141 | 8 | yes |
+| `13-HOST-EVALUATION-CODEX-CLAUDE-OTHER-AGENTS.md` | 431 | 12 | yes |
+| `14-MULTI-AGENT-LONG-RUNNING-FUTURE-AGI.md` | 299 | 12 | yes |
+| `15-FAILURE-MODE-EDGE-CASE-CATALOG.md` | 313 | 0 | yes |
+| `16-RELEASE-LIFECYCLE-AND-GATES.md` | 309 | 8 | yes |
+| `17-SOURCE-REGISTRY.md` | 463 | 0 | yes |
+| `18-FEASIBILITY-DEPENDENCY-MATRIX.md` | 193 | 2 | yes |
+| `19-OPEN-QUESTIONS-DECISION-GATES.md` | 491 | 2 | yes |
+| `20-UNIVERSAL-AGENT-COMPATIBILITY-ARCHITECTURE.md` | 376 | 20 | yes |
+| `21-PORTABLE-MCP-TOOLS-PROFILE.md` | 199 | 8 | yes |
+| `22-HOST-ADAPTER-SPI-AND-REGISTRY.md` | 263 | 20 | yes |
+| `23-CURRENT-AGENT-HOST-MATRIX-2026-08.md` | 88 | 0 | yes |
+| `24-HOST-ISOLATION-BENCHMARK-INTEGRITY.md` | 226 | 8 | yes |
+| `25-EVALUATION-EPISODES-CURRICULUM-CAPABILITY-UPLIFT.md` | 265 | 12 | yes |
+| `26-SCENARIO-FAMILIES-METAMORPHIC-COVERAGE.md` | 169 | 6 | yes |
+| `27-CROSS-PROTOCOL-ACP-A2A-BOUNDARY.md` | 152 | 10 | yes |
+| `28-COMPATIBILITY-CI-EVIDENCE-FRESHNESS.md` | 200 | 10 | yes |
+| `29-MULTIMODAL-ARTIFACT-OUTPUT-PROFILE.md` | 80 | 2 | yes |
+| `30-PORTABLE-SURFACE-PROJECTION-AND-COMPAT-LINT.md` | 149 | 8 | yes |
+| `31-REFERENCE-FRAMEWORK-ARCHITECTURE.md` | 465 | 42 | yes |
+| `32-UNIVERSAL-COMPATIBILITY-REQUIREMENT-CATALOG.md` | 205 | 0 | yes |
+| `33-IMPLEMENTATION-WORKSTREAMS-AND-EXIT-CRITERIA.md` | 258 | 4 | yes |
+| `PACK-QA.md` | 32 | 0 | yes |
+| `README.md` | 137 | 4 | yes |
+| `VNEXT-DELTA.md` | 150 | 6 | yes |
+| `templates/MCP-2026-07-28-GAP-MATRIX.md` | 29 | 0 | yes |
+| `templates/REQUIREMENT-TRACEABILITY.md` | 21 | 0 | yes |
+
+## YAML
+
+| File | Parse | Note |
+|---|---|---|
+| `templates/AGENT-COMPATIBILITY-PROFILE.yaml` | PASS |  |
+| `templates/COMPATIBILITY-CLAIM.yaml` | PASS |  |
+| `templates/EVALUATION-EPISODE.yaml` | PASS |  |
+| `templates/EVIDENCE-MANIFEST.yaml` | PASS |  |
+| `templates/HOST-PROFILE.yaml` | PASS |  |
+| `templates/HOST-SURFACE-PROJECTION.yaml` | PASS |  |
+| `templates/RELEASE-EVIDENCE-INVENTORY.yaml` | PASS |  |
+| `templates/SCENARIO-FAMILY.yaml` | PASS |  |
+| `templates/TWIN-BUNDLE-MANIFEST.yaml` | PASS |  |

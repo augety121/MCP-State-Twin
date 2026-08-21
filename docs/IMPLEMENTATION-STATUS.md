@@ -4,8 +4,8 @@
 **Last verified:** 2026-08-21
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 and SPEC-0001 through SPEC-0006 define the proposed
-v0.1 normative profile. ADR-0011 and ADR-0012 accept only bounded preview
-subsets of SPEC-0007, SPEC-0008, and SPEC-0012; the rest of the vNext pack
+v0.1 normative profile. ADR-0011 through ADR-0013 accept only bounded preview
+subsets of SPEC-0007, SPEC-0008, SPEC-0012, and SPEC-0015; the rest of the vNext pack
 remains proposal material.
 
 ## Implemented and tested
@@ -44,6 +44,7 @@ remains proposal material.
 | Monotonic branch head | SQLite schema v4 `head_version`, CAS updates for calls/reset/clock/fault configuration, snapshot source-head binding, migration tests |
 | Private virtual-clock advance | bounded forward-only `/v1/clock/advance`, expected-head conflict, and transactional `clock.advance` audit tests |
 | Deterministic fault preview | branch-local bounded plans; `before-validation` and `after-commit-before-response`; atomic counters/events; stable plan digest; private HTTP integration tests |
+| Versioned resource profile | `statetwin limits`; profile digest in Scenario environment identity; state/input/output/query/effect/diff/report/storage bounds; typed `RESOURCE_LIMIT` failures |
 
 ## Partially implemented
 
@@ -58,6 +59,7 @@ remains proposal material.
 | Snapshot storage | immutable logical snapshots work; copy-on-write/delta optimization and GC are not implemented |
 | MCP protocol coverage | direct 2026-07-28 wire smoke tests pass; the pinned conformance framework still covers legacy-era scenarios and does not establish every modern optional feature |
 | HTTP resource bounds | 1 MiB bodies/headers and read/write/idle timeouts are configured; oversize/config tests pass, direct slow-client test remains incomplete |
+| Resource governance | local profile and fail-closed enforcement are implemented; OS quotas, distributed fairness, scheduler/bundle/cassette quotas, and empirical performance budgets are not |
 
 ## Not implemented
 

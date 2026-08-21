@@ -237,6 +237,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 | Scenario `v1alpha1` runner | ✅ | Bounded scripted scenario; not live model evaluation |
 | Live OpenAI / ChatGPT / Claude smoke tests | ❌ not verified | No host-compatibility claim |
 | Deterministic fault injection / virtual-clock advancement | 🧪 Partial | Private clock and two fault transaction phases implemented; remaining scheduler/fault semantics are not |
+| Versioned resource governance | 🧪 Partial | `statetwin limits`, environment digest, and fail-closed local budgets; OS/remote quotas are not implemented |
 | Recorder / cassette replay / trace redaction | ⏳ | Not implemented |
 | Differential validation / L2 promotion | ⏳ | Not complete |
 | Data-plane auth / TLS / remote multi-tenancy | ⏳ | Current build should remain local/loopback |
@@ -260,6 +261,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - a tested CLI loop: initialize → snapshot → fork twice → mutate → terminal diff;
 - bounded Scenario `v1alpha1` runner with deterministic environment identity, ordered tool traces, JSON Pointer state assertions, and canonical state diff.
 - bounded branch-local fault plans for `before-validation` and `after-commit-before-response`, with a stable plan digest, transactional counters, and fault-event audit.
+- a versioned resource profile: input/output/state, JSON depth/member, effect/query, diff/report, and branch/snapshot limits fail closed as `RESOURCE_LIMIT` and bind to Scenario environment identity.
 
 </details>
 
@@ -601,6 +603,7 @@ statetwin fork       create an isolated branch from a snapshot
 statetwin diff       compare two branch states
 statetwin scenario   execute a bounded scripted scenario and assertions
 statetwin protocols   print pinned MCP wire-evidence profiles
+statetwin limits      print the versioned resource profile and digest
 statetwin serve      run separate MCP data and HTTP control planes
 statetwin version    print the development version
 ```
@@ -644,8 +647,10 @@ For a first read, the suggested path is:
 - [Phase 0 MCP 2026 Gap Matrix](docs/PHASE-0-MCP-2026-GAP-MATRIX.md)
 - [vNext Adoption Record](docs/VNEXT-ADOPTION.md)
 - [vNext SPEC Pack Traceability Matrix](docs/VNEXT-TRACEABILITY.md)
+- [Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md) / [Maintainer Evidence](docs/MAINTAINER-EVIDENCE.md) / [Release Operations](RELEASE.md)
 - [SPEC-0007 — Virtual Time Boundary](docs/SPEC-0007-VIRTUAL-TIME-ENTROPY-SCHEDULER.md)
 - [SPEC-0008 — Deterministic Fault Preview](docs/SPEC-0008-DETERMINISTIC-FAULTS.md)
+- [SPEC-0015 — Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md)
 - [SPEC-0012 — Storage/Concurrency/Recovery](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md)
 
 <details>
@@ -670,6 +675,7 @@ For a first read, the suggested path is:
 - [ADR-0010](docs/ADR-0010-SCENARIO-ARTIFACTS.md) — bounded scenario artifacts and scripted evidence reports
 - [ADR-0011](docs/ADR-0011-HEAD-VERSION-AND-VIRTUAL-CLOCK.md) — monotonic branch heads and private virtual-clock preview
 - [ADR-0012](docs/ADR-0012-DETERMINISTIC-FAULT-PREVIEW.md) — branch-local bounded deterministic fault preview
+- [ADR-0013](docs/ADR-0013-RESOURCE-GOVERNANCE-PROFILE.md) — versioned resource profile and fail-closed limits
 
 ### Evidence / research
 

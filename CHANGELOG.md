@@ -7,6 +7,12 @@ have a tagged release.
 
 ### Added
 
+- versioned local resource-governance profile and `statetwin limits` command;
+- fail-closed `RESOURCE_LIMIT` enforcement for JSON/state/query/diff/report and
+  branch/snapshot budgets;
+- deterministic fault preview and resource-profile ADR/SPEC evidence;
+- maintainer evidence ledger, release operations checklist, and Dependabot
+  configuration;
 - strict TwinSpec `v1alpha1` YAML decoding and validation;
 - canonical JSON digests for specs and state;
 - bounded CEL expression compilation;

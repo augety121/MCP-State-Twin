@@ -3,11 +3,34 @@ package world
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/augety121/mcp-state-twin/internal/limits"
 )
 
 type State struct {
 	Entities  map[string]map[string]map[string]any `json:"entities" yaml:"entities"`
 	Sequences map[string]int64                     `json:"sequences" yaml:"sequences"`
+}
+
+// ValidateBudget applies the default resource profile to a complete world
+// state. It is called both by the engine and the storage boundary so alternate
+// callers cannot bypass state limits.
+func (s *State) ValidateBudget() error {
+	if s == nil {
+		return fmt.Errorf("world state is required")
+	}
+	s.Normalize()
+	records := 0
+	for _, entities := range s.Entities {
+		records += len(entities)
+		if records > limits.MaxEntitiesPerBranch {
+			return fmt.Errorf("entity records %d exceed limit %d", records, limits.MaxEntitiesPerBranch)
+		}
+	}
+	if err := limits.ValidateJSON(s, limits.MaxStateBytes); err != nil {
+		return fmt.Errorf("world state: %w", err)
+	}
+	return nil
 }
 
 func New() *State {

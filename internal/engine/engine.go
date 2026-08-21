@@ -9,15 +9,16 @@ import (
 	"time"
 
 	"github.com/augety121/mcp-state-twin/internal/canonical"
+	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/spec"
 	"github.com/augety121/mcp-state-twin/internal/store"
 	"github.com/augety121/mcp-state-twin/internal/world"
 	"github.com/google/cel-go/cel"
 )
 
-const MaxExpressionBytes = 4096
+const MaxExpressionBytes = limits.MaxExpressionBytes
 
-const MaxToolResultBytes = 1 << 20
+const MaxToolResultBytes = limits.MaxOutputBytes
 
 type Runtime struct {
 	spec     *spec.TwinSpec
@@ -140,7 +141,7 @@ func (r *Runtime) compile(expression string) error {
 	if issues != nil && issues.Err() != nil {
 		return issues.Err()
 	}
-	program, err := r.env.Program(ast, cel.CostLimit(10_000))
+	program, err := r.env.Program(ast, cel.CostLimit(limits.MaxExpressionCost))
 	if err != nil {
 		return err
 	}
@@ -165,6 +166,9 @@ func (r *Runtime) Call(ctx context.Context, branchID, toolName string, input map
 	tool, exists := r.tools[toolName]
 	if !exists {
 		return nil, fmt.Errorf("unknown tool %q", toolName)
+	}
+	if err := limits.ValidateJSON(input, limits.MaxInputBytes); err != nil {
+		return nil, fmt.Errorf("RESOURCE_LIMIT: tool input: %w", err)
 	}
 	return r.store.ApplyCall(ctx, branchID, r.digest, toolName, input, func(state *world.State, clock time.Time, callIndex int64) (store.CallOutcome, error) {
 		return r.apply(tool, state, clock, callIndex, input), nil
@@ -283,6 +287,9 @@ func (r *Runtime) apply(tool spec.ToolSpec, state *world.State, clock time.Time,
 					}
 				}
 				items = append(items, item)
+				if len(items) > limits.MaxQueryResultItems {
+					return failure("RESOURCE_LIMIT", fmt.Sprintf("query results exceed limit %d", limits.MaxQueryResultItems))
+				}
 			}
 			vars[query.As] = items
 		} else {
@@ -300,6 +307,9 @@ func (r *Runtime) apply(tool spec.ToolSpec, state *world.State, clock time.Time,
 			}
 			vars[query.As] = item
 		}
+	}
+	if err := state.ValidateBudget(); err != nil {
+		return failure("RESOURCE_LIMIT", err.Error())
 	}
 
 	for _, condition := range tool.Postconditions {
@@ -339,7 +349,7 @@ func (r *Runtime) apply(tool spec.ToolSpec, state *world.State, clock time.Time,
 		return failure("INTERNAL_TWIN_ERROR", "declared result is not canonical JSON: "+err.Error())
 	}
 	if len(canonicalResult) > MaxToolResultBytes {
-		return failure("INTERNAL_TWIN_ERROR", fmt.Sprintf("declared result exceeds %d bytes", MaxToolResultBytes))
+		return failure("RESOURCE_LIMIT", fmt.Sprintf("declared result exceeds %d bytes", MaxToolResultBytes))
 	}
 	if err := validateJSON(result, toolSchemas.output); err != nil {
 		return failure("INTERNAL_TWIN_ERROR", "declared outputSchema rejected tool result: "+err.Error())

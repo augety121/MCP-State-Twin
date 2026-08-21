@@ -263,6 +263,8 @@ func writeStoreError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "FAULT_NOT_FOUND", err.Error())
 	case errors.Is(err, store.ErrFaultInvalid):
 		writeError(w, http.StatusBadRequest, "FAULT_INVALID", err.Error())
+	case errors.Is(err, store.ErrResourceLimit):
+		writeError(w, http.StatusRequestEntityTooLarge, "RESOURCE_LIMIT", err.Error())
 	default:
 		writeError(w, http.StatusBadRequest, "CONTROL_ERROR", err.Error())
 	}

@@ -32,9 +32,10 @@ never changes the disposition.
 ## 2. Complete pack inventory
 
 The table below covers every numbered document in the uploaded archive. The
-repository intentionally keeps only the accepted/maintained documents in
-`docs/`; the archive remains the source proposal and is identified by the hash
-above.
+proposal pack is vendored in `docs/00-...` through `docs/33-...` for public
+review, while the separately named `SPEC-*`, `ADR-*`, and status documents are
+the repository's maintained implementation records. Vendoring proposal text
+does not accept or implement it.
 
 | Pack file | Disposition in this repository | Current evidence / next gate |
 |---|---|---|
@@ -49,7 +50,7 @@ above.
 | `08-SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md` | Adopted / partial | SQLite schema v4, monotonic `head_version`, CAS calls/reset/clock/fault configuration, snapshot source-head binding, and legacy migrations are tested. Crash recovery, tagged migration fixtures, import/export, and multi-writer/remote guarantees are not accepted. |
 | `09-SPEC-0013-SECURITY-NETWORK-BOUNDARY.md` | Proposal / blocked | Local control bearer authentication and loopback-only hermetic CI evidence exist. TLS, mTLS/OAuth, remote tenancy, network policy, and production deployment are not implemented. |
 | `10-SPEC-0014-EVIDENCE-AUDIT-OBSERVABILITY.md` | Proposal / blocked | Mutation audit and operational redaction are implemented in the current boundary. Full evidence manifests, trace redaction/retention, OpenTelemetry, and signed attestations require a separate acceptance decision. |
-| `11-SPEC-0015-RESOURCE-GOVERNANCE.md` | Proposal / blocked | Existing HTTP/spec/CEL limits are local guards, not a complete governance profile. Gate: one versioned budget object covering bytes, calls, steps, wall/virtual time, concurrency, storage, and artifact retention, with exhaustion tests. |
+| `11-SPEC-0015-RESOURCE-GOVERNANCE.md` | Adopted / partial | ADR-0013 adds a versioned profile, `statetwin limits`, environment digest binding, typed `RESOURCE_LIMIT`, and fail-closed local state/input/output/diff/storage bounds. OS quotas, distributed fairness, scheduler/bundle/cassette quotas, and empirical performance budgets remain open. |
 | `12-SPEC-0016-REPRODUCIBLE-EVALUATION-BUNDLE.md` | Proposal / blocked | No portable bundle import/export or signature verification is implemented. Gate: path-safe archive handling, canonical manifest, schema/version checks, digest verification, size limits, and negative tests. |
 | `13-HOST-EVALUATION-CODEX-CLAUDE-OTHER-AGENTS.md` | Proposal / blocked | The project has a tools-first MCP surface, not verified provider adapters. Gate: versioned host profile, isolated smoke run, model-visible surface capture, and reproducible evidence for each host. |
 | `14-MULTI-AGENT-LONG-RUNNING-FUTURE-AGI.md` | Governance / planning | Research direction only. It cannot change the single-agent data/control-plane boundary or release claims. |

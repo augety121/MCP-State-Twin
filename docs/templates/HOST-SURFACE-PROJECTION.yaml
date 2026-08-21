@@ -1,0 +1,24 @@
+schemaVersion: statetwin.dev/host-surface-projection/v1alpha1
+
+hostProfileRef: "<...>"
+canonicalSurfaceDigest: "sha256:<...>"
+authorizationScopedSurfaceDigest: null
+projectedSurfaceDigest: null
+
+tools:
+  - canonicalTool: "<tool_name>"
+    canonicalToolDigest: "sha256:<...>"
+    hostToolName: "<projected-name>"
+    sourceInputSchemaDigest: "sha256:<...>"
+    projectedInputSchemaDigest: "sha256:<...>"
+    sourceOutputSchemaDigest: null
+    projectedOutputSchemaDigest: null
+    transforms:
+      - type: "<tool_name_prefix|schema_strip|schema_rewrite|other>"
+        detail: "<...>"
+    lossClass: "<none|syntactic|semantic-risk|unsupported|unknown>"
+    evidenceRef: null
+
+surfaceTransforms: []
+knownCollisions: []
+unknowns: []

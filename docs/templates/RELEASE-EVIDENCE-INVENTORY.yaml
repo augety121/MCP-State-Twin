@@ -1,0 +1,54 @@
+schemaVersion: statetwin.dev/release-evidence/v1alpha1
+
+release:
+  version: "<...>"
+  sourceCommit: "<...>"
+  createdAt: "<RFC3339>"
+
+protocol:
+  supportedProfiles: []
+  sdkVersions: {}
+  conformance:
+    versionOrCommit: null
+    evidenceArtifacts: []
+    expectedFailures: []
+
+determinism:
+  corpusVersion: null
+  platformMatrix: []
+  evidenceArtifacts: []
+
+storage:
+  schemaVersion: null
+  migrationEvidence: []
+  recoveryEvidence: []
+
+security:
+  profile: local
+  threatModel: null
+  evidenceArtifacts: []
+  knownExceptions: []
+
+fidelity:
+  l0Profiles: []
+  l1Profiles: []
+  l2Profiles: []
+  l3Profiles: []
+
+hosts:
+  verifiedProfiles: []
+
+supplyChain:
+  sbom: null
+  provenance: null
+  signatures: []
+
+claims:
+  - id: "<claim-id>"
+    text: "<public claim>"
+    status: "<specified|implemented|verified|compatible|fidelity-qualified>"
+    evidenceRefs: []
+
+blockers:
+  p0: []
+  p1: []

@@ -237,6 +237,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 | Scenario `v1alpha1` runner | ✅ | 有界 scripted scenario；不是 live model evaluation |
 | Live OpenAI / ChatGPT / Claude smoke tests | ❌ 尚未验证 | 不声明 host compatibility |
 | Deterministic fault injection / virtual-clock advancement | 🧪 部分实现 | 私有 clock；两个 fault transaction phases；其余 scheduler/fault semantics 未实现 |
+| Versioned resource governance | 🧪 部分实现 | `statetwin limits`、environment digest、fail-closed local budgets；OS/remote quotas 未实现 |
 | Recorder / cassette replay / trace redaction | ⏳ | 尚未实现 |
 | Differential validation / L2 promotion | ⏳ | 尚未完成 |
 | Data-plane auth / TLS / remote multi-tenancy | ⏳ | 当前仅适合本地 loopback 使用 |
@@ -260,6 +261,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 - 已测试 CLI 主链路：initialize → snapshot → fork ×2 → mutate → terminal diff；
 - bounded Scenario `v1alpha1` runner：deterministic environment identity、ordered tool trace、JSON Pointer state assertion 与 canonical state diff。
 - bounded branch-local fault plans：`before-validation` 与 `after-commit-before-response`，带稳定 plan digest、事务内计数和 fault-event audit。
+- versioned resource profile：input/output/state、JSON depth/members、effect/query、diff/report、branch/snapshot limits 以 `RESOURCE_LIMIT` fail closed，并绑定 Scenario environment digest。
 
 </details>
 
@@ -601,6 +603,7 @@ statetwin fork       create an isolated branch from a snapshot
 statetwin diff       compare two branch states
 statetwin scenario   execute a bounded scripted scenario and assertions
 statetwin protocols   print pinned MCP wire-evidence profiles
+statetwin limits      print the versioned resource profile and digest
 statetwin serve      run separate MCP data and HTTP control planes
 statetwin version    print the development version
 ```
@@ -644,8 +647,10 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [Phase 0 MCP 2026 Gap Matrix](docs/PHASE-0-MCP-2026-GAP-MATRIX.md)
 - [vNext Adoption Record](docs/VNEXT-ADOPTION.md)
 - [vNext SPEC Pack Traceability Matrix](docs/VNEXT-TRACEABILITY.md)
+- [Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md) / [Maintainer Evidence](docs/MAINTAINER-EVIDENCE.md) / [Release Operations](RELEASE.md)
 - [SPEC-0007 — Virtual Time Boundary](docs/SPEC-0007-VIRTUAL-TIME-ENTROPY-SCHEDULER.md)
 - [SPEC-0008 — Deterministic Fault Preview](docs/SPEC-0008-DETERMINISTIC-FAULTS.md)
+- [SPEC-0015 — Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md)
 - [SPEC-0012 — Storage/Concurrency/Recovery](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md)
 
 <details>
@@ -670,6 +675,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [ADR-0010](docs/ADR-0010-SCENARIO-ARTIFACTS.md) — bounded scenario artifacts 与 scripted evidence reports
 - [ADR-0011](docs/ADR-0011-HEAD-VERSION-AND-VIRTUAL-CLOCK.md) — monotonic branch head 与 private virtual clock
 - [ADR-0012](docs/ADR-0012-DETERMINISTIC-FAULT-PREVIEW.md) — branch-local bounded deterministic fault preview
+- [ADR-0013](docs/ADR-0013-RESOURCE-GOVERNANCE-PROFILE.md) — versioned resource profile and fail-closed limits
 
 ### Evidence / Research
 

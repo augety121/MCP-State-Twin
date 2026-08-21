@@ -1,0 +1,68 @@
+schemaVersion: statetwin.dev/evidence/v1alpha1
+status: incomplete
+
+environment:
+  runtimeVersion: "<...>"
+  buildId: "<...>"
+  mcpProtocolVersion: "<...>"
+  mcpExtensions: {}
+  storageSchemaVersion: "<...>"
+  canonicalizationId: "<...>"
+  hashAlgorithm: sha256
+  specDigest: "sha256:<...>"
+  serverSurfaceDigest: "sha256:<...>"
+  fixtureDigest: null
+  snapshotDigest: "sha256:<...>"
+  scenarioDigest: "sha256:<...>"
+  faultPlanDigest: null
+  resourceLimitProfileDigest: null
+  schedulerProfile:
+    version: null
+    initialWorldTime: null
+  entropyProfile:
+    algorithm: null
+    seedDigest: null
+
+host:
+  profileRef: null
+  profileDigest: null
+  provider: null
+  product: null
+  version: null
+  modelConfiguredId: null
+  modelResolvedSnapshot: null
+  hostVisibleSurfaceDigest: null
+  approvalPolicy: null
+
+run:
+  id: "<...>"
+  startedAt: "<wall-clock-metadata>"
+  completedAt: null
+  outcome: incomplete
+  completionReason: null
+  infrastructureFailureClass: null
+
+world:
+  branchId: "<...>"
+  initialHeadVersion: null
+  finalHeadVersion: null
+  initialStateDigest: "sha256:<...>"
+  terminalStateDigest: null
+  orderedCallTraceDigest: null
+  worldCommitTraceDigest: null
+  canonicalDiffDigest: null
+
+assertions:
+  evaluated: []
+  skipped: []
+  failed: []
+
+security:
+  dataHandlingProfile: synthetic-only
+  secretsPersisted: false
+  redactionPolicyVersion: "<...>"
+
+sources:
+  conformanceVersionOrCommit: null
+  sdkVersions: {}
+  hostSourceRegistryRefs: []

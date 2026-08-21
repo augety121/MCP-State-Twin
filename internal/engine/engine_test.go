@@ -96,7 +96,7 @@ func TestToolResultSizeLimitFailsClosed(t *testing.T) {
 		t.Fatal(err)
 	}
 	result := runtime.apply(twin.Tools[0], world.New(), time.Unix(0, 0).UTC(), 1, map[string]any{"payload": strings.Repeat("x", MaxToolResultBytes)})
-	if result.ErrorClass != "INTERNAL_TWIN_ERROR" || !strings.Contains(result.Result.(map[string]any)["error"].(map[string]any)["message"].(string), "exceeds") {
+	if result.ErrorClass != "RESOURCE_LIMIT" || !strings.Contains(result.Result.(map[string]any)["error"].(map[string]any)["message"].(string), "exceeds") {
 		t.Fatalf("expected bounded result failure, got %#v", result)
 	}
 }

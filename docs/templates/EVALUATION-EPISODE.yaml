@@ -1,0 +1,53 @@
+schemaVersion: statetwin.dev/evaluation-episode/v1alpha1
+
+episode:
+  id: "<...>"
+  mode: "<blind_eval|diagnostic_eval|coaching|curriculum|stress>"
+  scenarioFamily: null
+  generatorVersion: null
+  seed: null
+
+bundle:
+  ref: "<...>"
+  digest: "sha256:<...>"
+
+host:
+  compatibilityProfileRef: "<...>"
+  adapterVersion: "<...>"
+  modelConfiguredId: "<...>"
+
+isolation:
+  profile: "<mcp_only|declared_mixed|uncontrolled>"
+  workspaceDigest: null
+  instructionDigests: []
+  networkPolicy: "<...>"
+  memoryResetGuaranteed: "<true|false|unknown>"
+
+world:
+  snapshot: "<...>"
+  branch: "<generated>"
+  faultPlan: null
+  virtualTimeProfile: null
+  entropyProfile: null
+
+surface:
+  requiredTools: []
+  optionalTools: []
+  distractorTools: []
+  projectionRef: null
+  requireSurfaceReady: true
+
+budgets:
+  toolCalls: null
+  writes: null
+  deletes: null
+  wallTimeSeconds: null
+  virtualDuration: null
+
+scoring:
+  requiredInvariants: []
+  forbiddenEffects: []
+  metrics: []
+
+evidence:
+  manifestVersion: statetwin.dev/evidence/v1alpha1

@@ -1,0 +1,47 @@
+bundleVersion: statetwin.dev/twin-bundle/v1alpha1
+bundleId: "<content-addressed-or-project-id>"
+
+compatibility:
+  runtime:
+    minimum: "<...>"
+    maximumExclusive: null
+  twinSpecVersions:
+    - statetwin.dev/v1alpha1
+  scenarioVersions: []
+  evidenceVersions: []
+  mcpProtocolProfiles:
+    - "2026-07-28"
+  requiredExtensions: []
+
+identity:
+  canonicalizationId: "<...>"
+  hashAlgorithm: sha256
+
+components:
+  spec:
+    path: spec/twin.yaml
+    digest: "sha256:<...>"
+  fixture:
+    path: fixture/state.json
+    digest: "sha256:<...>"
+  scenarios: []
+  schemas: []
+  policies: []
+
+policy:
+  dataClassification: synthetic
+  externalNetworkRequired: false
+  allowedExternalOrigins: []
+  allowedExtensions: []
+  resourceLimitProfile: "<...>"
+
+expected:
+  scriptedEvidence: []
+
+provenance:
+  createdBy:
+    tool: statetwin
+    version: "<...>"
+  sbom: null
+  buildProvenance: null
+  signatureBundle: null

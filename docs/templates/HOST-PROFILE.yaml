@@ -1,0 +1,99 @@
+schemaVersion: statetwin.dev/host-profile/v1alpha2
+status: unverified
+
+identity:
+  provider: "<openai|anthropic|google|github|cursor|aws|jetbrains|other>"
+  product: "<codex|claude-code|gemini-cli|copilot|cursor|...>"
+  hostVersion: "<exact-or-unknown>"
+  channel: "<stable|beta|preview|unknown>"
+  platform: "<os/arch/environment>"
+  observedAt: "<RFC3339>"
+  sourceRegistryRefs: []
+
+model:
+  configuredId: "<model-id-or-alias>"
+  resolvedSnapshot: null
+  reasoningOrMode: null
+
+path:
+  class: "<native-mcp|mcp-via-agent-bridge|compatibility-bridge|unknown>"
+  intermediaryProtocols: []
+
+mcp:
+  protocolVersion: "<observed-or-unknown>"
+  transport: "<streamable-http|stdio|sse|other>"
+  serverSurfaceDigest: "sha256:<...>"
+  authorizationScopedSurfaceDigest: null
+  hostProjectedSurfaceDigest: null
+  modelVisibleSurfaceDigest: null
+  serverInstructionsDigest: null
+  extensions: {}
+
+projection:
+  profileRef: null
+  lossClass: "<none|syntactic|semantic-risk|unsupported|unknown>"
+  toolNameTransform: null
+  schemaTransform: []
+  outputTransform: []
+
+tools:
+  required: []
+  enabled: []
+  disabled: []
+  allowed: []
+  builtInTools: []
+  approvalPolicy: "<record-effective-policy>"
+  automaticRetry: "<true|false|unknown>"
+  discoveryMode: "<eager|progressive|deferred|unknown>"
+  toolContextBudget: null
+  surfaceReadyPolicy: "<...>"
+
+workspace:
+  repoCommit: null
+  worktreeDigest: null
+  instructionFiles: []
+  skillsPluginsHooks: []
+  writablePaths: []
+  hiddenEvaluatorPaths: []
+
+memory:
+  freshProcess: "<true|false|unknown>"
+  previousConversationCleared: "<true|false|unknown>"
+  persistentMemoryResetGuaranteed: "<true|false|unknown>"
+
+isolation:
+  profile: "<mcp_only|declared_mixed|uncontrolled>"
+  networkPolicy: "<...>"
+  controlPlaneCredentialVisibleToAgent: false
+
+run:
+  timeoutSeconds: null
+  maxTurns: null
+  maxToolCalls: null
+  budget: null
+  parallelismPolicy: "<unknown|serial|host-controlled>"
+  dataHandlingProfile: synthetic-only
+
+capabilities:
+  toolsList: unknown
+  toolsCall: unknown
+  structuredOutput: unknown
+  prompts: unknown
+  resources: unknown
+  roots: unknown
+  elicitation: unknown
+  serverDiscover: unknown
+  mrtr: unknown
+  tasksExtension: unknown
+  parallelCalls: unknown
+
+evidence:
+  profileDigest: "sha256:<...>"
+  capabilityProvenance:
+    documented: []
+    probed: []
+    inferred: []
+    unknown: []
+  verifiedCapabilities: []
+  unsupportedCapabilities: []
+  limitations: []

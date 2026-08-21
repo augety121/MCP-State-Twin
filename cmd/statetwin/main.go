@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/augety121/mcp-state-twin/internal/engine"
+	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/logging"
 	statetwinscenario "github.com/augety121/mcp-state-twin/internal/scenario"
 	"github.com/augety121/mcp-state-twin/internal/server"
@@ -58,6 +59,8 @@ func main() {
 		fmt.Println(server.Version)
 	case "protocols":
 		err = printJSON(server.CurrentProtocolEvidence())
+	case "limits":
+		err = runLimits()
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -85,8 +88,17 @@ Usage:
   statetwin scenario --spec twin.yaml --fixture state.json --scenario scenario.yaml
   statetwin serve --spec twin.yaml --fixture state.json --db twin.db
   statetwin protocols
+  statetwin limits
 
 Control-plane authentication is read from STATETWIN_CONTROL_TOKEN.`)
+}
+
+func runLimits() error {
+	digest, err := limits.Digest()
+	if err != nil {
+		return err
+	}
+	return printJSON(map[string]any{"profile": limits.Default(), "digest": digest})
 }
 
 func runValidate(_ context.Context, args []string) error {

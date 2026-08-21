@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+
+	"github.com/augety121/mcp-state-twin/internal/canonical"
+	"github.com/augety121/mcp-state-twin/internal/limits"
 )
 
 type Change struct {
@@ -32,15 +35,22 @@ func (s *Store) DiffBranches(ctx context.Context, beforeID, afterID string) ([]C
 	if err := json.Unmarshal(rb, &right); err != nil {
 		return nil, err
 	}
-	var changes []Change
-	diffValue("", left, right, &changes)
+	changes := make([]Change, 0)
+	budget := diffBudget{}
+	if err := diffValue("", left, right, &changes, &budget); err != nil {
+		return nil, err
+	}
 	sort.Slice(changes, func(i, j int) bool { return changes[i].Path < changes[j].Path })
 	return changes, nil
 }
 
-func diffValue(path string, before, after any, changes *[]Change) {
+type diffBudget struct {
+	bytes int
+}
+
+func diffValue(path string, before, after any, changes *[]Change, budget *diffBudget) error {
 	if reflect.DeepEqual(before, after) {
-		return
+		return nil
 	}
 	left, leftMap := before.(map[string]any)
 	right, rightMap := after.(map[string]any)
@@ -63,19 +73,41 @@ func diffValue(path string, before, after any, changes *[]Change) {
 			rv, rok := right[key]
 			switch {
 			case !lok:
-				*changes = append(*changes, Change{Path: child, After: rv})
+				if err := appendChange(Change{Path: child, After: rv}, changes, budget); err != nil {
+					return err
+				}
 			case !rok:
-				*changes = append(*changes, Change{Path: child, Before: lv})
+				if err := appendChange(Change{Path: child, Before: lv}, changes, budget); err != nil {
+					return err
+				}
 			default:
-				diffValue(child, lv, rv, changes)
+				if err := diffValue(child, lv, rv, changes, budget); err != nil {
+					return err
+				}
 			}
 		}
-		return
+		return nil
 	}
 	if path == "" {
 		path = "/"
 	}
-	*changes = append(*changes, Change{Path: path, Before: before, After: after})
+	return appendChange(Change{Path: path, Before: before, After: after}, changes, budget)
+}
+
+func appendChange(change Change, changes *[]Change, budget *diffBudget) error {
+	encoded, err := canonical.JSON(change)
+	if err != nil {
+		return fmt.Errorf("canonicalize diff entry: %w", err)
+	}
+	if len(*changes)+1 > limits.MaxDiffEntries {
+		return fmt.Errorf("%w: diff entries exceed limit %d", ErrResourceLimit, limits.MaxDiffEntries)
+	}
+	if budget.bytes+len(encoded) > limits.MaxDiffBytes {
+		return fmt.Errorf("%w: diff bytes exceed limit %d", ErrResourceLimit, limits.MaxDiffBytes)
+	}
+	budget.bytes += len(encoded)
+	*changes = append(*changes, change)
+	return nil
 }
 
 func escapePointer(value string) string {

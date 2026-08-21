@@ -112,6 +112,17 @@ func TestValidateRejectsOversizedAndDeepSchemas(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsTooManyEffects(t *testing.T) {
+	s := minimalSpec()
+	s.Tools[0].Effects = make([]Effect, MaxEffectsPerCall+1)
+	for i := range s.Tools[0].Effects {
+		s.Tools[0].Effects[i] = Effect{Op: "delete", Entity: "item", Key: "input.id"}
+	}
+	if err := s.Validate(); err == nil || !strings.Contains(err.Error(), "effects exceeds limit") {
+		t.Fatalf("expected effect budget rejection, got %v", err)
+	}
+}
+
 func TestValidateMinimal(t *testing.T) {
 	if err := minimalSpec().Validate(); err != nil {
 		t.Fatal(err)
