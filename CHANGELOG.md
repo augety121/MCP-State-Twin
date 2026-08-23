@@ -9,6 +9,9 @@ alpha prerelease but no stable release yet.
 
 - a synthetic package-registry reference Twin and release-lifecycle Scenario;
 - ADR-0014 recording the second-domain decision and its non-claims;
+- ADR-0015 accepting the L1-only v0.1 profile and explicitly deferring
+  recorder/L0 and L2/L3 fidelity work;
+- a direct slow-header connection test for the production HTTP timeout profile;
 - versioned local resource-governance profile and `statetwin limits` command;
 - fail-closed `RESOURCE_LIMIT` enforcement for JSON/state/query/diff/report and
   branch/snapshot budgets;

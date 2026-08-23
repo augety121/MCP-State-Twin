@@ -7,14 +7,16 @@
 
 Progress: protocol, control-plane isolation, expression engine, storage,
 canonicalization, and operational logging decisions have ADRs. RFC-0001 remains
-the umbrella Draft; SPEC-0001 through SPEC-0006 define the proposed normative
-layers and still require maintainer review before a tagged v0.1. ADR-0011
-accepts only bounded preview slices of SPEC-0007 and SPEC-0012; the remaining
-vNext pack is not accepted or implemented.
+the umbrella Draft. ADR-0015 accepts RFC-0002 as the authoritative, L1-only
+v0.1 release profile; SPEC-0001 through SPEC-0006 still require maintainer
+review before a stable v0.1. ADR-0011 accepts only bounded preview slices of
+SPEC-0007 and SPEC-0012; the remaining vNext pack is not accepted or
+implemented.
 
 Deliverables:
 
-- RFC-0001 umbrella reviewed and reconciled with RFC-0002.
+- RFC-0001 umbrella reconciled with the RFC-0002 release profile by ADR-0015;
+  accepting RFC-0002 does not accept every umbrella requirement.
 - SPEC-0001 through SPEC-0006 prepared as the proposed v0.1 normative set;
   maintainer acceptance remains a governance gate.
 - Failure matrix P0/P1 reviewed.
@@ -118,11 +120,15 @@ Exit criteria:
 - security test attempts to discover control tools through MCP and fails.
 - control-plane mutation audit completeness test.
 
-## Phase 5 — Recorder and surface drift
+## Phase 5 — Surface drift now; recorder after v0.1
 
 Progress: the canonical model-facing tool-surface envelope, digest, and
 fail-closed startup binding are implemented. The upstream inspector, recorder,
 redaction pipeline, and automatic refresh remain unimplemented.
+
+ADR-0015 excludes recorder/L0 and all upstream access from stable v0.1. The
+recorder items below are a separate post-v0.1 security and legal workstream;
+their position in this roadmap is not a v0.1 commitment.
 
 Build:
 

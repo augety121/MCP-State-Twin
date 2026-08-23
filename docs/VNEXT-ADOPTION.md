@@ -18,6 +18,9 @@ the following bounded slice in this change:
 6. ADR-0014 accepts the synthetic package-registry reference domain as the
    second stateful domain required by the v0.1 release profile; it does not
    claim compatibility with any real package registry.
+7. ADR-0015 accepts RFC-0002's L1-only v0.1 profile and explicitly defers
+   recorder/L0 and L2/L3 fidelity work; exclusion is not an implementation
+   claim.
 
 The authoritative implementation status is
 [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md). A proposal becomes an

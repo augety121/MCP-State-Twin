@@ -696,6 +696,7 @@ For a first read, the suggested path is:
 - [ADR-0012](docs/ADR-0012-DETERMINISTIC-FAULT-PREVIEW.md) — branch-local bounded deterministic fault preview
 - [ADR-0013](docs/ADR-0013-RESOURCE-GOVERNANCE-PROFILE.md) — versioned resource profile and fail-closed limits
 - [ADR-0014](docs/ADR-0014-SECOND-REFERENCE-DOMAIN.md) — synthetic package-registry reference domain
+- [ADR-0015](docs/ADR-0015-V0.1-SCOPE-AND-FIDELITY.md) — accepted L1-only v0.1 scope and explicit fidelity deferrals
 
 ### Evidence / research
 

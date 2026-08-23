@@ -1,6 +1,10 @@
 package main
 
 import (
+	"bufio"
+	"errors"
+	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,6 +21,60 @@ func TestHardenedHTTPServerDefaults(t *testing.T) {
 		server.IdleTimeout != 60*time.Second ||
 		server.MaxHeaderBytes != 1<<20 {
 		t.Fatalf("unexpected HTTP server limits: %#v", server)
+	}
+}
+
+func TestHardenedHTTPServerRejectsSlowHeaders(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	handlerCalled := make(chan struct{}, 1)
+	httpServer := hardenedHTTPServer(listener.Addr().String(), http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		handlerCalled <- struct{}{}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	serveErrors := make(chan error, 1)
+	go func() {
+		serveErrors <- httpServer.Serve(listener)
+	}()
+	t.Cleanup(func() {
+		_ = httpServer.Close()
+		if serveErr := <-serveErrors; serveErr != nil && serveErr != http.ErrServerClosed {
+			t.Errorf("HTTP server stopped with %v", serveErr)
+		}
+	})
+
+	connection, err := net.Dial("tcp", listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer connection.Close()
+	if _, err := fmt.Fprint(connection, "GET / HTTP/1.1\r\nHost: local\r\nX-Slow:"); err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(httpServer.ReadHeaderTimeout + 250*time.Millisecond)
+	if err := connection.SetDeadline(time.Now().Add(2 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	_, _ = fmt.Fprint(connection, " complete\r\n\r\n")
+	response, readErr := http.ReadResponse(bufio.NewReader(connection), &http.Request{Method: http.MethodGet})
+	if readErr == nil {
+		defer response.Body.Close()
+		if response.StatusCode < http.StatusBadRequest {
+			t.Fatalf("slow header response status = %d, want connection close or 4xx", response.StatusCode)
+		}
+	} else {
+		var networkError net.Error
+		if errors.As(readErr, &networkError) && networkError.Timeout() {
+			t.Fatalf("server left the slow-header connection open past the read deadline: %v", readErr)
+		}
+	}
+	select {
+	case <-handlerCalled:
+		t.Fatal("slow header request reached the application handler")
+	default:
 	}
 }
 

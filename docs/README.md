@@ -13,7 +13,9 @@ order:
    rules;
 4. [`RFC-0002-V0.1-RELEASE-PROFILE.md`](RFC-0002-V0.1-RELEASE-PROFILE.md) —
    current release boundary and blockers;
-5. [`RELEASE-MANAGEMENT.md`](RELEASE-MANAGEMENT.md) and the root
+5. [`ADR-0015-V0.1-SCOPE-AND-FIDELITY.md`](ADR-0015-V0.1-SCOPE-AND-FIDELITY.md)
+   — accepted L1-only v0.1 scope and explicit fidelity exclusions;
+6. [`RELEASE-MANAGEMENT.md`](RELEASE-MANAGEMENT.md) and the root
    [`RELEASE.md`](../RELEASE.md) — maintainer and publication workflow.
 
 The accepted normative documents are the ADRs and SPECs linked from the status
