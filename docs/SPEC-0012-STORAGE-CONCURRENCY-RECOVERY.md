@@ -1,8 +1,8 @@
 # SPEC-0012: Storage, Concurrency, Migration, and Recovery
 
-- **Status:** Proposed; local storage subset implemented
-- **Implementation status:** partial
-- **Verification status:** schema migration, head monotonicity, and branch isolation are tested
+- **Status:** Local v0.1 storage subset accepted by ADR-0016
+- **Implementation status:** accepted single-process SQLite profile implemented
+- **Verification status:** tagged-schema reopen, v1/v2/v3 migration, process-exit recovery, head monotonicity, and branch isolation are tested
 - **Source:** `MCP-State-Twin-Lifecycle-SPEC-Pack-vNext/08-SPEC-0012...`
 
 ## 1. Supported profile
@@ -50,7 +50,13 @@ through snapshot/fork operations.
 ## 4. Recovery boundary
 
 SQLite transaction atomicity protects normal transitions and control audits.
-Crash kill-point fixtures, interrupted migration recovery, disk-full behavior,
-WAL checkpoint policy, and backup/restore verification remain open gates. The
-project MUST NOT describe the local preview as HA or crash-proof until those
-fixtures exist.
+Subprocess kill-points after schema mutation and metadata mutation verify that
+an interrupted migration can be reopened, migrated, and pass SQLite integrity
+checking. The public alpha schema-v4 fixture and historical v1/v2/v3 migrations
+are covered by executable tests.
+
+ADR-0016 explicitly excludes disk-full behavior, network-filesystem SQLite,
+multi-process writers, WAL checkpoint tuning guarantees, online backup/restore,
+replication, and HA from the stable v0.1 storage profile. The project MUST NOT
+describe the local runtime as HA, disaster-recovery capable, or generally
+crash-proof.

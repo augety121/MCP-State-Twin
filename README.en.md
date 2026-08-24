@@ -230,12 +230,14 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 | Canonical spec / MCP surface / world-state digests | ✅ | SHA-256 |
 | Upstream binding admission | ✅ | Fails closed on surface mismatch |
 | SQLite atomic transitions and audit | ✅ | Versioned database identity and storage schema |
+| SQLite storage compatibility | ✅ | v1/v2/v3 migration, tagged alpha v4 reopen, and process-exit recovery; ADR-0016 local profile only |
 | Immutable snapshot / fork / reset / diff | ✅ | Isolated branch state |
 | Stateless Streamable HTTP MCP data plane | ✅ | Official Go SDK |
 | Separate HTTP control plane | ✅ | Bearer token; isolated from the data plane |
 | Issue-tracker reference twin | ✅ | 6 tools; synthetic; `L1/unverified/unbound` |
 | Package-registry reference twin | ✅ | publish/yank/install/advisory flows; synthetic; `L1/unverified/unbound` |
 | Scenario `v1alpha1` runner | ✅ | Bounded scripted scenario; not live model evaluation |
+| HostCompatibilityReport admission | ✅ | Strict schema, bounded evidence, and credential/private-key/email pattern rejection; not a live-provider result |
 | Live OpenAI / ChatGPT / Claude smoke tests | ❌ not verified | No host-compatibility claim |
 | Deterministic fault injection / virtual-clock advancement | 🧪 Partial | Private clock and two fault transaction phases implemented; remaining scheduler/fault semantics are not |
 | Versioned resource governance | 🧪 Partial | `statetwin limits`, environment digest, and fail-closed local budgets; OS/remote quotas are not implemented |
@@ -264,6 +266,8 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - bounded Scenario `v1alpha1` runner with deterministic environment identity, ordered tool traces, JSON Pointer state assertions, and canonical state diff.
 - bounded branch-local fault plans for `before-validation` and `after-commit-before-response`, with a stable plan digest, transactional counters, and fault-event audit.
 - a versioned resource profile: input/output/state, JSON depth/member, effect/query, diff/report, and branch/snapshot limits fail closed as `RESOURCE_LIMIT` and bind to Scenario environment identity.
+- storage compatibility evidence for v1/v2/v3 forward migration, the public alpha schema-v4 fixture, and two migration pre-commit process-exit kill-points.
+- strict HostCompatibilityReport admission for immutable revisions/digests, profile-specific checks, remote deployment binding, bounded trials, and credential/private-key/email pattern rejection.
 
 </details>
 
@@ -273,7 +277,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - recorder, cassette replay, trace redaction, or automatic upstream surface inspection/refresh;
 - remaining deterministic fault phases, scheduler, deterministic entropy, idempotency collapse, crash/cancellation, and eventual consistency; the private clock and two fault phases are implemented;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
-- evidence-derived host compatibility reports or a provider harness;
+- a live provider harness, admitted OpenAI/Anthropic reports, or an evidence-derived compatibility matrix;
 - differential validation or an L2 fidelity promotion workflow;
 - data-plane authentication, TLS, remote multi-tenancy, or a security audit.
 
@@ -543,9 +547,9 @@ Failed domain outcomes keep the prior state digest and still append a tool-call 
 - `UNMODELED_BEHAVIOR`
 - `INTERNAL_TWIN_ERROR`
 
-Timeout-before-effect, timeout-after-effect, partial-effect, rate-limit, and eventual-consistency faults remain **specified but not implemented**.
+Timeout-before-effect, timeout-after-effect, and rate-limit are implemented only as the bounded private deterministic-fault preview. Latency, partial effects, crash/cancellation, and eventual consistency remain unimplemented.
 
-SQLite files carry the State Twin application ID and an explicit schema version. Snapshots persist that storage schema version and bind it into their IDs; foreign databases and versions newer than the runtime are rejected.
+SQLite files carry the State Twin application ID and an explicit schema version. Snapshots persist that storage schema version and bind it into their IDs; foreign databases and versions newer than the runtime are rejected. Tests cover v1/v2/v3 forward migration, reopening the `v0.1.0-alpha.1` schema-v4 fixture, and reopen/integrity recovery after process exit at two pre-commit migration stages. This claim is limited to single-process local SQLite; it excludes shared filesystems, multi-process writers, online backup, replication, and HA.
 
 ---
 
@@ -597,6 +601,8 @@ The automated integration test uses the official Go SDK as server and client ove
 > [!NOTE]
 > The repository has **not completed live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests**. The README therefore does not present provider-specific integrations as verified. A host should be listed as verified only after a versioned smoke run produces the evidence required by [SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md).
 
+`statetwin compatibility validate --report <path>` now performs strict evidence admission; see the [Host Compatibility Evidence Procedure](docs/HOST-COMPATIBILITY-EVIDENCE.md). A validated report format is not a validated provider.
+
 Design references:
 
 - [MCP Specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)
@@ -620,6 +626,7 @@ statetwin diff       compare two branch states
 statetwin scenario   execute a bounded scripted scenario and assertions
 statetwin protocols   print pinned MCP wire-evidence profiles
 statetwin limits      print the versioned resource profile and digest
+statetwin compatibility validate --report report.yaml
 statetwin serve      run separate MCP data and HTTP control planes
 statetwin version    print the development version
 ```
@@ -697,6 +704,8 @@ For a first read, the suggested path is:
 - [ADR-0013](docs/ADR-0013-RESOURCE-GOVERNANCE-PROFILE.md) — versioned resource profile and fail-closed limits
 - [ADR-0014](docs/ADR-0014-SECOND-REFERENCE-DOMAIN.md) — synthetic package-registry reference domain
 - [ADR-0015](docs/ADR-0015-V0.1-SCOPE-AND-FIDELITY.md) — accepted L1-only v0.1 scope and explicit fidelity deferrals
+- [ADR-0016](docs/ADR-0016-V0.1-STORAGE-COMPATIBILITY.md) — accepted local SQLite compatibility and migration-recovery evidence
+- [ADR-0017](docs/ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md) — strict host report admission without provider claims
 
 ### Evidence / research
 
@@ -715,18 +724,11 @@ The RFCs and accepted ADRs define **intended semantics**. Implementation Status 
 
 ## Roadmap to the first tagged release
 
-Current release-critical work includes:
+Under accepted RFC-0002, the only stable-v0.1 required gate still marked `open` is:
 
-1. virtual-time advancement and deterministic scheduled faults;
-2. crash kill-points and tagged-database migration fixtures;
-3. upstream surface inspector and automated refresh;
-4. continued proof of hermetic / egress-deny integration gates;
-5. pinned official MCP conformance scenarios for the tools-first subset;
-6. live OpenAI/ChatGPT and Anthropic/Claude smoke-test matrix;
-7. recorder redaction tests if recorder enters v0.1 scope;
-8. differential validation and an honest L2 coverage report;
-9. expand both reference domains to 20+ multi-step scenarios and add differential evidence;
-10. complete P0/P1 failure-mode traceability.
+1. complete and publish OpenAI-family and Anthropic-family live smoke evidence against a separately reviewed remote deployment profile.
+
+Storage compatibility, P0 traceability, MCP conformance, and hermetic CI now have executable evidence. Scheduled faults, an upstream inspector, recorder support, L2 differential validation, cloud hosting, and a larger scenario corpus remain later work; they must not be presented as implemented v0.1 capabilities or implicit release gates.
 
 Cloud hosting, registries, marketplaces, and automatic production mirroring are **not first-release priorities**.
 

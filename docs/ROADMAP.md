@@ -33,7 +33,9 @@ Exit criteria:
 
 Progress: implemented in the development preview. A 1,000-call two-branch
 deterministic replay test currently passes. Bounded TwinSpec and CEL fuzz
-targets pass in Linux CI run #6; crash kill-point coverage remains incomplete.
+targets pass in Linux CI run #6. Migration transaction kill-points are covered;
+general tool-transition process-crash injection remains outside the current
+fault preview.
 
 Build:
 
@@ -183,6 +185,11 @@ Exit criteria:
 
 ## Phase 7 — Cross-provider smoke matrix
 
+Progress: ADR-0017 accepts a strict HostCompatibilityReport decoder, validator,
+and CLI admission command. No live OpenAI-family or Anthropic-family report is
+committed, no remote deployment profile is accepted, and the provider release
+gate remains open.
+
 Run the **same twin endpoint and same initial snapshot** with:
 
 - ChatGPT Developer Mode.
@@ -263,7 +270,7 @@ v0.1 should be released only when:
 - snapshot/fork is stable.
 - MCP conformance passes for supported subset.
 - two model-provider families successfully use the same twin.
-- one real reference twin has useful scenarios.
+- one useful synthetic reference twin has executable scenarios.
 - P0 failure modes have tests or are architecturally impossible.
 - docs state limitations prominently.
 - CI can run with network egress denied.

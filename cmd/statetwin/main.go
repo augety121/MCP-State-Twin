@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/augety121/mcp-state-twin/internal/engine"
+	"github.com/augety121/mcp-state-twin/internal/hostcompat"
 	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/logging"
 	statetwinscenario "github.com/augety121/mcp-state-twin/internal/scenario"
@@ -61,6 +62,8 @@ func main() {
 		err = printJSON(server.CurrentProtocolEvidence())
 	case "limits":
 		err = runLimits()
+	case "compatibility":
+		err = runCompatibility(os.Args[2:])
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -89,8 +92,38 @@ Usage:
   statetwin serve --spec twin.yaml --fixture state.json --db twin.db
   statetwin protocols
   statetwin limits
+  statetwin compatibility validate --report report.yaml
 
 Control-plane authentication is read from STATETWIN_CONTROL_TOKEN.`)
+}
+
+func runCompatibility(args []string) error {
+	if len(args) == 0 || args[0] != "validate" {
+		return errors.New("compatibility requires the validate subcommand")
+	}
+	flags := flag.NewFlagSet("compatibility validate", flag.ContinueOnError)
+	reportPath := flags.String("report", "", "HostCompatibilityReport YAML path")
+	if err := flags.Parse(args[1:]); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return errors.New("compatibility validate does not accept positional arguments")
+	}
+	if *reportPath == "" {
+		return errors.New("--report is required")
+	}
+	report, err := hostcompat.Load(*reportPath)
+	if err != nil {
+		return err
+	}
+	digest, err := report.Digest()
+	if err != nil {
+		return err
+	}
+	return printJSON(map[string]any{
+		"valid": true, "format": report.Format, "profile": report.Host.Profile,
+		"claimLevel": report.Claim.Level, "reportDigest": digest,
+	})
 }
 
 func runLimits() error {

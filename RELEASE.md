@@ -16,6 +16,8 @@ proposal text into an implementation claim.
 6. Update CHANGELOG.md with verified behavior and explicit limitations.
 7. Update the relevant ADR/SPEC and implementation status together.
 8. Create a GitHub release only from the reviewed commit.
+9. For stable v0.1, validate both required provider-family evidence reports and
+   review their remote deployment profile; an absent report keeps the gate open.
 
 For a tagged release, use a SemVer tag such as `v0.1.0-alpha.1` or `v0.1.1`.
 The tag workflow in `.github/workflows/release.yml` reruns the release gates,

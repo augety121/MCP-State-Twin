@@ -12,6 +12,11 @@ alpha prerelease but no stable release yet.
 - ADR-0015 accepting the L1-only v0.1 profile and explicitly deferring
   recorder/L0 and L2/L3 fidelity work;
 - a direct slow-header connection test for the production HTTP timeout profile;
+- ADR-0016 plus synthetic schema-v3 and tagged alpha schema-v4 fixtures, with
+  process-exit migration recovery at two pre-commit kill-points;
+- ADR-0017 and strict HostCompatibilityReport admission through
+  `statetwin compatibility validate`, including bounded trials, remote-profile
+  binding, immutable digests, and credential/private-key/email pattern rejection;
 - versioned local resource-governance profile and `statetwin limits` command;
 - fail-closed `RESOURCE_LIMIT` enforcement for JSON/state/query/diff/report and
   branch/snapshot budgets;

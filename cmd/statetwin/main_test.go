@@ -24,6 +24,21 @@ func TestHardenedHTTPServerDefaults(t *testing.T) {
 	}
 }
 
+func TestRunCompatibilityRequiresValidatedReport(t *testing.T) {
+	if err := runCompatibility(nil); err == nil || !strings.Contains(err.Error(), "validate subcommand") {
+		t.Fatalf("missing compatibility subcommand error = %v", err)
+	}
+	if err := runCompatibility([]string{"validate"}); err == nil || !strings.Contains(err.Error(), "--report") {
+		t.Fatalf("missing compatibility report error = %v", err)
+	}
+	if err := runCompatibility([]string{"publish"}); err == nil || !strings.Contains(err.Error(), "validate subcommand") {
+		t.Fatalf("unsupported compatibility subcommand error = %v", err)
+	}
+	if err := runCompatibility([]string{"validate", "report.yaml"}); err == nil || !strings.Contains(err.Error(), "positional") {
+		t.Fatalf("positional compatibility report error = %v", err)
+	}
+}
+
 func TestHardenedHTTPServerRejectsSlowHeaders(t *testing.T) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

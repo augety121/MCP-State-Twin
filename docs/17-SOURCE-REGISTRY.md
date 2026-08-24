@@ -99,10 +99,9 @@
 
 - **Source:** official OpenAI API documentation
 - **URLs:**
-  - https://platform.openai.com/docs/api-reference/
-  - https://platform.openai.com/docs/quickstart/make-your-first-api-request
-- **Checked:** 2026-08-18
-- **Used for:** remote MCP tool configuration, tool filtering, approvals and observable MCP list/call objects/events.
+  - https://developers.openai.com/api/reference/cli/resources/responses/methods/create
+- **Checked:** 2026-08-24
+- **Used for:** the Responses API's documented MCP tool category and observable MCP list/call result types.
 - **Policy:** OpenAI API MCP testing is a separate Host Profile from Codex.
 
 ### SRC-OPENAI-MODEL-GUIDANCE
@@ -404,7 +403,7 @@ A stale source must never silently remain the basis of a current compatibility c
 
 - **Source:** Anthropic Messages API MCP connector
 - **URL:** https://platform.claude.com/docs/en/agents-and-tools/mcp-connector
-- **Checked:** 2026-08-18
+- **Checked:** 2026-08-24
 - **Documented at this research cut:**
   - current beta header `mcp-client-2025-11-20`;
   - tool calls are supported;

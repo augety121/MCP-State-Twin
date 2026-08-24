@@ -27,3 +27,10 @@ func Redact(message string) string {
 	message = emailPattern.ReplaceAllString(message, "[REDACTED_EMAIL]")
 	return message
 }
+
+// ContainsSensitive reports whether Redact would remove a credential-like or
+// email/private-key pattern. It is intended for fail-closed artifact admission;
+// callers should not log the rejected value.
+func ContainsSensitive(message string) bool {
+	return Redact(message) != message
+}

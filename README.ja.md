@@ -49,13 +49,15 @@
 - bounded TwinSpec/CEL fuzz target と secret-policy / loopback-only hermetic CI gate
 - initialize → snapshot → fork ×2 → 各 fork を変更 → terminal diff の CLI ループ
 - deterministic environment identity、ordered tool trace、JSON Pointer state assertion、canonical state diff を備えた bounded Scenario `v1alpha1` runner
+- v1/v2/v3 migration、tagged alpha schema-v4 fixture、process-exit recovery を含む local SQLite compatibility evidence
+- strict HostCompatibilityReport admission（live provider compatibility の証明ではない）
 
 ### 未実装または未検証
 
 - recorder、cassette replay、trace redaction、自動 upstream surface inspection/refresh
 - 残りの deterministic fault phases、scheduler、deterministic entropy、idempotency、crash/cancellation、eventual consistency は未実装（private clock と 2 つの fault phases は実装済み）
 - 実際の ChatGPT / OpenAI API / Claude / Claude Code smoke test
-- evidence-derived host compatibility report、provider harness
+- live provider harness、admitted OpenAI/Anthropic report、evidence-derived compatibility matrix
 - differential validation、L2 fidelity promotion workflow
 - data-plane authentication、TLS、remote multi-tenancy、security audit
 
@@ -308,6 +310,8 @@ statetwin scenario   execute a bounded scripted scenario and assertions
 statetwin serve      run separate MCP data and HTTP control planes
 statetwin version    print the development version
 statetwin protocols   print pinned MCP wire-evidence profiles
+statetwin limits      print the versioned resource profile and digest
+statetwin compatibility validate --report report.yaml
 ```
 
 ## Test / Build
@@ -353,6 +357,7 @@ go build ./cmd/statetwin
 - [SPEC-0007](docs/SPEC-0007-VIRTUAL-TIME-ENTROPY-SCHEDULER.md) / [SPEC-0008](docs/SPEC-0008-DETERMINISTIC-FAULTS.md) / [SPEC-0012](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md) / [ADR-0011](docs/ADR-0011-HEAD-VERSION-AND-VIRTUAL-CLOCK.md) / [ADR-0012](docs/ADR-0012-DETERMINISTIC-FAULT-PREVIEW.md)
 - [SPEC-0015](docs/SPEC-0015-RESOURCE-GOVERNANCE.md) / [ADR-0013](docs/ADR-0013-RESOURCE-GOVERNANCE-PROFILE.md)
 - [ADR-0015](docs/ADR-0015-V0.1-SCOPE-AND-FIDELITY.md) — v0.1 の L1-only scope と明示的な fidelity 延期
+- [ADR-0016](docs/ADR-0016-V0.1-STORAGE-COMPATIBILITY.md) / [ADR-0017](docs/ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md)
 - [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md)
 - [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md)
 - [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md)

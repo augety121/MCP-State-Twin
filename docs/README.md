@@ -15,7 +15,10 @@ order:
    current release boundary and blockers;
 5. [`ADR-0015-V0.1-SCOPE-AND-FIDELITY.md`](ADR-0015-V0.1-SCOPE-AND-FIDELITY.md)
    — accepted L1-only v0.1 scope and explicit fidelity exclusions;
-6. [`RELEASE-MANAGEMENT.md`](RELEASE-MANAGEMENT.md) and the root
+6. [`ADR-0016-V0.1-STORAGE-COMPATIBILITY.md`](ADR-0016-V0.1-STORAGE-COMPATIBILITY.md)
+   and [`ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md`](ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md)
+   — accepted local storage evidence and host-report admission boundaries;
+7. [`RELEASE-MANAGEMENT.md`](RELEASE-MANAGEMENT.md) and the root
    [`RELEASE.md`](../RELEASE.md) — maintainer and publication workflow.
 
 The accepted normative documents are the ADRs and SPECs linked from the status

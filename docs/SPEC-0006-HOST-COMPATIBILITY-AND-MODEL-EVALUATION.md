@@ -1,6 +1,6 @@
 # SPEC-0006: Host Compatibility and Model Evaluation
 
-- **Status:** Proposed normative specification
+- **Status:** Report-admission subset accepted by ADR-0017; live provider profiles unverified
 - **Scope:** MCP host interoperability and cross-model evaluation evidence
 - **Related:** SPEC-0003, SPEC-0004, SPEC-0005, ADR-0002, ADR-0008
 
@@ -214,17 +214,23 @@ identifier, both values SHOULD be retained if exposed.
 ## 10. Compatibility report
 
 The canonical report format is
-`statetwin.dev/host-compatibility-report/v1alpha1`. A report MUST contain:
+`statetwin.dev/host-compatibility-report/v1alpha1`. ADR-0017 accepts its strict
+decoder and validator. A report MUST contain:
 
 ```yaml
 apiVersion: statetwin.dev/v1alpha1
 kind: HostCompatibilityReport
+format: statetwin.dev/host-compatibility-report/v1alpha1
 metadata:
   name: example-run
   createdAt: "2026-08-18T00:00:00Z"
+claim:
+  level: verified
+  validUntil: "2026-09-18T00:00:00Z"
+  procedureDigest: sha256:<digest>
 runtime:
   version: 0.1.0-dev
-  revision: <immutable revision>
+  revision: <immutable-40-or-64-character-revision>
   specDigest: sha256:<digest>
   surfaceDigest: sha256:<digest>
   snapshotDigest: sha256:<digest>
@@ -233,12 +239,14 @@ host:
   name: <host>
   version: <version>
   provider: <provider-or-none>
-  model: <model-or-none>
+  requestedModel: <configured-model-or-empty>
+  model: <resolved-model-or-none>
 mcp:
   configuredVersion: <version>
   negotiatedVersion: <version>
   transport: streamable-http
   endpointTrust: loopback
+  # deploymentProfileDigest: sha256:<required-for-non-loopback>
   observedSurfaceDigest: sha256:<digest>
   surfaceStatus: exact
 trial:
@@ -250,11 +258,29 @@ trial:
     providerRequests: 0
     toolCalls: 32
     wallTimeMs: 60000
+    maxTraceBytes: 1048576
+    retriesPerProviderRequest: 0
+    retriesPerToolCall: 1
+    repeatedIdenticalCalls: 3
   outcome: completed
 evidence:
   environmentDigest: sha256:<digest>
   terminalStateDigest: sha256:<digest>
   traceDigest: sha256:<digest>
+  # providerRequestIdDigest: sha256:<required-for-API-profiles>
+  checks:
+    - initialize
+    - ping
+    - tools-list
+    - read-only-call
+    - state-changing-call
+    - invalid-input
+    - domain-error
+    - unknown-tool
+    - control-tools-hidden
+    - surface-digest
+    - branch-isolation
+    - cancellation-unsupported
   assertionSummary:
     passed: 4
     failed: 0
@@ -263,9 +289,11 @@ redaction:
   secretsDetected: false
 ```
 
-The concrete schema and serializer are not implemented in the current preview.
-Until they are, reports are design examples and MUST NOT be advertised as
-runtime output.
+The implementation is `internal/hostcompat`; the admission CLI is
+`statetwin compatibility validate --report <path>`. A valid document proves
+only that the evidence artifact satisfies this schema. It does not prove that a
+provider run occurred, and the repository currently contains no live provider
+report.
 
 ## 11. Required test suites
 

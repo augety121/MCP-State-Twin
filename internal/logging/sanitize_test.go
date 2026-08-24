@@ -28,3 +28,12 @@ func TestSafeErrorPreservesNonSensitiveContext(t *testing.T) {
 		t.Fatalf("unexpected safe error: %q", got)
 	}
 }
+
+func TestContainsSensitive(t *testing.T) {
+	if !ContainsSensitive("Authorization: Bearer abc123") {
+		t.Fatal("authorization credential was not detected")
+	}
+	if ContainsSensitive("sha256:0123456789abcdef") {
+		t.Fatal("digest-like value was incorrectly classified as sensitive")
+	}
+}

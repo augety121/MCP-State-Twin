@@ -41,6 +41,12 @@ Before tagging:
    migration notes are recorded.
 7. Fixtures are synthetic and repository scans show no credentials or private
    traces.
+8. Every tagged storage schema has a provenance-labelled reopen/migration
+   fixture, and interrupted-migration recovery passes on the candidate commit.
+9. For stable v0.1, admitted OpenAI-family and Anthropic-family reports pass
+   `statetwin compatibility validate`; their remote deployment profile is
+   reviewed, and no raw provider request ID, transcript, or credential is
+   committed.
 
 ## Tag and publish procedure
 

@@ -47,6 +47,15 @@ type Store struct {
 	db *sql.DB
 }
 
+type migrationStage string
+
+const (
+	migrationStageSchemaApplied migrationStage = "schema-applied"
+	migrationStageMetadataSet   migrationStage = "metadata-set"
+)
+
+type migrationHook func(migrationStage) error
+
 type Branch struct {
 	ID          string       `json:"id"`
 	SpecDigest  string       `json:"specDigest"`
@@ -119,6 +128,10 @@ type ControlAuditEntry struct {
 }
 
 func Open(path string) (*Store, error) {
+	return openWithMigrationHook(path, nil)
+}
+
+func openWithMigrationHook(path string, hook migrationHook) (*Store, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, fmt.Errorf("open SQLite: %w", err)
@@ -138,7 +151,7 @@ func Open(path string) (*Store, error) {
 		}
 	}
 	s := &Store{db: db}
-	if err := s.migrate(); err != nil {
+	if err := s.migrate(hook); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -147,7 +160,7 @@ func Open(path string) (*Store, error) {
 
 func (s *Store) Close() error { return s.db.Close() }
 
-func (s *Store) migrate() error {
+func (s *Store) migrate(hook migrationHook) error {
 	var appID int
 	if err := s.db.QueryRow(`PRAGMA application_id`).Scan(&appID); err != nil {
 		return fmt.Errorf("read SQLite application_id: %w", err)
@@ -302,11 +315,21 @@ DROP TABLE audit_legacy;`); err != nil {
 			return fmt.Errorf("upgrade legacy audit schema: %w", err)
 		}
 	}
+	if hook != nil {
+		if err := hook(migrationStageSchemaApplied); err != nil {
+			return fmt.Errorf("migration hook after schema changes: %w", err)
+		}
+	}
 	if _, err := tx.Exec(fmt.Sprintf(`PRAGMA application_id = %d`, applicationID)); err != nil {
 		return fmt.Errorf("set SQLite application_id: %w", err)
 	}
 	if _, err := tx.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, schemaVersion)); err != nil {
 		return fmt.Errorf("set SQLite user_version: %w", err)
+	}
+	if hook != nil {
+		if err := hook(migrationStageMetadataSet); err != nil {
+			return fmt.Errorf("migration hook after metadata update: %w", err)
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit SQLite migration: %w", err)

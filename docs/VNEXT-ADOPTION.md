@@ -21,6 +21,10 @@ the following bounded slice in this change:
 7. ADR-0015 accepts RFC-0002's L1-only v0.1 profile and explicitly defers
    recorder/L0 and L2/L3 fidelity work; exclusion is not an implementation
    claim.
+8. ADR-0016 accepts the single-process local SQLite compatibility profile with
+   tagged fixtures and interrupted-migration recovery evidence.
+9. ADR-0017 accepts strict HostCompatibilityReport admission without claiming
+   that a live OpenAI or Anthropic run has occurred.
 
 The authoritative implementation status is
 [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md). A proposal becomes an

@@ -230,12 +230,14 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 | Spec / MCP surface / world state canonical digest | ✅ | SHA-256 |
 | Upstream binding admission | ✅ | surface 不匹配时 fail closed |
 | SQLite 原子状态转换与审计 | ✅ | 带数据库身份与 schema version |
+| SQLite storage compatibility | ✅ | v1/v2/v3 migration、tagged alpha v4 reopen、进程退出恢复；仅限 ADR-0016 local profile |
 | Immutable snapshot / fork / reset / diff | ✅ | branch 间状态隔离 |
 | Stateless Streamable HTTP MCP data plane | ✅ | 官方 Go SDK |
 | 独立 HTTP control plane | ✅ | bearer token；与数据面分离 |
 | Issue-tracker reference Twin | ✅ | 6 tools；synthetic；`L1/unverified/unbound` |
 | Package-registry reference Twin | ✅ | publish/yank/install/advisory flows；synthetic；`L1/unverified/unbound` |
 | Scenario `v1alpha1` runner | ✅ | 有界 scripted scenario；不是 live model evaluation |
+| HostCompatibilityReport admission | ✅ | 严格 schema、bounded evidence、credential/private-key/email pattern rejection；不等于 live provider 通过 |
 | Live OpenAI / ChatGPT / Claude smoke tests | ❌ 尚未验证 | 不声明 host compatibility |
 | Deterministic fault injection / virtual-clock advancement | 🧪 部分实现 | 私有 clock；两个 fault transaction phases；其余 scheduler/fault semantics 未实现 |
 | Versioned resource governance | 🧪 部分实现 | `statetwin limits`、environment digest、fail-closed local budgets；OS/remote quotas 未实现 |
@@ -264,6 +266,8 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 - bounded Scenario `v1alpha1` runner：deterministic environment identity、ordered tool trace、JSON Pointer state assertion 与 canonical state diff。
 - bounded branch-local fault plans：`before-validation` 与 `after-commit-before-response`，带稳定 plan digest、事务内计数和 fault-event audit。
 - versioned resource profile：input/output/state、JSON depth/members、effect/query、diff/report、branch/snapshot limits 以 `RESOURCE_LIMIT` fail closed，并绑定 Scenario environment digest。
+- storage compatibility evidence：v1/v2/v3 forward migration、公开 alpha schema-v4 fixture reopen，以及两个 migration pre-commit 进程退出 kill-points。
+- strict HostCompatibilityReport admission：immutable revision/digests、profile-specific checks、remote deployment binding、bounded trial 和 credential/private-key/email pattern fail-closed validation。
 
 </details>
 
@@ -273,7 +277,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 - recorder、cassette replay、trace redaction、自动 upstream surface inspection/refresh；
 - 其余 deterministic fault phases、scheduler、deterministic entropy、idempotency collapse、crash/cancellation 与 eventual consistency；private clock 和两个 fault phases 已实现；
 - live ChatGPT、OpenAI API、Claude、Claude Code smoke tests；
-- evidence-derived host compatibility report 或 provider harness；
+- live provider harness、admitted OpenAI/Anthropic reports 与 evidence-derived compatibility matrix；
 - differential validation 或 L2 fidelity promotion workflow；
 - data-plane authentication、TLS、remote multi-tenancy、security audit。
 
@@ -542,9 +546,9 @@ load branch head
 - `UNMODELED_BEHAVIOR`
 - `INTERNAL_TWIN_ERROR`
 
-Timeout-before-effect、timeout-after-effect、partial-effect、rate-limit、eventual-consistency fault 目前仍属于**已规范但未实现**范围。
+Timeout-before-effect、timeout-after-effect 与 rate-limit 已作为有界、私有的 deterministic fault preview 实现；latency、partial-effect、crash/cancellation 与 eventual-consistency 仍未实现。
 
-SQLite file 带 State Twin application ID 与显式 schema version。Snapshot 会持久化 storage schema version 并把它绑定到 snapshot ID；foreign database 与高于当前 runtime 的版本会被拒绝。
+SQLite file 带 State Twin application ID 与显式 schema version。Snapshot 会持久化 storage schema version 并把它绑定到 snapshot ID；foreign database 与高于当前 runtime 的版本会被拒绝。测试覆盖 v1/v2/v3 forward migration、`v0.1.0-alpha.1` schema-v4 fixture reopen，以及迁移事务两个 pre-commit 阶段发生进程退出后的 reopen/integrity recovery。该声明只适用于单进程、本地 SQLite；不包含 shared filesystem、multi-process writer、online backup、replication 或 HA。
 
 ---
 
@@ -596,6 +600,8 @@ MCP State Twin 的核心集成对象是 **MCP**，不是某一家 model provider
 > [!NOTE]
 > 当前仓库**尚未完成 live ChatGPT、OpenAI API、Claude 或 Claude Code smoke tests**。因此 README 不提供“已验证”的 provider-specific 一键接入声明；host 只有在版本化 smoke run 产生 [SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md) 要求的证据后，才应被列为 verified。
 
+`statetwin compatibility validate --report <path>` 已实现严格 evidence admission；详见 [Host Compatibility Evidence Procedure](docs/HOST-COMPATIBILITY-EVIDENCE.md)。验证报告格式不等于验证 provider。
+
 设计参考：
 
 - [MCP Specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)
@@ -619,6 +625,7 @@ statetwin diff       compare two branch states
 statetwin scenario   execute a bounded scripted scenario and assertions
 statetwin protocols   print pinned MCP wire-evidence profiles
 statetwin limits      print the versioned resource profile and digest
+statetwin compatibility validate --report report.yaml
 statetwin serve      run separate MCP data and HTTP control planes
 statetwin version    print the development version
 ```
@@ -696,6 +703,8 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [ADR-0013](docs/ADR-0013-RESOURCE-GOVERNANCE-PROFILE.md) — versioned resource profile and fail-closed limits
 - [ADR-0014](docs/ADR-0014-SECOND-REFERENCE-DOMAIN.md) — synthetic package-registry reference domain
 - [ADR-0015](docs/ADR-0015-V0.1-SCOPE-AND-FIDELITY.md) — accepted L1-only v0.1 scope and explicit fidelity deferrals
+- [ADR-0016](docs/ADR-0016-V0.1-STORAGE-COMPATIBILITY.md) — accepted local SQLite compatibility and migration-recovery evidence
+- [ADR-0017](docs/ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md) — strict host report admission without provider claims
 
 ### Evidence / Research
 
@@ -714,18 +723,11 @@ RFC 和 accepted ADR 定义**设计意图**；Implementation Status 与 executab
 
 ## 首个 Tagged Release 路线图
 
-当前 release-critical 工作包括：
+按照 accepted RFC-0002，当前唯一仍为 `open` 的 stable v0.1 required gate 是：
 
-1. virtual-time advancement 与 deterministic scheduled faults；
-2. crash kill-point 与 tagged-database migration fixtures；
-3. upstream surface inspector 与 automated refresh；
-4. 持续证明 hermetic / egress-deny integration gates；
-5. pinned official MCP conformance scenarios for tools-first subset；
-6. live OpenAI/ChatGPT 与 Anthropic/Claude smoke-test matrix；
-7. recorder redaction tests（如果 recorder 进入 v0.1 scope）；
-8. differential validation 与诚实的 L2 coverage report；
-9. 扩展两个 reference domain 到 20+ 多步场景并补充差分 evidence；
-10. 完成 P0/P1 failure-mode traceability。
+1. 在独立、已审查的 remote deployment profile 上完成并发布 OpenAI-family 与 Anthropic-family live smoke evidence。
+
+Storage compatibility、P0 traceability、MCP conformance 与 hermetic CI 已有可执行证据。scheduled faults、upstream inspector、recorder、L2 differential validation、cloud hosting 与扩大 scenario corpus 仍是后续工作，但不应被偷换成当前 v0.1 已实现能力或隐含 release gate。
 
 Cloud hosting、registry、marketplace 与 automatic production mirroring **不是首个正式 release 的优先事项**。
 

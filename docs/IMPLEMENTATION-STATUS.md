@@ -1,11 +1,10 @@
 # Implementation Status
 
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
-**Last verified:** 2026-08-21
+**Last verified:** 2026-08-24
 **Authority:** this file reports implementation evidence. RFC-0001 is the
-umbrella design; RFC-0002 and SPEC-0001 through SPEC-0006 define the proposed
-v0.1 normative profile. ADR-0011 through ADR-0013 accept only bounded preview
-subsets of SPEC-0007, SPEC-0008, SPEC-0012, and SPEC-0015; the rest of the vNext pack
+umbrella design; RFC-0002 is the accepted v0.1 release profile. ADR-0011 through
+ADR-0017 accept only the bounded subsets they name; the rest of the vNext pack
 remains proposal material.
 
 ## Implemented and tested
@@ -26,7 +25,7 @@ remains proposal material.
 | Preconditions/postconditions/global invariants | engine tests and reference TwinSpec |
 | Immutable snapshots and isolated forks | sibling-fork isolation test |
 | Reset and canonical state diff | store implementation and diff tests |
-| Storage identity/version | SQLite application ID and schema-v4 migration/refusal tests |
+| Storage identity/version | SQLite application ID, current-version admission, foreign/future refusal, v1/v2/v3 migration, tagged alpha schema-v4 reopen fixture, and process-exit migration recovery tests |
 | Privileged control audit | snapshot/fork/reset audit written in mutation transaction |
 | Deterministic replay | 1,000-call corpus replayed on two branches with equal digest at every step |
 | Concurrent branch isolation | 100 forks mutated concurrently without sibling/base leakage |
@@ -48,6 +47,7 @@ remains proposal material.
 | Versioned resource profile | `statetwin limits`; profile digest in Scenario environment identity; state/input/output/query/effect/diff/report/storage bounds; typed `RESOURCE_LIMIT` failures |
 | Maintainer/release automation | release checklist, docs authority map, PR/Issue templates, Dependabot, and tag-driven multi-platform release workflow are present; no stable release has been published |
 | HTTP server bounds | 1 MiB bodies/headers, read/write/idle timeouts, configuration tests, and a direct slow-header connection test that proves the application handler is not reached |
+| Host compatibility report admission | strict 1 MiB single-document schema, immutable revision/digest checks, bounded profile checks, remote deployment-profile binding, credential/private-key/email pattern rejection, and `statetwin compatibility validate` |
 
 ## Partially implemented
 
@@ -55,7 +55,6 @@ remains proposal material.
 |---|---|
 | Virtual time | private forward-only clock advancement is implemented; scheduler, entropy, due events, and scheduled effects are not implemented |
 | Deterministic faults | two transaction phases and three canonical outcomes are implemented; latency, partial effects, idempotency collapse, crash/cancellation, scheduled visibility, and eventual consistency are not |
-| Migration coverage | schema v1 snapshot and untagged legacy audit layouts are upgraded; no tagged historical database fixture exists yet |
 | Upstream surface discovery | local canonicalization and binding enforcement work; upstream inspection and automatic refresh are not implemented |
 | Hermeticity | there is no upstream connector or passthrough code; only-loopback Linux CI job passed in run #6 |
 | Secret/fixture policy | pinned Gitleaks history scan and synthetic-fixture heuristic passed in run #6 |
@@ -68,10 +67,10 @@ remains proposal material.
 - recorder and trace redaction;
 - L0 cassette replay;
 - remaining deterministic fault phases, idempotency semantics, crash/cancellation injection, and eventual consistency;
-- provider/model harnesses and live-agent trajectory capture;
-- official MCP conformance-suite execution;
+- provider/model live harnesses and live-agent trajectory capture;
+- full MCP 2026-07-28 conformance coverage beyond the pinned official subset;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
-- HostCompatibilityReport schema, serializer, and evidence-derived matrix;
+- evidence-derived host compatibility matrix and admitted live provider reports;
 - differential validation against an upstream fixture service;
 - L2 promotion workflow and coverage report;
 - full import/export/migration tooling;
@@ -94,6 +93,7 @@ go test ./internal/engine -run=^$ -fuzz=FuzzExpressionCompilation -fuzztime=10s
 go vet ./...
 go build ./cmd/statetwin
 go run ./cmd/statetwin validate --spec examples/issue-tracker/twin.yaml
+go test ./internal/hostcompat ./internal/store
 ```
 
 Any README claim should be traceable to this matrix or to a reproducible command.

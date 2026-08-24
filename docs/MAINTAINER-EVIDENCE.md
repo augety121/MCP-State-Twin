@@ -72,6 +72,30 @@ repository, for example:
 Do not claim Codex or an OpenAI API has already been used unless a linked
 repository artifact or CI record proves it.
 
+## Claim audit for automated repository analyses
+
+Automated application helpers may infer security surfaces from repository
+labels instead of executable code. Review those statements before submission.
+For the current accepted v0.1 profile:
+
+- **Do not claim that the runtime makes external network requests.** Hermetic
+  mode has no upstream connector or passthrough path; CI dependency downloads
+  are a build-system concern, not a runtime feature.
+- **Do not claim a third-party native extension surface.** TwinSpec expressions
+  are bounded and declarative, and arbitrary scripts/native adapters are out of
+  scope.
+- **Do not describe model-controlled tool input as prompt execution.** Inputs
+  remain untrusted data validated against schemas and transition rules. Tool
+  descriptions may influence an external model's choices, but the runtime does
+  not execute them as instructions.
+- Actual current review surfaces include bounded YAML/JSON/CEL admission,
+  unauthenticated loopback data-plane exposure, authenticated control-plane
+  routing, SQLite file/migration handling, HTTP resource limits, dependency
+  supply chain, and GitHub Actions/release permissions.
+
+If remote hosting, provider harnesses, recorder support, or native adapters are
+added later, re-run this audit instead of inheriting today's statement.
+
 ## Application readiness gate
 
 Before applying, confirm:
