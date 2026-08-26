@@ -1,8 +1,8 @@
 # SPEC-0015 — Resource Governance (Accepted Local Profile)
 
-- **Status:** Accepted subset via ADR-0013; TwinBundle amendment via ADR-0018
-- **Verification status:** executable unit, runtime, storage, diff, report, and bundle-bound tests
-- **Profile:** `statetwin.dev/resource-profile/v1alpha1`, `local-preview-v2`
+- **Status:** Accepted subset via ADR-0013; TwinBundle/Episode amendments via ADR-0018 and ADR-0019
+- **Verification status:** executable unit, runtime, storage, diff, report, bundle, and Episode Journal bound tests
+- **Profile:** `statetwin.dev/resource-profile/v1alpha1`, `local-preview-v3`
 
 ## 1. Typed profile
 
@@ -32,10 +32,12 @@ Limits cover:
 | bundle files | 128 |
 | bundle compressed / extracted bytes | 32 MiB / 64 MiB |
 | bundle member bytes | 16 MiB |
+| local Episode Journal records | 10,000 |
 
 Cassette, scheduled-event, and future-task limits are zero because those
 features are not implemented in this release profile. Bundle limits are enabled
-only for the deterministic local preview accepted by ADR-0018.
+only for the deterministic local preview accepted by ADR-0018. The Episode
+record bound applies only to the independent local Journal accepted by ADR-0019.
 
 ## 2. Fail-closed semantics
 

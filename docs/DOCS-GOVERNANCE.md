@@ -11,7 +11,7 @@ When documents disagree, use this order:
 1. `AGENTS.md` for repository process and safety rules;
 2. accepted ADRs for binding architectural decisions;
 3. RFC-0002 for the current v0.1 release profile and gates; RFC-0003 only for
-   the subset explicitly accepted by ADR-0018;
+   the subsets explicitly accepted by ADR-0018 and ADR-0019;
 4. `SPEC-0001` through accepted SPEC documents for normative semantics;
 5. `IMPLEMENTATION-STATUS.md` for what executable evidence exists today;
 6. `ROADMAP.md` and the vNext pack for planned work only.

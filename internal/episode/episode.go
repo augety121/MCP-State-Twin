@@ -73,6 +73,8 @@ type Envelope struct {
 	EvidenceDigest string    `json:"evidenceDigest"`
 }
 
+type transitionObserver func(Event) error
+
 func NewLifecycle() Lifecycle {
 	return Lifecycle{Current: StatusCreated, Events: []Event{{Sequence: 0, To: StatusCreated}}}
 }
@@ -94,6 +96,10 @@ func (e *Evidence) Digest() (string, error) {
 }
 
 func Run(ctx context.Context, artifact *bundle.Artifact, episodeID, scenarioPath, runtimeVersion, runtimeRevision string) (*Envelope, error) {
+	return run(ctx, artifact, episodeID, scenarioPath, runtimeVersion, runtimeRevision, nil)
+}
+
+func run(ctx context.Context, artifact *bundle.Artifact, episodeID, scenarioPath, runtimeVersion, runtimeRevision string, observer transitionObserver) (*Envelope, error) {
 	if artifact == nil {
 		return nil, errors.New("TwinBundle artifact is required")
 	}
@@ -111,7 +117,7 @@ func Run(ctx context.Context, artifact *bundle.Artifact, episodeID, scenarioPath
 		return nil, err
 	}
 	lifecycle := NewLifecycle()
-	if err := lifecycle.Transition(StatusProvisioning); err != nil {
+	if err := transition(&lifecycle, StatusProvisioning, observer); err != nil {
 		return nil, err
 	}
 	twin, err := spec.Decode(artifact.Files[artifact.Manifest.Spec])
@@ -126,18 +132,18 @@ func Run(ctx context.Context, artifact *bundle.Artifact, episodeID, scenarioPath
 	if err != nil {
 		return nil, fmt.Errorf("decode bundled Scenario: %w", err)
 	}
-	if err := lifecycle.Transition(StatusReady); err != nil {
+	if err := transition(&lifecycle, StatusReady, observer); err != nil {
 		return nil, err
 	}
-	if err := lifecycle.Transition(StatusRunning); err != nil {
+	if err := transition(&lifecycle, StatusRunning, observer); err != nil {
 		return nil, err
 	}
 	report, err := scenario.Run(ctx, twin, initial, testScenario, runtimeVersion)
 	if err != nil {
-		_ = lifecycle.Transition(StatusRuntimeError)
+		_ = transition(&lifecycle, StatusRuntimeError, observer)
 		return nil, fmt.Errorf("run bundled Scenario: %w", err)
 	}
-	if err := lifecycle.Transition(StatusEvaluating); err != nil {
+	if err := transition(&lifecycle, StatusEvaluating, observer); err != nil {
 		return nil, err
 	}
 	outcome := "succeeded"
@@ -146,7 +152,7 @@ func Run(ctx context.Context, artifact *bundle.Artifact, episodeID, scenarioPath
 		outcome = "assertion_failed"
 		terminal = StatusAssertionFailed
 	}
-	if err := lifecycle.Transition(terminal); err != nil {
+	if err := transition(&lifecycle, terminal, observer); err != nil {
 		return nil, err
 	}
 	evidence := &Evidence{
@@ -163,6 +169,29 @@ func Run(ctx context.Context, artifact *bundle.Artifact, episodeID, scenarioPath
 		return nil, err
 	}
 	return &Envelope{APIVersion: APIVersion, Kind: "EpisodeEvidenceEnvelope", Evidence: evidence, EvidenceDigest: digest}, nil
+}
+
+func transition(lifecycle *Lifecycle, next Status, observer transitionObserver) error {
+	if err := lifecycle.Transition(next); err != nil {
+		return err
+	}
+	if observer == nil {
+		return nil
+	}
+	event := lifecycle.Events[len(lifecycle.Events)-1]
+	if err := observer(event); err != nil {
+		return fmt.Errorf("persist episode transition %s -> %s: %w", event.From, event.To, err)
+	}
+	return nil
+}
+
+func IsTerminal(status Status) bool {
+	switch status {
+	case StatusSucceeded, StatusAssertionFailed, StatusRuntimeError, StatusCancelled:
+		return true
+	default:
+		return false
+	}
 }
 
 func allowedTransition(current, next Status) bool {

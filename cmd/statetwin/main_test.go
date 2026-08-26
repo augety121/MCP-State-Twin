@@ -53,14 +53,20 @@ func TestBundleAndEpisodeCommandsFailClosed(t *testing.T) {
 	if err := runBundle([]string{"verify", "bundle.stb"}); err == nil || !strings.Contains(err.Error(), "positional") {
 		t.Fatalf("positional bundle argument error = %v", err)
 	}
-	if err := runEpisode(context.Background(), nil); err == nil || !strings.Contains(err.Error(), "run subcommand") {
+	if err := runEpisode(context.Background(), nil); err == nil || !strings.Contains(err.Error(), "run or inspect") {
 		t.Fatalf("missing episode subcommand error = %v", err)
 	}
 	if err := runEpisode(context.Background(), []string{"run"}); err == nil || !strings.Contains(err.Error(), "--bundle and --id") {
 		t.Fatalf("missing episode arguments error = %v", err)
 	}
-	if err := runEpisode(context.Background(), []string{"start"}); err == nil || !strings.Contains(err.Error(), "run subcommand") {
+	if err := runEpisode(context.Background(), []string{"start"}); err == nil || !strings.Contains(err.Error(), "run or inspect") {
 		t.Fatalf("unsupported episode subcommand error = %v", err)
+	}
+	if err := runEpisode(context.Background(), []string{"inspect"}); err == nil || !strings.Contains(err.Error(), "--journal and --id") {
+		t.Fatalf("missing Episode inspect arguments error = %v", err)
+	}
+	if err := runEpisode(context.Background(), []string{"inspect", "episode-1"}); err == nil || !strings.Contains(err.Error(), "positional") {
+		t.Fatalf("positional Episode inspect error = %v", err)
 	}
 }
 

@@ -5,8 +5,9 @@
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 is the accepted v0.1 release profile. RFC-0003 is a
 v0.2 proposal whose deterministic TwinBundle and local scripted Episode subset
-is accepted by ADR-0018. ADR-0011 through ADR-0018 accept only the bounded
-subsets they name; the rest of the vNext pack remains proposal material.
+is accepted by ADR-0018 and local durable Journal subset by ADR-0019. ADR-0011
+through ADR-0019 accept only the bounded subsets they name; the rest of the
+vNext pack remains proposal material.
 
 ## Implemented and tested
 
@@ -43,6 +44,7 @@ subsets they name; the rest of the vNext pack remains proposal material.
 | Scripted scenario runner | bounded Scenario v1alpha1 parser, expected error classes, JSON Pointer assertions, deterministic environment/report digests, ordered trace, and state diff |
 | Deterministic TwinBundle | strict v1alpha1 manifest; portable paths; regular non-symlink members; exact declaration set; member SHA-256; TwinSpec/fixture/Scenario semantic admission; compressed/extracted/member bounds; byte-equality reproducibility and tamper tests |
 | Local scripted EvaluationEpisode | declared-Scenario admission, closed lifecycle, deterministic Scenario execution, runtime version/revision identity, canonical evidence digest, terminal-outcome tests, and fail-closed existing-output behavior |
+| Durable local Episode Journal | independent SQLite application/schema identity; immutable request digest; transactional lifecycle CAS; terminal Evidence atomicity; reopen/idempotent replay/incomplete/conflict/tamper/foreign/future-schema tests; `episode inspect` |
 | MCP 2026 wire evidence | raw `server/discover`, direct modern `tools/list`, result discriminator, header/body mismatch, and 2025-11-25 initialize compatibility tests; pinned SDK evidence CLI |
 | Monotonic branch head | SQLite schema v4 `head_version`, CAS updates for calls/reset/clock/fault configuration, snapshot source-head binding, migration tests |
 | Private virtual-clock advance | bounded forward-only `/v1/clock/advance`, expected-head conflict, and transactional `clock.advance` audit tests |
@@ -65,6 +67,7 @@ subsets they name; the rest of the vNext pack remains proposal material.
 | MCP protocol coverage | direct 2026-07-28 wire smoke tests pass; the pinned conformance framework still covers legacy-era scenarios and does not establish every modern optional feature |
 | Resource governance | local profile and fail-closed enforcement are implemented; ADR-0018 adds bounded bundle file/compressed/extracted/member admission; OS quotas, distributed fairness, scheduler/cassette quotas, and empirical performance budgets are not |
 | Portable evaluation artifacts | deterministic unsigned local TwinBundle and scripted EpisodeEvidence are implemented; import/export migrations, signatures, provenance attestations, registry transport, and remote execution are not |
+| Episode durability | optional local Journal persists lifecycle and terminal Evidence; automatic retry/resume, cancellation, leases, remote workers, distributed claiming, retention and exactly-once execution are not implemented |
 
 ## Not implemented
 
@@ -78,7 +81,7 @@ subsets they name; the rest of the vNext pack remains proposal material.
 - differential validation against an upstream fixture service;
 - L2 promotion workflow and coverage report;
 - full import/export/migration tooling;
-- durable Episode persistence, concurrent workers, remote runners, cancellation/retry recovery, and scheduling;
+- concurrent Episode workers, automatic retry/resume, remote runners, cancellation/commit recovery, leases, retention and scheduling;
 - generic HostProfile execution or provider SDK adapters;
 - TwinBundle signatures, publisher identity, registry distribution, and provenance attestations;
 - data-plane authentication, TLS, remote multi-tenancy, or cloud deployment;
@@ -104,9 +107,11 @@ go test ./internal/hostcompat ./internal/store
 go run ./cmd/statetwin bundle build --manifest examples/issue-tracker/bundle.yaml --out issue-tracker.stb
 go run ./cmd/statetwin bundle verify --bundle issue-tracker.stb
 go run ./cmd/statetwin episode run --bundle issue-tracker.stb --id local-episode-001 --out episode-evidence.json
+go run ./cmd/statetwin episode run --bundle issue-tracker.stb --id durable-episode-001 --journal episodes.db
+go run ./cmd/statetwin episode inspect --journal episodes.db --id durable-episode-001
 ```
 
-The three artifact commands above refuse to overwrite existing output paths;
-use fresh paths in automation and delete test artifacts after inspection.
+Artifact/evidence output commands refuse to overwrite existing paths; use fresh
+paths in automation and delete local test artifacts after inspection.
 
 Any README claim should be traceable to this matrix or to a reproducible command.

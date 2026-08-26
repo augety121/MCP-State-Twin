@@ -239,11 +239,12 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 | Scenario `v1alpha1` runner | ✅ | Bounded scripted scenario; not live model evaluation |
 | Deterministic TwinBundle `v1alpha1` | ✅ development preview | Strict manifest, payload semantics, member SHA-256, path/type/size limits, reproducible ZIP; unsigned |
 | Local scripted EvaluationEpisode | ✅ development preview | Single process and Scenario, closed lifecycle, digestible evidence; not a provider harness |
+| Durable local Episode Journal | ✅ development preview | Independent SQLite, immutable request digest, lifecycle CAS, idempotent terminal Evidence reads, explicit `incomplete` |
 | HostCompatibilityReport admission | ✅ | Strict schema, bounded evidence, and credential/private-key/email pattern rejection; not a live-provider result |
 | Live OpenAI / ChatGPT / Claude smoke tests | ❌ not verified | No host-compatibility claim |
 | Deterministic fault injection / virtual-clock advancement | 🧪 Partial | Private clock and two fault transaction phases implemented; remaining scheduler/fault semantics are not |
 | Versioned resource governance | 🧪 Partial | `statetwin limits`, environment digest, and fail-closed local budgets; OS/remote quotas are not implemented |
-| Durable/remote Episodes, HostProfile, signed bundles | ⏳ | Not implemented; no remote execution, supply-chain authenticity, or host compatibility claim |
+| Remote Episodes/retry/cancellation, HostProfile, signed bundles | ⏳ | Not implemented; no remote execution, exactly-once, supply-chain authenticity, or host compatibility claim |
 | Recorder / cassette replay / trace redaction | ⏳ | Not implemented |
 | Differential validation / L2 promotion | ⏳ | Not complete |
 | Data-plane auth / TLS / remote multi-tenancy | ⏳ | Current build should remain local/loopback |
@@ -269,6 +270,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - bounded Scenario `v1alpha1` runner with deterministic environment identity, ordered tool traces, JSON Pointer state assertions, and canonical state diff.
 - deterministic TwinBundle `v1alpha1` admission with strict paths, regular-file and size checks, member SHA-256, payload semantics, and byte-for-byte reproducible ZIP output;
 - local scripted EvaluationEpisode execution over declared Scenarios, with a closed lifecycle, runtime revision, complete Scenario report, and canonical evidence digest;
+- optional durable local Episode Journal with independent SQLite identity/schema, request-digest binding, transactional lifecycle CAS, atomic terminal Evidence persistence, and `episode inspect`;
 - bounded branch-local fault plans for `before-validation` and `after-commit-before-response`, with a stable plan digest, transactional counters, and fault-event audit.
 - a versioned resource profile: input/output/state, JSON depth/member, effect/query, diff/report, and branch/snapshot limits fail closed as `RESOURCE_LIMIT` and bind to Scenario environment identity.
 - storage compatibility evidence for v1/v2/v3 forward migration, the public alpha schema-v4 fixture, and two migration pre-commit process-exit kill-points.
@@ -285,7 +287,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - a live provider harness, admitted OpenAI/Anthropic reports, or an evidence-derived compatibility matrix;
 - differential validation or an L2 fidelity promotion workflow;
 - data-plane authentication, TLS, remote multi-tenancy, or a security audit.
-- durable Episode storage, concurrent workers, remote runners, cancellation recovery, HostProfile, bundle signing/registry, or provenance attestations.
+- Episode automatic retry/resume, concurrent/remote workers, cancellation/commit recovery, leases/retention, HostProfile, bundle signing/registry, or provenance attestations.
 
 </details>
 
@@ -344,9 +346,18 @@ go run ./cmd/statetwin episode run \
   --bundle issue-tracker.stb \
   --id local-episode-001 \
   --out episode-evidence.json
+
+go run ./cmd/statetwin episode run \
+  --bundle issue-tracker.stb \
+  --id durable-episode-001 \
+  --journal episodes.db
+
+go run ./cmd/statetwin episode inspect \
+  --journal episodes.db \
+  --id durable-episode-001
 ```
 
-`bundle verify` checks both archive integrity and strict TwinSpec, fixture, and Scenario semantics. It does **not** establish publisher identity or upstream fidelity. The current Episode runs `scripted-scenario` only and never calls Codex, OpenAI, Claude, or another remote model. Existing output paths are refused to prevent accidental evidence overwrite.
+`bundle verify` checks both archive integrity and strict TwinSpec, fixture, and Scenario semantics. It does **not** establish publisher identity or upstream fidelity. The current Episode runs `scripted-scenario` only and never calls Codex, OpenAI, Claude, or another remote model. The Journal returns existing Evidence for an identical completed request, conflicts on the same ID with different inputs, and reports non-terminal records as `incomplete` without automatic retry. Existing output paths are refused to prevent accidental evidence overwrite.
 
 ---
 
@@ -653,6 +664,8 @@ statetwin compatibility validate --report report.yaml
 statetwin bundle build --manifest bundle.yaml --out twin.stb
 statetwin bundle verify --bundle twin.stb
 statetwin episode run --bundle twin.stb --id episode-001 --out evidence.json
+statetwin episode run --bundle twin.stb --id episode-001 --journal episodes.db
+statetwin episode inspect --journal episodes.db --id episode-001
 statetwin serve      run separate MCP data and HTTP control planes
 statetwin version    print the development version
 ```
@@ -706,6 +719,7 @@ For a first read, the suggested path is:
 - [SPEC-0008 — Deterministic Fault Preview](docs/SPEC-0008-DETERMINISTIC-FAULTS.md)
 - [SPEC-0015 — Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md)
 - [SPEC-0012 — Storage/Concurrency/Recovery](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md)
+- [SPEC-0017 — Durable Local Episode Journal](docs/SPEC-0017-EPISODE-JOURNAL.md)
 
 <details>
 <summary><strong>Complete RFC / ADR / evidence index</strong></summary>
@@ -714,7 +728,7 @@ For a first read, the suggested path is:
 
 - [RFC-0001](docs/RFC-0001.md) — product boundary, hard invariants, architecture, semantics, and release gates
 - [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) — v0.1 normative release profile, limits, traceability, and gates
-- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 local evaluation platform; only the ADR-0018 subset is accepted
+- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 local evaluation platform; only the ADR-0018/ADR-0019 subsets are accepted
 
 ### ADRs
 
@@ -736,6 +750,7 @@ For a first read, the suggested path is:
 - [ADR-0016](docs/ADR-0016-V0.1-STORAGE-COMPATIBILITY.md) — accepted local SQLite compatibility and migration-recovery evidence
 - [ADR-0017](docs/ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md) — strict host report admission without provider claims
 - [ADR-0018](docs/ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md) — deterministic TwinBundle and local scripted Episode preview
+- [ADR-0019](docs/ADR-0019-DURABLE-LOCAL-EPISODE-JOURNAL.md) — durable local Episode Journal, idempotent terminal reads, and incomplete boundary
 
 ### Evidence / research
 

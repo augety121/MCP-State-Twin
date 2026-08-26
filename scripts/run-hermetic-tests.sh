@@ -38,3 +38,14 @@ trap 'rm -rf -- "$workdir"' EXIT
   --bundle "$workdir/issue-tracker.stb" \
   --id hermetic-episode \
   --out "$workdir/episode-evidence.json"
+"$binary" episode run \
+  --bundle "$workdir/issue-tracker.stb" \
+  --id hermetic-durable \
+  --journal "$workdir/episodes.db"
+"$binary" episode run \
+  --bundle "$workdir/issue-tracker.stb" \
+  --id hermetic-durable \
+  --journal "$workdir/episodes.db"
+"$binary" episode inspect \
+  --journal "$workdir/episodes.db" \
+  --id hermetic-durable

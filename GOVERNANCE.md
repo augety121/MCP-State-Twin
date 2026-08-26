@@ -7,7 +7,7 @@ changes through evidence-backed pull requests.
 
 - Accepted ADRs control architectural decisions.
 - RFC-0002 controls the stable v0.1 release profile.
-- RFC-0003 controls only the v0.2 subset explicitly accepted by ADR-0018.
+- RFC-0003 controls only the v0.2 subsets explicitly accepted by ADR-0018 and ADR-0019.
 - `docs/IMPLEMENTATION-STATUS.md` controls current implementation claims.
 - Roadmap and archived vNext documents do not grant implementation status.
 

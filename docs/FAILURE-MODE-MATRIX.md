@@ -150,6 +150,14 @@ implemented the corresponding feature.
 | F-128 | Episode | process exit loses lifecycle/commit ambiguity | P0 | local preview makes no durability claim; remote/durable design requires kill-point evidence |
 | F-129 | Evidence | development scripted report is mistaken for a provider run | P0 | fixed `development` claim and `scripted-scenario` identity |
 | F-130 | Evidence | report publishes secrets or personal data from inputs/results | P0 | synthetic-only policy and secret scan; encryption/retention controls remain unimplemented |
+| F-131 | Episode Journal | same Episode ID is reused with different Bundle/runtime inputs | P0 | immutable request digest and identity-conflict refusal |
+| F-132 | Episode Journal | process dies after lifecycle progress and retry duplicates effects | P0 | preserve non-terminal record as `incomplete`; never auto-retry |
+| F-133 | Episode Journal | terminal status commits without its Evidence | P0 | terminal event/status/Evidence commit in one SQLite transaction |
+| F-134 | Episode Journal | stale writer overwrites newer lifecycle state | P0 | status + monotonic-sequence compare-and-swap |
+| F-135 | Episode Journal | stored Evidence bytes are modified after completion | P0 | verify envelope and canonical Evidence digest on every read |
+| F-136 | Episode Journal | raw runtime error persists a credential or private input | P0 | persist typed error class only; raw message remains operational/redacted |
+| F-137 | Episode Journal | unlimited records exhaust local storage | P1 | 10,000-record admission bound; retention automation remains open |
+| F-138 | Episode Journal | users infer exactly-once execution from idempotent terminal reads | P0 | explicit non-claim; no automatic recovery, lease or distributed worker semantics |
 
 ## Release interpretation
 

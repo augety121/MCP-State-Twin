@@ -32,6 +32,9 @@ jobs:
           go run ./cmd/statetwin bundle build --manifest examples/issue-tracker/bundle.yaml --out "${RUNNER_TEMP}/issue-tracker.stb"
           go run ./cmd/statetwin bundle verify --bundle "${RUNNER_TEMP}/issue-tracker.stb"
           go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/issue-tracker.stb" --id ci-issue-tracker --out "${RUNNER_TEMP}/issue-tracker-evidence.json"
+          go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/issue-tracker.stb" --id ci-durable --journal "${RUNNER_TEMP}/episodes.db"
+          go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/issue-tracker.stb" --id ci-durable --journal "${RUNNER_TEMP}/episodes.db"
+          go run ./cmd/statetwin episode inspect --journal "${RUNNER_TEMP}/episodes.db" --id ci-durable
           go run ./cmd/statetwin bundle build --manifest examples/package-registry/bundle.yaml --out "${RUNNER_TEMP}/package-registry.stb"
           go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/package-registry.stb" --id ci-package-registry --out "${RUNNER_TEMP}/package-registry-evidence.json"
       - name: Resource profile smoke

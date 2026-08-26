@@ -38,7 +38,7 @@ solve model intelligence, planning quality, or general agent alignment.
 | MCP data plane | Model-visible business tools | Tools-first, loopback-oriented development profile |
 | Control plane | Snapshot, fork, reset, diff, clock and fault controls | Private and separately authenticated; never agent-facing |
 | Scenario runner | Ordered calls, assertions, expected errors, report digest | Scripted deterministic scenarios; no live-model score claim |
-| Evidence layer | Canonical digests, audit records, protocol evidence and status | Partial preview; recorder/bundle/OTel remain open |
+| Evidence layer | Canonical digests, audit records, protocol evidence, deterministic unsigned TwinBundle, scripted EpisodeEvidence and durable local Journal | Partial preview; recorder, signatures/provenance, remote Episodes and OTel remain open |
 | Release governance | SemVer gates, CI, changelog and evidence inventory | Development preview; no stable `v0.1.0` yet |
 
 ## 4. End-to-end lifecycle

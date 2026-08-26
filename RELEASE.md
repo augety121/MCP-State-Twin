@@ -21,6 +21,8 @@ proposal text into an implementation claim.
    review their remote deployment profile; an absent report keeps the gate open.
 10. Treat unsigned TwinBundle verification as integrity/semantic evidence only;
     it is not publisher identity or supply-chain provenance.
+11. For Journal changes, run a completed Episode twice with the same request,
+    inspect after reopen, and verify incomplete/conflict/tamper negative tests.
 
 For a tagged release, use a SemVer tag such as `v0.1.0-alpha.1` or `v0.1.1`.
 The tag workflow in `.github/workflows/release.yml` reruns the release gates,

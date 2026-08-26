@@ -102,7 +102,8 @@ Usage:
   statetwin compatibility validate --report report.yaml
   statetwin bundle build --manifest bundle.yaml --out twin.stb
   statetwin bundle verify --bundle twin.stb
-  statetwin episode run --bundle twin.stb --id episode-001 [--scenario path]
+  statetwin episode run --bundle twin.stb --id episode-001 [--scenario path] [--journal episodes.db]
+  statetwin episode inspect --journal episodes.db --id episode-001
 
 Control-plane authentication is read from STATETWIN_CONTROL_TOKEN.`)
 }
@@ -153,15 +154,27 @@ func runBundle(args []string) error {
 }
 
 func runEpisode(ctx context.Context, args []string) error {
-	if len(args) == 0 || args[0] != "run" {
-		return errors.New("episode requires the run subcommand")
+	if len(args) == 0 {
+		return errors.New("episode requires the run or inspect subcommand")
 	}
+	switch args[0] {
+	case "run":
+		return runEpisodeRun(ctx, args[1:])
+	case "inspect":
+		return runEpisodeInspect(ctx, args[1:])
+	default:
+		return errors.New("episode requires the run or inspect subcommand")
+	}
+}
+
+func runEpisodeRun(ctx context.Context, args []string) error {
 	flags := flag.NewFlagSet("episode run", flag.ContinueOnError)
 	bundlePath := flags.String("bundle", "", "TwinBundle .stb path")
 	episodeID := flags.String("id", "", "stable local episode identifier")
 	scenarioPath := flags.String("scenario", "", "declared Scenario path; optional for one-scenario bundles")
 	outputPath := flags.String("out", "", "optional evidence JSON output path")
-	if err := flags.Parse(args[1:]); err != nil {
+	journalPath := flags.String("journal", "", "optional durable local Episode Journal SQLite path")
+	if err := flags.Parse(args); err != nil {
 		return err
 	}
 	if flags.NArg() != 0 {
@@ -174,7 +187,17 @@ func runEpisode(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	evidence, err := episode.Run(ctx, artifact, *episodeID, *scenarioPath, server.Version, server.Revision)
+	var evidence *episode.Envelope
+	if *journalPath == "" {
+		evidence, err = episode.Run(ctx, artifact, *episodeID, *scenarioPath, server.Version, server.Revision)
+	} else {
+		journal, openErr := episode.OpenJournal(*journalPath)
+		if openErr != nil {
+			return openErr
+		}
+		defer journal.Close()
+		evidence, _, err = journal.RunPersistent(ctx, artifact, *episodeID, *scenarioPath, server.Version, server.Revision)
+	}
 	if err != nil {
 		return err
 	}
@@ -190,6 +213,31 @@ func runEpisode(ctx context.Context, args []string) error {
 		return errors.New("episode assertions failed")
 	}
 	return nil
+}
+
+func runEpisodeInspect(ctx context.Context, args []string) error {
+	flags := flag.NewFlagSet("episode inspect", flag.ContinueOnError)
+	journalPath := flags.String("journal", "", "durable local Episode Journal SQLite path")
+	episodeID := flags.String("id", "", "Episode identifier")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return errors.New("episode inspect does not accept positional arguments")
+	}
+	if *journalPath == "" || *episodeID == "" {
+		return errors.New("--journal and --id are required")
+	}
+	journal, err := episode.OpenJournal(*journalPath)
+	if err != nil {
+		return err
+	}
+	defer journal.Close()
+	record, err := journal.Get(ctx, *episodeID)
+	if err != nil {
+		return err
+	}
+	return printJSON(record)
 }
 
 func runCompatibility(args []string) error {

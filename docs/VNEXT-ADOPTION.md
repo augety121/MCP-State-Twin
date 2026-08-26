@@ -26,9 +26,12 @@ the following bounded slice in this change:
 9. ADR-0017 accepts strict HostCompatibilityReport admission without claiming
    that a live OpenAI or Anthropic run has occurred.
 10. ADR-0018 accepts deterministic unsigned TwinBundle admission and one-shot
-    local scripted EvaluationEpisode evidence. Durable/remote execution,
-    HostProfile adapters, signatures, registries, and provider claims remain
-    proposals.
+    local scripted EvaluationEpisode evidence. Remote execution, HostProfile
+    adapters, signatures, registries, and provider claims remain proposals.
+11. ADR-0019 accepts an independent durable local Episode Journal with
+    immutable request identity, lifecycle CAS, idempotent completed-evidence
+    reads and explicit incomplete records. Automatic recovery, cancellation,
+    leases, remote workers and exactly-once execution remain proposals.
 
 The authoritative implementation status is
 [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md). A proposal becomes an

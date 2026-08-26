@@ -36,6 +36,8 @@ jobs:
           go run ./cmd/statetwin bundle build --manifest examples/issue-tracker/bundle.yaml --out "${RUNNER_TEMP}/issue-tracker.stb"
           go run ./cmd/statetwin bundle verify --bundle "${RUNNER_TEMP}/issue-tracker.stb"
           go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/issue-tracker.stb" --id release-issue-tracker --out "${RUNNER_TEMP}/issue-tracker-evidence.json"
+          go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/issue-tracker.stb" --id release-durable --journal "${RUNNER_TEMP}/episodes.db"
+          go run ./cmd/statetwin episode inspect --journal "${RUNNER_TEMP}/episodes.db" --id release-durable
           go run ./cmd/statetwin bundle build --manifest examples/package-registry/bundle.yaml --out "${RUNNER_TEMP}/package-registry.stb"
           go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/package-registry.stb" --id release-package-registry --out "${RUNNER_TEMP}/package-registry-evidence.json"
       - name: Build release artifacts

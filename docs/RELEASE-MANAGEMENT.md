@@ -50,6 +50,9 @@ Before tagging:
 10. For a release containing TwinBundle/Episode preview changes, build and
     verify both reference bundles, run one Episode per reference domain, and
     record that artifacts are unsigned and local-only.
+11. For a release containing Journal changes, verify reopen, identical-request
+    terminal replay, identity conflict, incomplete refusal, foreign/future
+    schema refusal, and Evidence tamper detection.
 
 ## Tag and publish procedure
 

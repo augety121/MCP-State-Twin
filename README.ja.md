@@ -53,6 +53,7 @@
 - strict HostCompatibilityReport admission（live provider compatibility の証明ではない）
 - deterministic TwinBundle `v1alpha1`（厳格な path/type/size/digest/payload 検証、再現可能 ZIP、未署名）
 - local scripted EvaluationEpisode（閉じた lifecycle と evidence digest。provider harness ではない）
+- durable local Episode Journal（独立 SQLite、immutable request digest、lifecycle CAS、明示的 `incomplete`。自動 retry ではない）
 
 ### 未実装または未検証
 
@@ -318,6 +319,8 @@ statetwin compatibility validate --report report.yaml
 statetwin bundle build --manifest bundle.yaml --out twin.stb
 statetwin bundle verify --bundle twin.stb
 statetwin episode run --bundle twin.stb --id episode-001 --out evidence.json
+statetwin episode run --bundle twin.stb --id episode-001 --journal episodes.db
+statetwin episode inspect --journal episodes.db --id episode-001
 ```
 
 ## Test / Build
@@ -366,6 +369,7 @@ go build ./cmd/statetwin
 - [ADR-0015](docs/ADR-0015-V0.1-SCOPE-AND-FIDELITY.md) — v0.1 の L1-only scope と明示的な fidelity 延期
 - [ADR-0016](docs/ADR-0016-V0.1-STORAGE-COMPATIBILITY.md) / [ADR-0017](docs/ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md)
 - [ADR-0018](docs/ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md)
+- [ADR-0019](docs/ADR-0019-DURABLE-LOCAL-EPISODE-JOURNAL.md)
 - [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md)
 - [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md)
 - [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md)

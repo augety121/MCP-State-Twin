@@ -7,6 +7,11 @@ alpha prerelease but no stable release yet.
 
 ### Added
 
+- an independent durable local Episode Journal with SQLite identity/schema,
+  immutable request digests, transactional lifecycle CAS, terminal Evidence
+  atomicity, idempotent completed-request reads, explicit incomplete records,
+  tamper admission, and `episode inspect`;
+- SPEC-0017, ADR-0019 and `local-preview-v3` with a 10,000-record Journal bound;
 - deterministic TwinBundle `v1alpha1` build/verify commands with strict
   manifest and payload admission, portable path handling, exact member
   digests, resource bounds, deterministic ZIP bytes, and tamper/negative tests;

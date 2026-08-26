@@ -30,6 +30,9 @@ func TestDefaultProfileDigestIsStableAndBindsSemanticLimits(t *testing.T) {
 	if profile.MaxBundleMember != 16<<20 {
 		t.Fatal("enabled TwinBundle member limit is not bound into the resource profile")
 	}
+	if profile.MaxEpisodeRecords != 10_000 {
+		t.Fatal("enabled Episode record limit is not bound into the resource profile")
+	}
 }
 
 func TestValidateJSONBoundsBytesDepthMembersAndDomain(t *testing.T) {

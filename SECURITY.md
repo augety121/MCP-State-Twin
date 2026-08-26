@@ -22,6 +22,9 @@ The current development build has important limitations:
   do not establish publisher identity or provenance;
 - local Episode evidence can contain full synthetic tool inputs/results and is
   not encrypted or remotely access-controlled.
+- the optional Episode Journal stores that Evidence in a local unencrypted
+  SQLite database; it persists only typed runtime failure classes, but operators
+  must still protect/delete Journal files according to their data policy;
 
 Do not expose either endpoint to an untrusted network. Use synthetic fixtures,
 bind to loopback, and enforce network egress denial outside the process.

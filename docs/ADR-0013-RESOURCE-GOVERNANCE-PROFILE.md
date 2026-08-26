@@ -58,3 +58,10 @@ only deterministic local TwinBundle file-count, compressed-byte,
 extracted-byte, and per-member limits. The remaining non-claims above are
 unchanged; bundle signatures, publisher identity, registries, and remote import
 remain outside the accepted boundary.
+
+## Amendment: ADR-0019 (2026-08-26)
+
+ADR-0019 advances the profile identifier to `local-preview-v3` and enables a
+10,000-record bound for the independent local Episode Journal. It does not
+enable remote task quotas, scheduling, retention automation or multi-tenant
+fairness.

@@ -10,9 +10,10 @@ canonicalization, and operational logging decisions have ADRs. RFC-0001 remains
 the umbrella Draft. ADR-0015 accepts RFC-0002 as the authoritative, L1-only
 v0.1 release profile; SPEC-0001 through SPEC-0006 still require maintainer
 review before a stable v0.1. ADR-0011 accepts only bounded preview slices of
-SPEC-0007 and SPEC-0012. ADR-0018 accepts only deterministic TwinBundle and
-local scripted Episode preview slices of RFC-0003; the remaining vNext pack is
-not accepted or implemented.
+SPEC-0007 and SPEC-0012. ADR-0018 accepts deterministic TwinBundle/local
+scripted Episode slices and ADR-0019 accepts an independent durable local
+Journal slice of RFC-0003; the remaining vNext pack is not accepted or
+implemented.
 
 Deliverables:
 
@@ -68,6 +69,11 @@ unsigned TwinBundle and one-shot local scripted EvaluationEpisode now package
 and execute declared Scenarios with canonical evidence. State export/import,
 durable/remote Episode orchestration, signatures, and retention/GC remain
 incomplete.
+
+An optional independent Episode Journal now persists lifecycle transitions and
+terminal Evidence with request identity/CAS. It deliberately refuses to resume
+an incomplete Episode; retry lineage, cancellation and remote workers remain
+open.
 
 Build:
 

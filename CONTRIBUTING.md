@@ -31,6 +31,8 @@ go run ./cmd/statetwin scenario --spec examples/issue-tracker/twin.yaml --fixtur
 go run ./cmd/statetwin bundle build --manifest examples/issue-tracker/bundle.yaml --out issue-tracker.stb
 go run ./cmd/statetwin bundle verify --bundle issue-tracker.stb
 go run ./cmd/statetwin episode run --bundle issue-tracker.stb --id contributor-smoke --out episode-evidence.json
+go run ./cmd/statetwin episode run --bundle issue-tracker.stb --id contributor-durable --journal episodes.db
+go run ./cmd/statetwin episode inspect --journal episodes.db --id contributor-durable
 ```
 
 Before submitting a change:
@@ -54,7 +56,8 @@ Open an ADR or RFC change before implementing anything that changes:
 - supported MCP protocol behavior.
 - Scenario/report semantics or environment identity.
 - resource limits or profile/environment identity.
-- TwinBundle manifest/admission, Episode lifecycle, or evidence identity.
+- TwinBundle manifest/admission, Episode lifecycle/Journal, request identity,
+  or evidence identity.
 
 ## Pull requests
 
