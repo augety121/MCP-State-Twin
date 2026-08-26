@@ -13,11 +13,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/augety121/mcp-state-twin/internal/bundle"
 	"github.com/augety121/mcp-state-twin/internal/engine"
+	"github.com/augety121/mcp-state-twin/internal/episode"
 	"github.com/augety121/mcp-state-twin/internal/hostcompat"
 	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/logging"
@@ -64,6 +67,10 @@ func main() {
 		err = runLimits()
 	case "compatibility":
 		err = runCompatibility(os.Args[2:])
+	case "bundle":
+		err = runBundle(os.Args[2:])
+	case "episode":
+		err = runEpisode(ctx, os.Args[2:])
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -93,8 +100,96 @@ Usage:
   statetwin protocols
   statetwin limits
   statetwin compatibility validate --report report.yaml
+  statetwin bundle build --manifest bundle.yaml --out twin.stb
+  statetwin bundle verify --bundle twin.stb
+  statetwin episode run --bundle twin.stb --id episode-001 [--scenario path]
 
 Control-plane authentication is read from STATETWIN_CONTROL_TOKEN.`)
+}
+
+func runBundle(args []string) error {
+	if len(args) == 0 {
+		return errors.New("bundle requires build or verify subcommand")
+	}
+	switch args[0] {
+	case "build":
+		flags := flag.NewFlagSet("bundle build", flag.ContinueOnError)
+		manifestPath := flags.String("manifest", "", "TwinBundle source manifest path")
+		outputPath := flags.String("out", "", "output .stb path")
+		if err := flags.Parse(args[1:]); err != nil {
+			return err
+		}
+		if flags.NArg() != 0 {
+			return errors.New("bundle build does not accept positional arguments")
+		}
+		if *manifestPath == "" || *outputPath == "" {
+			return errors.New("--manifest and --out are required")
+		}
+		result, err := bundle.Build(*manifestPath, *outputPath)
+		if err != nil {
+			return err
+		}
+		return printJSON(result)
+	case "verify":
+		flags := flag.NewFlagSet("bundle verify", flag.ContinueOnError)
+		bundlePath := flags.String("bundle", "", "TwinBundle .stb path")
+		if err := flags.Parse(args[1:]); err != nil {
+			return err
+		}
+		if flags.NArg() != 0 {
+			return errors.New("bundle verify does not accept positional arguments")
+		}
+		if *bundlePath == "" {
+			return errors.New("--bundle is required")
+		}
+		result, err := bundle.Verify(*bundlePath)
+		if err != nil {
+			return err
+		}
+		return printJSON(result)
+	default:
+		return errors.New("bundle requires build or verify subcommand")
+	}
+}
+
+func runEpisode(ctx context.Context, args []string) error {
+	if len(args) == 0 || args[0] != "run" {
+		return errors.New("episode requires the run subcommand")
+	}
+	flags := flag.NewFlagSet("episode run", flag.ContinueOnError)
+	bundlePath := flags.String("bundle", "", "TwinBundle .stb path")
+	episodeID := flags.String("id", "", "stable local episode identifier")
+	scenarioPath := flags.String("scenario", "", "declared Scenario path; optional for one-scenario bundles")
+	outputPath := flags.String("out", "", "optional evidence JSON output path")
+	if err := flags.Parse(args[1:]); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return errors.New("episode run does not accept positional arguments")
+	}
+	if *bundlePath == "" || *episodeID == "" {
+		return errors.New("--bundle and --id are required")
+	}
+	artifact, err := bundle.Open(*bundlePath)
+	if err != nil {
+		return err
+	}
+	evidence, err := episode.Run(ctx, artifact, *episodeID, *scenarioPath, server.Version, server.Revision)
+	if err != nil {
+		return err
+	}
+	if *outputPath != "" {
+		if err := writeJSONFile(*outputPath, evidence); err != nil {
+			return err
+		}
+	}
+	if err := printJSON(evidence); err != nil {
+		return err
+	}
+	if evidence.Evidence == nil || evidence.Evidence.Report == nil || !evidence.Evidence.Report.Passed {
+		return errors.New("episode assertions failed")
+	}
+	return nil
 }
 
 func runCompatibility(args []string) error {
@@ -470,4 +565,47 @@ func printJSON(value any) error {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(value)
+}
+
+func writeJSONFile(path string, value any) error {
+	if _, err := os.Lstat(path); err == nil {
+		return fmt.Errorf("evidence output %q already exists", path)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("inspect evidence output: %w", err)
+	}
+	data, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode JSON output: %w", err)
+	}
+	data = append(data, '\n')
+	directory := filepath.Dir(path)
+	temporary, err := os.CreateTemp(directory, ".statetwin-evidence-*.tmp")
+	if err != nil {
+		return fmt.Errorf("create temporary evidence: %w", err)
+	}
+	name := temporary.Name()
+	committed := false
+	defer func() {
+		_ = temporary.Close()
+		if !committed {
+			_ = os.Remove(name)
+		}
+	}()
+	if err := temporary.Chmod(0o600); err != nil {
+		return fmt.Errorf("secure temporary evidence: %w", err)
+	}
+	if _, err := temporary.Write(data); err != nil {
+		return fmt.Errorf("write evidence: %w", err)
+	}
+	if err := temporary.Sync(); err != nil {
+		return fmt.Errorf("sync evidence: %w", err)
+	}
+	if err := temporary.Close(); err != nil {
+		return fmt.Errorf("close evidence: %w", err)
+	}
+	if err := os.Rename(name, path); err != nil {
+		return fmt.Errorf("publish evidence: %w", err)
+	}
+	committed = true
+	return nil
 }

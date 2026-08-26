@@ -17,6 +17,10 @@ import (
 // -ldflags so the CLI and MCP server report the immutable release tag.
 var Version = "0.1.0-dev"
 
+// Revision is the immutable source revision for release and evidence builds.
+// Development binaries report unknown unless the build supplies -ldflags.
+var Revision = "unknown"
+
 type DataPlane struct {
 	runtime *engine.Runtime
 	handler http.Handler

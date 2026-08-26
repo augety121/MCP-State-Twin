@@ -50,3 +50,11 @@ This ADR does not claim OS-level memory isolation, CPU quotas, distributed
 multi-tenant fairness, scheduler limits, bundle import safety, or cassette
 limits. Those require the corresponding feature to exist and independent
 acceptance evidence.
+
+## Amendment: ADR-0018 (2026-08-26)
+
+ADR-0018 advances the profile identifier to `local-preview-v2` and enables
+only deterministic local TwinBundle file-count, compressed-byte,
+extracted-byte, and per-member limits. The remaining non-claims above are
+unchanged; bundle signatures, publisher identity, registries, and remote import
+remain outside the accepted boundary.

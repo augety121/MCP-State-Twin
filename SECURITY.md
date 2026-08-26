@@ -17,6 +17,11 @@ The current development build has important limitations:
 - the control plane uses one bearer token and is intended to remain on
   loopback;
 - native TwinSpec extensions are deliberately unsupported.
+- TwinBundle admission verifies deterministic bytes, declared members, digests,
+  paths, bounds, and payload semantics, but bundles are currently unsigned and
+  do not establish publisher identity or provenance;
+- local Episode evidence can contain full synthetic tool inputs/results and is
+  not encrypted or remotely access-controlled.
 
 Do not expose either endpoint to an untrusted network. Use synthetic fixtures,
 bind to loopback, and enforce network egress denial outside the process.

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -36,6 +37,44 @@ func TestRunCompatibilityRequiresValidatedReport(t *testing.T) {
 	}
 	if err := runCompatibility([]string{"validate", "report.yaml"}); err == nil || !strings.Contains(err.Error(), "positional") {
 		t.Fatalf("positional compatibility report error = %v", err)
+	}
+}
+
+func TestBundleAndEpisodeCommandsFailClosed(t *testing.T) {
+	if err := runBundle(nil); err == nil || !strings.Contains(err.Error(), "build or verify") {
+		t.Fatalf("missing bundle subcommand error = %v", err)
+	}
+	if err := runBundle([]string{"publish"}); err == nil || !strings.Contains(err.Error(), "build or verify") {
+		t.Fatalf("unsupported bundle subcommand error = %v", err)
+	}
+	if err := runBundle([]string{"build"}); err == nil || !strings.Contains(err.Error(), "--manifest and --out") {
+		t.Fatalf("missing bundle build arguments error = %v", err)
+	}
+	if err := runBundle([]string{"verify", "bundle.stb"}); err == nil || !strings.Contains(err.Error(), "positional") {
+		t.Fatalf("positional bundle argument error = %v", err)
+	}
+	if err := runEpisode(context.Background(), nil); err == nil || !strings.Contains(err.Error(), "run subcommand") {
+		t.Fatalf("missing episode subcommand error = %v", err)
+	}
+	if err := runEpisode(context.Background(), []string{"run"}); err == nil || !strings.Contains(err.Error(), "--bundle and --id") {
+		t.Fatalf("missing episode arguments error = %v", err)
+	}
+	if err := runEpisode(context.Background(), []string{"start"}); err == nil || !strings.Contains(err.Error(), "run subcommand") {
+		t.Fatalf("unsupported episode subcommand error = %v", err)
+	}
+}
+
+func TestEvidenceWriterRefusesExistingOutput(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "evidence.json")
+	if err := os.WriteFile(path, []byte("keep"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeJSONFile(path, map[string]any{"replace": true}); err == nil || !strings.Contains(err.Error(), "already exists") {
+		t.Fatalf("expected existing evidence refusal, got %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || string(data) != "keep" {
+		t.Fatalf("existing evidence changed: data=%q err=%v", data, err)
 	}
 }
 

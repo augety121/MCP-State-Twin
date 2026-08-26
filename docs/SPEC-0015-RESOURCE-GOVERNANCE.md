@@ -1,8 +1,8 @@
 # SPEC-0015 — Resource Governance (Accepted Local Profile)
 
-- **Status:** Accepted subset via ADR-0013
-- **Verification status:** executable unit, runtime, storage, diff, and report-bound tests
-- **Profile:** `statetwin.dev/resource-profile/v1alpha1`, `local-preview-v1`
+- **Status:** Accepted subset via ADR-0013; TwinBundle amendment via ADR-0018
+- **Verification status:** executable unit, runtime, storage, diff, report, and bundle-bound tests
+- **Profile:** `statetwin.dev/resource-profile/v1alpha1`, `local-preview-v2`
 
 ## 1. Typed profile
 
@@ -29,9 +29,13 @@ Limits cover:
 | scenario steps / report bytes | 256 / 32 MiB |
 | fault plans / branches / snapshots | 128 / 1,024 / 1,024 |
 | concurrent calls | serialized local SQLite writer |
+| bundle files | 128 |
+| bundle compressed / extracted bytes | 32 MiB / 64 MiB |
+| bundle member bytes | 16 MiB |
 
-Bundle, cassette, scheduled-event, and future-task limits are zero because
-those features are not implemented in this release profile.
+Cassette, scheduled-event, and future-task limits are zero because those
+features are not implemented in this release profile. Bundle limits are enabled
+only for the deterministic local preview accepted by ADR-0018.
 
 ## 2. Fail-closed semantics
 
@@ -58,7 +62,7 @@ The profile does not yet implement:
 
 - OS memory/CPU quotas or distributed tenant fairness;
 - scheduler due-event/cascade budgets;
-- cassette or reproducible-bundle budgets;
+- cassette budgets;
 - remote request rate limiting;
 - storage quota/GC/WAL checkpoint governance;
 - empirical p50/p95 performance budgets.

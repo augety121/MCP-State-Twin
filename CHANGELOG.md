@@ -7,6 +7,15 @@ alpha prerelease but no stable release yet.
 
 ### Added
 
+- deterministic TwinBundle `v1alpha1` build/verify commands with strict
+  manifest and payload admission, portable path handling, exact member
+  digests, resource bounds, deterministic ZIP bytes, and tamper/negative tests;
+- one-shot local scripted EvaluationEpisode execution with a closed lifecycle,
+  declared-Scenario admission, runtime revision identity, canonical evidence
+  digest, and fail-closed output handling;
+- RFC-0003, ADR-0018, and a structured v0.2 requirement/evidence
+  ledger that keep durable/remote/provider/signing work explicitly deferred;
+- governance, maintainer, support, code-of-conduct, and CODEOWNERS records;
 - a synthetic package-registry reference Twin and release-lifecycle Scenario;
 - ADR-0014 recording the second-domain decision and its non-claims;
 - ADR-0015 accepting the L1-only v0.1 profile and explicitly deferring

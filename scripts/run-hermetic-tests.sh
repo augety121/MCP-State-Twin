@@ -30,3 +30,11 @@ trap 'rm -rf -- "$workdir"' EXIT
   --branch isolated \
   --tool get_issue \
   --input '{"owner":"octo","repository":"demo","number":1}'
+"$binary" bundle build \
+  --manifest examples/issue-tracker/bundle.yaml \
+  --out "$workdir/issue-tracker.stb"
+"$binary" bundle verify --bundle "$workdir/issue-tracker.stb"
+"$binary" episode run \
+  --bundle "$workdir/issue-tracker.stb" \
+  --id hermetic-episode \
+  --out "$workdir/episode-evidence.json"

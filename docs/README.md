@@ -20,6 +20,10 @@ order:
    — accepted local storage evidence and host-report admission boundaries;
 7. [`RELEASE-MANAGEMENT.md`](RELEASE-MANAGEMENT.md) and the root
    [`RELEASE.md`](../RELEASE.md) — maintainer and publication workflow.
+8. [`RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md`](RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md),
+   [`ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md`](ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md),
+   and [`V0.2-REQUIREMENTS.md`](V0.2-REQUIREMENTS.md) — v0.2 proposal,
+   accepted local artifact subset, and requirement/evidence ledger.
 
 The accepted normative documents are the ADRs and SPECs linked from the status
 ledger. The large pack below is deliberately preserved as proposal material so

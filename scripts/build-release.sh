@@ -8,6 +8,7 @@ if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
 fi
 
 version="${tag#v}"
+revision="$(git rev-parse HEAD)"
 rm -rf dist
 mkdir -p dist
 
@@ -29,7 +30,7 @@ for target in "${targets[@]}"; do
   binary="dist/${name}${suffix}"
   echo "building ${binary}"
   GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 go build \
-    -trimpath -ldflags "-s -w -X github.com/augety121/mcp-state-twin/internal/server.Version=${version}" \
+    -trimpath -ldflags "-s -w -X github.com/augety121/mcp-state-twin/internal/server.Version=${version} -X github.com/augety121/mcp-state-twin/internal/server.Revision=${revision}" \
     -o "$binary" ./cmd/statetwin
 done
 

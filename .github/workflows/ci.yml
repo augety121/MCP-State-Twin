@@ -27,6 +27,13 @@ jobs:
         run: go run ./cmd/statetwin scenario --spec examples/issue-tracker/twin.yaml --fixture examples/issue-tracker/state.json --scenario examples/issue-tracker/scenario-close-issue.yaml
       - name: Second reference domain smoke
         run: go run ./cmd/statetwin scenario --spec examples/package-registry/twin.yaml --fixture examples/package-registry/state.json --scenario examples/package-registry/scenario-release-lifecycle.yaml
+      - name: TwinBundle and local Episode smoke
+        run: |
+          go run ./cmd/statetwin bundle build --manifest examples/issue-tracker/bundle.yaml --out "${RUNNER_TEMP}/issue-tracker.stb"
+          go run ./cmd/statetwin bundle verify --bundle "${RUNNER_TEMP}/issue-tracker.stb"
+          go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/issue-tracker.stb" --id ci-issue-tracker --out "${RUNNER_TEMP}/issue-tracker-evidence.json"
+          go run ./cmd/statetwin bundle build --manifest examples/package-registry/bundle.yaml --out "${RUNNER_TEMP}/package-registry.stb"
+          go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/package-registry.stb" --id ci-package-registry --out "${RUNNER_TEMP}/package-registry-evidence.json"
       - name: Resource profile smoke
         run: go run ./cmd/statetwin limits
       - name: MCP 2026 wire smoke
@@ -35,6 +42,23 @@ jobs:
           go run ./cmd/statetwin protocols
       - name: Build
         run: go build ./cmd/statetwin
+
+  platform-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.26.x"
+          cache: true
+      - name: Test and build
+        run: |
+          go test ./...
+          go build ./cmd/statetwin
 
   fuzz-smoke:
     runs-on: ubuntu-latest

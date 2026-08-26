@@ -21,8 +21,14 @@ func TestDefaultProfileDigestIsStableAndBindsSemanticLimits(t *testing.T) {
 	if profile.Format != Format || profile.Version != Version {
 		t.Fatalf("profile identity = %#v", profile)
 	}
-	if profile.MaxScheduledEvents != 0 || profile.MaxBundleFiles != 0 {
+	if profile.MaxScheduledEvents != 0 || profile.MaxCassetteBytes != 0 {
 		t.Fatal("disabled features must use zero, not an accidental unlimited value")
+	}
+	if profile.MaxBundleFiles != 128 || profile.MaxBundleCompressed != 32<<20 || profile.MaxBundleExtracted != 64<<20 {
+		t.Fatal("enabled TwinBundle limits are not bound into the resource profile")
+	}
+	if profile.MaxBundleMember != 16<<20 {
+		t.Fatal("enabled TwinBundle member limit is not bound into the resource profile")
 	}
 }
 

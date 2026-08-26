@@ -237,10 +237,13 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 | Issue-tracker reference twin | ✅ | 6 tools; synthetic; `L1/unverified/unbound` |
 | Package-registry reference twin | ✅ | publish/yank/install/advisory flows; synthetic; `L1/unverified/unbound` |
 | Scenario `v1alpha1` runner | ✅ | Bounded scripted scenario; not live model evaluation |
+| Deterministic TwinBundle `v1alpha1` | ✅ development preview | Strict manifest, payload semantics, member SHA-256, path/type/size limits, reproducible ZIP; unsigned |
+| Local scripted EvaluationEpisode | ✅ development preview | Single process and Scenario, closed lifecycle, digestible evidence; not a provider harness |
 | HostCompatibilityReport admission | ✅ | Strict schema, bounded evidence, and credential/private-key/email pattern rejection; not a live-provider result |
 | Live OpenAI / ChatGPT / Claude smoke tests | ❌ not verified | No host-compatibility claim |
 | Deterministic fault injection / virtual-clock advancement | 🧪 Partial | Private clock and two fault transaction phases implemented; remaining scheduler/fault semantics are not |
 | Versioned resource governance | 🧪 Partial | `statetwin limits`, environment digest, and fail-closed local budgets; OS/remote quotas are not implemented |
+| Durable/remote Episodes, HostProfile, signed bundles | ⏳ | Not implemented; no remote execution, supply-chain authenticity, or host compatibility claim |
 | Recorder / cassette replay / trace redaction | ⏳ | Not implemented |
 | Differential validation / L2 promotion | ⏳ | Not complete |
 | Data-plane auth / TLS / remote multi-tenancy | ⏳ | Current build should remain local/loopback |
@@ -264,6 +267,8 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - bounded TwinSpec/CEL fuzz targets plus secret-policy and loopback-only hermetic CI gates;
 - a tested CLI loop: initialize → snapshot → fork twice → mutate → terminal diff;
 - bounded Scenario `v1alpha1` runner with deterministic environment identity, ordered tool traces, JSON Pointer state assertions, and canonical state diff.
+- deterministic TwinBundle `v1alpha1` admission with strict paths, regular-file and size checks, member SHA-256, payload semantics, and byte-for-byte reproducible ZIP output;
+- local scripted EvaluationEpisode execution over declared Scenarios, with a closed lifecycle, runtime revision, complete Scenario report, and canonical evidence digest;
 - bounded branch-local fault plans for `before-validation` and `after-commit-before-response`, with a stable plan digest, transactional counters, and fault-event audit.
 - a versioned resource profile: input/output/state, JSON depth/member, effect/query, diff/report, and branch/snapshot limits fail closed as `RESOURCE_LIMIT` and bind to Scenario environment identity.
 - storage compatibility evidence for v1/v2/v3 forward migration, the public alpha schema-v4 fixture, and two migration pre-commit process-exit kill-points.
@@ -280,6 +285,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - a live provider harness, admitted OpenAI/Anthropic reports, or an evidence-derived compatibility matrix;
 - differential validation or an L2 fidelity promotion workflow;
 - data-plane authentication, TLS, remote multi-tenancy, or a security audit.
+- durable Episode storage, concurrent workers, remote runners, cancellation recovery, HostProfile, bundle signing/registry, or provenance attestations.
 
 </details>
 
@@ -324,6 +330,23 @@ real package registry.
 
 > [!WARNING]
 > Scenario reports contain tool inputs and results. Use synthetic fixtures only; do not commit reports containing credentials, production traces, or personal data.
+
+### Build a portable TwinBundle and run a local Episode
+
+```bash
+go run ./cmd/statetwin bundle build \
+  --manifest examples/issue-tracker/bundle.yaml \
+  --out issue-tracker.stb
+
+go run ./cmd/statetwin bundle verify --bundle issue-tracker.stb
+
+go run ./cmd/statetwin episode run \
+  --bundle issue-tracker.stb \
+  --id local-episode-001 \
+  --out episode-evidence.json
+```
+
+`bundle verify` checks both archive integrity and strict TwinSpec, fixture, and Scenario semantics. It does **not** establish publisher identity or upstream fidelity. The current Episode runs `scripted-scenario` only and never calls Codex, OpenAI, Claude, or another remote model. Existing output paths are refused to prevent accidental evidence overwrite.
 
 ---
 
@@ -627,6 +650,9 @@ statetwin scenario   execute a bounded scripted scenario and assertions
 statetwin protocols   print pinned MCP wire-evidence profiles
 statetwin limits      print the versioned resource profile and digest
 statetwin compatibility validate --report report.yaml
+statetwin bundle build --manifest bundle.yaml --out twin.stb
+statetwin bundle verify --bundle twin.stb
+statetwin episode run --bundle twin.stb --id episode-001 --out evidence.json
 statetwin serve      run separate MCP data and HTTP control planes
 statetwin version    print the development version
 ```
@@ -661,6 +687,8 @@ For a first read, the suggested path is:
 6. **[Runtime Semantics](docs/SPEC-0002-RUNTIME-SEMANTICS.md)** — determinism, transactions, snapshots, and errors;
 7. **[Release Management](docs/RELEASE-MANAGEMENT.md)** — versions, CI, tags, release evidence, and maintainer cadence;
 8. **[Roadmap](docs/ROADMAP.md)** — ordered next steps and exit criteria.
+9. **[RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md)** — v0.2 local evaluation proposal and its accepted subset;
+10. **[v0.2 Requirement Ledger](docs/V0.2-REQUIREMENTS.md)** — requirements, decisions, status, and evidence.
 
 ### Specifications
 
@@ -686,6 +714,7 @@ For a first read, the suggested path is:
 
 - [RFC-0001](docs/RFC-0001.md) — product boundary, hard invariants, architecture, semantics, and release gates
 - [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) — v0.1 normative release profile, limits, traceability, and gates
+- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 local evaluation platform; only the ADR-0018 subset is accepted
 
 ### ADRs
 
@@ -706,6 +735,7 @@ For a first read, the suggested path is:
 - [ADR-0015](docs/ADR-0015-V0.1-SCOPE-AND-FIDELITY.md) — accepted L1-only v0.1 scope and explicit fidelity deferrals
 - [ADR-0016](docs/ADR-0016-V0.1-STORAGE-COMPATIBILITY.md) — accepted local SQLite compatibility and migration-recovery evidence
 - [ADR-0017](docs/ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md) — strict host report admission without provider claims
+- [ADR-0018](docs/ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md) — deterministic TwinBundle and local scripted Episode preview
 
 ### Evidence / research
 

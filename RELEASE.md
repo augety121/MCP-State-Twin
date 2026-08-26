@@ -11,13 +11,16 @@ proposal text into an implementation claim.
 1. Confirm the working tree is clean and the target commit is on main.
 2. Run the commands in docs/IMPLEMENTATION-STATUS.md.
 3. Run go test -race ./... on Linux CI; Windows without cgo is not race evidence.
-4. Run scenario, MCP wire, fuzz, secret-policy, and hermetic-egress jobs.
+4. Run Scenario, TwinBundle/Episode, MCP wire, fuzz, secret-policy, and
+   hermetic-egress jobs.
 5. Review changed public claims in all README language variants.
 6. Update CHANGELOG.md with verified behavior and explicit limitations.
 7. Update the relevant ADR/SPEC and implementation status together.
 8. Create a GitHub release only from the reviewed commit.
 9. For stable v0.1, validate both required provider-family evidence reports and
    review their remote deployment profile; an absent report keeps the gate open.
+10. Treat unsigned TwinBundle verification as integrity/semantic evidence only;
+    it is not publisher identity or supply-chain provenance.
 
 For a tagged release, use a SemVer tag such as `v0.1.0-alpha.1` or `v0.1.1`.
 The tag workflow in `.github/workflows/release.yml` reruns the release gates,

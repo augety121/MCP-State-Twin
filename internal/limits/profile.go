@@ -10,7 +10,7 @@ import (
 
 const (
 	Format  = "statetwin.dev/resource-profile/v1alpha1"
-	Version = "local-preview-v1"
+	Version = "local-preview-v2"
 
 	MaxSpecBytes         = 1 << 20
 	MaxToolCount         = 256
@@ -36,9 +36,10 @@ const (
 	MaxForks             = 1024
 	MaxSnapshots         = 1024
 	MaxConcurrentCalls   = 1
-	MaxBundleFiles       = 0
-	MaxBundleCompressed  = 0
-	MaxBundleExtracted   = 0
+	MaxBundleFiles       = 128
+	MaxBundleCompressed  = 32 << 20
+	MaxBundleExtracted   = 64 << 20
+	MaxBundleMember      = 16 << 20
 	MaxCassetteBytes     = 0
 	MaxScheduledEvents   = 0
 	FutureMaxTaskCount   = 0
@@ -78,6 +79,7 @@ type Profile struct {
 	MaxBundleFiles       int    `json:"maxBundleFiles"`
 	MaxBundleCompressed  int    `json:"maxBundleCompressedBytes"`
 	MaxBundleExtracted   int    `json:"maxBundleExtractedBytes"`
+	MaxBundleMember      int    `json:"maxBundleMemberBytes"`
 	FutureMaxTaskCount   int    `json:"futureMaxTaskCount"`
 }
 
@@ -99,7 +101,8 @@ func Default() Profile {
 		MaxForks: MaxForks, MaxSnapshots: MaxSnapshots,
 		MaxConcurrentCalls: MaxConcurrentCalls, MaxCassetteBytes: MaxCassetteBytes,
 		MaxBundleFiles: MaxBundleFiles, MaxBundleCompressed: MaxBundleCompressed,
-		MaxBundleExtracted: MaxBundleExtracted, FutureMaxTaskCount: FutureMaxTaskCount,
+		MaxBundleExtracted: MaxBundleExtracted, MaxBundleMember: MaxBundleMember,
+		FutureMaxTaskCount: FutureMaxTaskCount,
 	}
 }
 

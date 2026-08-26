@@ -10,6 +10,10 @@ Maintainer workflows and release evidence are documented in
 [docs/MAINTAINER-EVIDENCE.md](docs/MAINTAINER-EVIDENCE.md). Document authority
 and proposal status are defined in
 [docs/DOCS-GOVERNANCE.md](docs/DOCS-GOVERNANCE.md).
+Project roles, decision rights, support boundaries, and community expectations
+are defined in [GOVERNANCE.md](GOVERNANCE.md),
+[MAINTAINERS.md](MAINTAINERS.md), [SUPPORT.md](SUPPORT.md), and
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ## Development setup
 
@@ -24,6 +28,9 @@ go test ./...
 go build ./cmd/statetwin
 go run ./cmd/statetwin validate --spec examples/issue-tracker/twin.yaml
 go run ./cmd/statetwin scenario --spec examples/issue-tracker/twin.yaml --fixture examples/issue-tracker/state.json --scenario examples/issue-tracker/scenario-close-issue.yaml
+go run ./cmd/statetwin bundle build --manifest examples/issue-tracker/bundle.yaml --out issue-tracker.stb
+go run ./cmd/statetwin bundle verify --bundle issue-tracker.stb
+go run ./cmd/statetwin episode run --bundle issue-tracker.stb --id contributor-smoke --out episode-evidence.json
 ```
 
 Before submitting a change:
@@ -47,6 +54,7 @@ Open an ADR or RFC change before implementing anything that changes:
 - supported MCP protocol behavior.
 - Scenario/report semantics or environment identity.
 - resource limits or profile/environment identity.
+- TwinBundle manifest/admission, Episode lifecycle, or evidence identity.
 
 ## Pull requests
 

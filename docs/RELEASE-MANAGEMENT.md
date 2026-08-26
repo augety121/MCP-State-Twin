@@ -33,7 +33,7 @@ Before tagging:
 1. `git status --short` is empty and the commit is on `main`.
 2. `go test ./...` and `go vet ./...` pass locally.
 3. Linux CI passes `go test -race ./...`.
-4. Scenario, MCP wire, limits, fuzz, secret-policy and hermetic-egress jobs
+4. Scenario, TwinBundle/Episode, MCP wire, limits, fuzz, secret-policy and hermetic-egress jobs
    pass, or the release notes record a precise exception.
 5. README language variants, `CHANGELOG.md`, RFC-0002 and
    `IMPLEMENTATION-STATUS.md` agree.
@@ -47,6 +47,9 @@ Before tagging:
    `statetwin compatibility validate`; their remote deployment profile is
    reviewed, and no raw provider request ID, transcript, or credential is
    committed.
+10. For a release containing TwinBundle/Episode preview changes, build and
+    verify both reference bundles, run one Episode per reference domain, and
+    record that artifacts are unsigned and local-only.
 
 ## Tag and publish procedure
 

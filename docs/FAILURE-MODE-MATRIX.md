@@ -140,6 +140,16 @@ implemented the corresponding feature.
 | F-118 | Upgrade | old TwinSpec is silently reinterpreted by a new evaluator | P0 | semantic versioning, golden vectors, explicit migration |
 | F-119 | Benchmark | an easy twin inflates agent scores through missing constraints | P1 | fidelity report, negative cases, differential coverage |
 | F-120 | Legal | third-party trace or schema is redistributed without permission | P0 | synthetic fixtures by default, consent/license gate |
+| F-121 | Bundle | archive path traversal or intermediate symlink escapes the source root | P0 | reject non-canonical paths and every symlink path component; negative tests |
+| F-122 | Bundle | duplicate or undeclared archive members hide a different payload | P0 | exact declared-member set, duplicate refusal, member SHA-256 |
+| F-123 | Bundle | decompression/file-count amplification exhausts memory or disk | P0 | compressed, extracted, per-member and file-count admission limits |
+| F-124 | Bundle | valid hashes wrap an invalid TwinSpec, fixture, or Scenario | P0 | strict semantic payload admission during build and verify |
+| F-125 | Bundle | unsigned integrity check is misrepresented as publisher authenticity | P0 | explicit unsigned status; signing/provenance remains blocked |
+| F-126 | Episode | requested Scenario is not part of the admitted Bundle | P0 | declared-Scenario lookup only; omission allowed only for one Scenario |
+| F-127 | Episode | retry overwrites earlier evidence and erases the failure record | P1 | current CLI refuses existing output; durable append-only store is future work |
+| F-128 | Episode | process exit loses lifecycle/commit ambiguity | P0 | local preview makes no durability claim; remote/durable design requires kill-point evidence |
+| F-129 | Evidence | development scripted report is mistaken for a provider run | P0 | fixed `development` claim and `scripted-scenario` identity |
+| F-130 | Evidence | report publishes secrets or personal data from inputs/results | P0 | synthetic-only policy and secret scan; encryption/retention controls remain unimplemented |
 
 ## Release interpretation
 

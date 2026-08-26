@@ -51,6 +51,8 @@
 - deterministic environment identity、ordered tool trace、JSON Pointer state assertion、canonical state diff を備えた bounded Scenario `v1alpha1` runner
 - v1/v2/v3 migration、tagged alpha schema-v4 fixture、process-exit recovery を含む local SQLite compatibility evidence
 - strict HostCompatibilityReport admission（live provider compatibility の証明ではない）
+- deterministic TwinBundle `v1alpha1`（厳格な path/type/size/digest/payload 検証、再現可能 ZIP、未署名）
+- local scripted EvaluationEpisode（閉じた lifecycle と evidence digest。provider harness ではない）
 
 ### 未実装または未検証
 
@@ -59,6 +61,7 @@
 - 実際の ChatGPT / OpenAI API / Claude / Claude Code smoke test
 - live provider harness、admitted OpenAI/Anthropic report、evidence-derived compatibility matrix
 - differential validation、L2 fidelity promotion workflow
+- durable/remote Episode、HostProfile、bundle signing/registry、provenance attestation
 - data-plane authentication、TLS、remote multi-tenancy、security audit
 
 詳細は [Implementation Status](docs/IMPLEMENTATION-STATUS.md) を参照してください。Roadmap 上の項目を現在の機能として表現することはありません。
@@ -312,6 +315,9 @@ statetwin version    print the development version
 statetwin protocols   print pinned MCP wire-evidence profiles
 statetwin limits      print the versioned resource profile and digest
 statetwin compatibility validate --report report.yaml
+statetwin bundle build --manifest bundle.yaml --out twin.stb
+statetwin bundle verify --bundle twin.stb
+statetwin episode run --bundle twin.stb --id episode-001 --out evidence.json
 ```
 
 ## Test / Build
@@ -350,6 +356,7 @@ go build ./cmd/statetwin
 - [Release Management](docs/RELEASE-MANAGEMENT.md) — バージョン、CI、タグ、リリース証拠
 - [RFC-0001](docs/RFC-0001.md)
 - [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md)
+- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) / [v0.2 Requirement Ledger](docs/V0.2-REQUIREMENTS.md)
 - [SPEC-0001](docs/SPEC-0001-TWINSPEC-CORE.md) / [SPEC-0002](docs/SPEC-0002-RUNTIME-SEMANTICS.md) / [SPEC-0003](docs/SPEC-0003-MCP-BOUNDARIES-AND-COMPATIBILITY.md)
 - [SPEC-0004](docs/SPEC-0004-EVIDENCE-FIDELITY-AND-RELEASE.md) / [SPEC-0005](docs/SPEC-0005-SCENARIO-AND-REPORT.md) / [SPEC-0006](docs/SPEC-0006-HOST-COMPATIBILITY-AND-MODEL-EVALUATION.md)
 - [Phase 0 MCP 2026 Gap Matrix](docs/PHASE-0-MCP-2026-GAP-MATRIX.md) / [vNext Adoption Record](docs/VNEXT-ADOPTION.md)
@@ -358,6 +365,7 @@ go build ./cmd/statetwin
 - [SPEC-0015](docs/SPEC-0015-RESOURCE-GOVERNANCE.md) / [ADR-0013](docs/ADR-0013-RESOURCE-GOVERNANCE-PROFILE.md)
 - [ADR-0015](docs/ADR-0015-V0.1-SCOPE-AND-FIDELITY.md) — v0.1 の L1-only scope と明示的な fidelity 延期
 - [ADR-0016](docs/ADR-0016-V0.1-STORAGE-COMPATIBILITY.md) / [ADR-0017](docs/ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md)
+- [ADR-0018](docs/ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md)
 - [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md)
 - [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md)
 - [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md)

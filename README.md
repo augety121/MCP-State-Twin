@@ -237,10 +237,13 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 | Issue-tracker reference Twin | ✅ | 6 tools；synthetic；`L1/unverified/unbound` |
 | Package-registry reference Twin | ✅ | publish/yank/install/advisory flows；synthetic；`L1/unverified/unbound` |
 | Scenario `v1alpha1` runner | ✅ | 有界 scripted scenario；不是 live model evaluation |
+| Deterministic TwinBundle `v1alpha1` | ✅ 开发预览 | 严格清单、payload 语义校验、成员 SHA-256、路径/类型/大小限制、可重现 ZIP；未签名 |
+| Local scripted EvaluationEpisode | ✅ 开发预览 | 单进程、单 Scenario、封闭生命周期与可摘要 evidence；不是 provider harness |
 | HostCompatibilityReport admission | ✅ | 严格 schema、bounded evidence、credential/private-key/email pattern rejection；不等于 live provider 通过 |
 | Live OpenAI / ChatGPT / Claude smoke tests | ❌ 尚未验证 | 不声明 host compatibility |
 | Deterministic fault injection / virtual-clock advancement | 🧪 部分实现 | 私有 clock；两个 fault transaction phases；其余 scheduler/fault semantics 未实现 |
 | Versioned resource governance | 🧪 部分实现 | `statetwin limits`、environment digest、fail-closed local budgets；OS/remote quotas 未实现 |
+| Durable/remote Episode、HostProfile、signed bundle | ⏳ | 尚未实现；不声明远程执行、供应链真实性或 host compatibility |
 | Recorder / cassette replay / trace redaction | ⏳ | 尚未实现 |
 | Differential validation / L2 promotion | ⏳ | 尚未完成 |
 | Data-plane auth / TLS / remote multi-tenancy | ⏳ | 当前仅适合本地 loopback 使用 |
@@ -264,6 +267,8 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 - bounded TwinSpec/CEL fuzz targets，以及 secret-policy / loopback-only hermetic CI gates；
 - 已测试 CLI 主链路：initialize → snapshot → fork ×2 → mutate → terminal diff；
 - bounded Scenario `v1alpha1` runner：deterministic environment identity、ordered tool trace、JSON Pointer state assertion 与 canonical state diff。
+- deterministic TwinBundle `v1alpha1`：严格检查声明路径、regular-file、大小、成员 SHA-256 和 payload 语义，并生成 byte-for-byte 可重现的 ZIP artifact；
+- local scripted EvaluationEpisode：只运行 bundle 声明的 Scenario，记录封闭生命周期、runtime revision、完整 Scenario report 与 canonical evidence digest；
 - bounded branch-local fault plans：`before-validation` 与 `after-commit-before-response`，带稳定 plan digest、事务内计数和 fault-event audit。
 - versioned resource profile：input/output/state、JSON depth/members、effect/query、diff/report、branch/snapshot limits 以 `RESOURCE_LIMIT` fail closed，并绑定 Scenario environment digest。
 - storage compatibility evidence：v1/v2/v3 forward migration、公开 alpha schema-v4 fixture reopen，以及两个 migration pre-commit 进程退出 kill-points。
@@ -280,6 +285,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 - live provider harness、admitted OpenAI/Anthropic reports 与 evidence-derived compatibility matrix；
 - differential validation 或 L2 fidelity promotion workflow；
 - data-plane authentication、TLS、remote multi-tenancy、security audit。
+- durable Episode store、并发 worker、remote runner、cancellation recovery、HostProfile、bundle signing/registry 与 provenance attestation。
 
 </details>
 
@@ -323,6 +329,23 @@ yanked release 不能被安装。该环境同样是 synthetic、`L1/unverified/u
 
 > [!WARNING]
 > Scenario report 会包含工具输入与结果。请只使用 synthetic fixture；不要提交含 credential、production trace 或 personal data 的报告。
+
+### 构建可移植 TwinBundle 并运行本地 Episode
+
+```bash
+go run ./cmd/statetwin bundle build \
+  --manifest examples/issue-tracker/bundle.yaml \
+  --out issue-tracker.stb
+
+go run ./cmd/statetwin bundle verify --bundle issue-tracker.stb
+
+go run ./cmd/statetwin episode run \
+  --bundle issue-tracker.stb \
+  --id local-episode-001 \
+  --out episode-evidence.json
+```
+
+`bundle verify` 同时验证 archive 完整性和包内 TwinSpec、fixture、Scenario 的严格语义，但它**不证明发布者身份或上游 fidelity**。当前 Episode 只执行确定性的 `scripted-scenario`，不会调用 Codex、OpenAI、Claude 或任何远程模型。为避免覆盖证据，已存在的 `--out` 路径会 fail closed。
 
 ---
 
@@ -626,6 +649,9 @@ statetwin scenario   execute a bounded scripted scenario and assertions
 statetwin protocols   print pinned MCP wire-evidence profiles
 statetwin limits      print the versioned resource profile and digest
 statetwin compatibility validate --report report.yaml
+statetwin bundle build --manifest bundle.yaml --out twin.stb
+statetwin bundle verify --bundle twin.stb
+statetwin episode run --bundle twin.stb --id episode-001 --out evidence.json
 statetwin serve      run separate MCP data and HTTP control planes
 statetwin version    print the development version
 ```
@@ -660,6 +686,8 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 6. **[Runtime Semantics](docs/SPEC-0002-RUNTIME-SEMANTICS.md)** — 确定性、事务、snapshot 与错误；
 7. **[Release Management](docs/RELEASE-MANAGEMENT.md)** — 版本、CI、tag、release evidence 与维护节奏；
 8. **[Roadmap](docs/ROADMAP.md)** — 下一阶段工作与退出条件。
+9. **[RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md)** — v0.2 本地评测平台提案与已接受子集；
+10. **[v0.2 Requirement Ledger](docs/V0.2-REQUIREMENTS.md)** — requirement、decision、实现状态与证据。
 
 ### Specifications
 
@@ -685,6 +713,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 
 - [RFC-0001](docs/RFC-0001.md) — product boundary、hard invariants、architecture、semantics、release gates
 - [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) — v0.1 normative release profile、limits、traceability、gates
+- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 local evaluation platform；仅 ADR-0018 所列子集已接受
 
 ### ADR
 
@@ -705,6 +734,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [ADR-0015](docs/ADR-0015-V0.1-SCOPE-AND-FIDELITY.md) — accepted L1-only v0.1 scope and explicit fidelity deferrals
 - [ADR-0016](docs/ADR-0016-V0.1-STORAGE-COMPATIBILITY.md) — accepted local SQLite compatibility and migration-recovery evidence
 - [ADR-0017](docs/ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md) — strict host report admission without provider claims
+- [ADR-0018](docs/ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md) — deterministic TwinBundle 与 local scripted Episode preview
 
 ### Evidence / Research
 

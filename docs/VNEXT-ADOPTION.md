@@ -13,8 +13,8 @@ the following bounded slice in this change:
 5. the bounded deterministic-fault preview in ADR-0012 and local resource
    governance profile in ADR-0013 are implemented; all
    other fault phases, scheduler, entropy, recorder/replay, differential
-   fidelity, remote security, bundles, and host adapters remain proposals with
-   explicit gates.
+   fidelity, remote security, and host adapters remain proposals with explicit
+   gates.
 6. ADR-0014 accepts the synthetic package-registry reference domain as the
    second stateful domain required by the v0.1 release profile; it does not
    claim compatibility with any real package registry.
@@ -25,6 +25,10 @@ the following bounded slice in this change:
    tagged fixtures and interrupted-migration recovery evidence.
 9. ADR-0017 accepts strict HostCompatibilityReport admission without claiming
    that a live OpenAI or Anthropic run has occurred.
+10. ADR-0018 accepts deterministic unsigned TwinBundle admission and one-shot
+    local scripted EvaluationEpisode evidence. Durable/remote execution,
+    HostProfile adapters, signatures, registries, and provider claims remain
+    proposals.
 
 The authoritative implementation status is
 [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md). A proposal becomes an
