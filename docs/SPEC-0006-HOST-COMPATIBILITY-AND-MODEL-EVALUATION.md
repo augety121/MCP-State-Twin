@@ -2,6 +2,7 @@
 
 - **Status:** Report-admission subset accepted by ADR-0017; live provider profiles unverified
 - **Scope:** MCP host interoperability and cross-model evaluation evidence
+- **Amended by:** SPEC-0019 for exact HostProfile identity, live evidence and freshness
 - **Related:** SPEC-0003, SPEC-0004, SPEC-0005, ADR-0002, ADR-0008
 
 ## 1. Purpose
@@ -354,5 +355,7 @@ report fields, or minimum evidence require an ADR and a compatibility note.
 Provider-specific implementation details SHOULD live in adapters or harnesses,
 not in the deterministic state engine.
 
-The compatibility matrix MUST be regenerated from evidence artifacts. It MUST
-NOT be a hand-edited marketing table whose status can diverge from test output.
+A `verified` compatibility row MUST be generated from admitted evidence
+artifacts. The repository MAY maintain a hand-reviewed bootstrap matrix for
+`unverified`, `unsupported` and explicitly experimental profiles, but it MUST
+NOT use that table to manufacture or preserve `verified` status.

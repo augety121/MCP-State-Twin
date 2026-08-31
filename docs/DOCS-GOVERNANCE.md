@@ -9,9 +9,10 @@ of documents.
 When documents disagree, use this order:
 
 1. `AGENTS.md` for repository process and safety rules;
-2. accepted ADRs for binding architectural decisions;
-3. RFC-0002 for the current v0.1 release profile and gates; RFC-0003 only for
-   the subsets explicitly accepted by ADR-0018 and ADR-0019;
+2. accepted ADRs for binding architectural decisions, including ADR-0021 for
+   lifecycle and release boundaries;
+3. accepted RFCs: RFC-0001 revision 3 for the product contract, RFC-0002 for
+   v0.1, and RFC-0003 only for subsets accepted by ADR-0018 through ADR-0020;
 4. `SPEC-0001` through accepted SPEC documents for normative semantics;
 5. `IMPLEMENTATION-STATUS.md` for what executable evidence exists today;
 6. `ROADMAP.md` and the vNext pack for planned work only.
@@ -58,6 +59,32 @@ Changing only README prose never changes the product contract.
   a newly accepted capability.
 - `docs/00-...` through `docs/33-...`: vendored vNext proposal material; not
   implementation authority.
+
+## Independent version dimensions
+
+The following versions MUST be recorded independently when they apply:
+
+- product release;
+- TwinSpec API;
+- MCP protocol profile;
+- world-store schema;
+- Episode-Journal schema;
+- Evidence format;
+- TwinBundle format;
+- ResourceProfile;
+- HostProfile; and
+- provider/host adapter.
+
+Changing one dimension does not silently change or verify another.
+
+## Normative indexes
+
+- `REQUIREMENT-TRACEABILITY.md` maps accepted requirements to evidence.
+- `CLAIM-REGISTRY.md` controls public implementation claims.
+- `COMPATIBILITY-MATRIX.md` records exact profiles without transitive claims.
+- `DECISION-REGISTER.md` separates resolved decisions from open roadmap work.
+- `PHASE-00` through `PHASE-07` define entry, scope, exclusions and exit
+  evidence for each lifecycle phase.
 
 ## Claim review checklist
 

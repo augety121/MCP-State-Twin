@@ -230,7 +230,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 | Canonical spec / MCP surface / world-state digests | ✅ | SHA-256 |
 | Upstream binding admission | ✅ | Fails closed on surface mismatch |
 | SQLite atomic transitions and audit | ✅ | Versioned database identity and storage schema |
-| SQLite storage compatibility | ✅ | v1/v2/v3 migration, tagged alpha v4 reopen, and process-exit recovery; ADR-0016 local profile only |
+| World-store storage compatibility | ✅ | v1/v2/v3 → v4, tagged-alpha v4 reopen, migration kill-point recovery, and zero-write foreign/future refusal; ADR-0016 local profile only |
 | Immutable snapshot / fork / reset / diff | ✅ | Isolated branch state |
 | Stateless Streamable HTTP MCP data plane | ✅ | Official Go SDK |
 | Separate HTTP control plane | ✅ | Bearer token; isolated from the data plane |
@@ -239,12 +239,15 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 | Scenario `v1alpha1` runner | ✅ | Bounded scripted scenario; not live model evaluation |
 | Deterministic TwinBundle `v1alpha1` | ✅ development preview | Strict manifest, payload semantics, member SHA-256, path/type/size limits, reproducible ZIP; unsigned |
 | Local scripted EvaluationEpisode | ✅ development preview | Single process and Scenario, closed lifecycle, digestible evidence; not a provider harness |
-| Durable local Episode Journal | ✅ development preview | Independent SQLite, immutable request digest, lifecycle CAS, idempotent terminal Evidence reads, explicit `incomplete` |
+| Durable Episode Journal | ✅ development preview | Independent SQLite schema v2; v1-fixture migration, migration kill-point recovery, immutable requests, and terminal Evidence consistency checks |
+| Remote Episode coordinator/workers | ✅ development preview | Bearer/TLS boundary, leases, heartbeats, fencing, concurrent claiming, bounded retry, and cooperative cancellation; synthetic TwinBundles only |
+| Exactly-once terminal acceptance | ✅ bounded semantics | At most one matching Evidence envelope is accepted per parent Episode; **not** exactly-once provider/tool/external effects |
 | HostCompatibilityReport admission | ✅ | Strict schema, bounded evidence, and credential/private-key/email pattern rejection; not a live-provider result |
-| Live OpenAI / ChatGPT / Claude smoke tests | ❌ not verified | No host-compatibility claim |
+| OpenAI / Anthropic provider smoke harness | 🧪 contract tested | OpenAI background/retrieve/cancel and Anthropic MCP connector mock contract tests; no dated live report yet |
 | Deterministic fault injection / virtual-clock advancement | 🧪 Partial | Private clock and two fault transaction phases implemented; remaining scheduler/fault semantics are not |
 | Versioned resource governance | 🧪 Partial | `statetwin limits`, environment digest, and fail-closed local budgets; OS/remote quotas are not implemented |
-| Remote Episodes/retry/cancellation, HostProfile, signed bundles | ⏳ | Not implemented; no remote execution, exactly-once, supply-chain authenticity, or host compatibility claim |
+| External-effect retry / distributed HA | ⏳ | Ambiguous external commits stop at `COMMIT_UNKNOWN`; no multi-coordinator, replication, manual reconciliation, or external exactly-once claim |
+| HostProfile / signed bundles | ⏳ | No supply-chain-authenticity or host-compatibility claim |
 | Recorder / cassette replay / trace redaction | ⏳ | Not implemented |
 | Differential validation / L2 promotion | ⏳ | Not complete |
 | Data-plane auth / TLS / remote multi-tenancy | ⏳ | Current build should remain local/loopback |
@@ -271,6 +274,9 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - deterministic TwinBundle `v1alpha1` admission with strict paths, regular-file and size checks, member SHA-256, payload semantics, and byte-for-byte reproducible ZIP output;
 - local scripted EvaluationEpisode execution over declared Scenarios, with a closed lifecycle, runtime revision, complete Scenario report, and canonical evidence digest;
 - optional durable local Episode Journal with independent SQLite identity/schema, request-digest binding, transactional lifecycle CAS, atomic terminal Evidence persistence, and `episode inspect`;
+- fenced remote Episode coordinator with schema-v2 task/attempt lineage, one active lease, heartbeats, monotonic fencing, hermetic recovery, cooperative cancellation, and fail-closed `COMMIT_UNKNOWN`;
+- provider-neutral remote worker that claims only `hermetic` tasks, runs TwinBundles through a separate HTTP control plane, and atomically submits Evidence;
+- OpenAI/Anthropic smoke harness with current official API contract shapes and mock-server positive/negative tests; persisted reports contain digests, capabilities, and counts rather than tokens, raw responses, or prompts;
 - bounded branch-local fault plans for `before-validation` and `after-commit-before-response`, with a stable plan digest, transactional counters, and fault-event audit.
 - a versioned resource profile: input/output/state, JSON depth/member, effect/query, diff/report, and branch/snapshot limits fail closed as `RESOURCE_LIMIT` and bind to Scenario environment identity.
 - storage compatibility evidence for v1/v2/v3 forward migration, the public alpha schema-v4 fixture, and two migration pre-commit process-exit kill-points.
@@ -283,11 +289,12 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 
 - recorder, cassette replay, trace redaction, or automatic upstream surface inspection/refresh;
 - remaining deterministic fault phases, scheduler, deterministic entropy, idempotency collapse, crash/cancellation, and eventual consistency; the private clock and two fault phases are implemented;
-- live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
-- a live provider harness, admitted OpenAI/Anthropic reports, or an evidence-derived compatibility matrix;
+- live ChatGPT, Claude product, or Claude Code smoke tests;
+- dated OpenAI/Anthropic live reports or an evidence-derived compatibility matrix; the current environment has no provider key or public synthetic MCP endpoint;
 - differential validation or an L2 fidelity promotion workflow;
 - data-plane authentication, TLS, remote multi-tenancy, or a security audit.
-- Episode automatic retry/resume, concurrent/remote workers, cancellation/commit recovery, leases/retention, HostProfile, bundle signing/registry, or provenance attestations.
+- automatic retry for external effects, manual `COMMIT_UNKNOWN` reconciliation, multi-coordinator HA/replication, retention, HostProfile, bundle signing/registry, or provenance attestations;
+- exactly-once provider inference, HTTP delivery, MCP tool execution, or arbitrary external side effects.
 
 </details>
 
@@ -357,7 +364,54 @@ go run ./cmd/statetwin episode inspect \
   --id durable-episode-001
 ```
 
-`bundle verify` checks both archive integrity and strict TwinSpec, fixture, and Scenario semantics. It does **not** establish publisher identity or upstream fidelity. The current Episode runs `scripted-scenario` only and never calls Codex, OpenAI, Claude, or another remote model. The Journal returns existing Evidence for an identical completed request, conflicts on the same ID with different inputs, and reports non-terminal records as `incomplete` without automatic retry. Existing output paths are refused to prevent accidental evidence overwrite.
+`bundle verify` checks both archive integrity and strict TwinSpec, fixture, and Scenario semantics. It does **not** establish publisher identity or upstream fidelity. A local Episode runs `scripted-scenario` only and never calls Codex, OpenAI, Claude, or another remote model. The Journal returns existing Evidence for an identical completed request and conflicts on the same ID with different inputs. Existing output paths are refused to prevent accidental evidence overwrite.
+
+### Run a fenced remote Episode worker
+
+Submit a task that permits hermetic execution only:
+
+```bash
+go run ./cmd/statetwin episode submit \
+  --bundle issue-tracker.stb \
+  --id remote-episode-001 \
+  --journal remote-episodes.db \
+  --effect-profile hermetic \
+  --max-attempts 3
+```
+
+Set `STATETWIN_COORDINATOR_TOKEN`, then run the coordinator and worker in separate terminals:
+
+```bash
+go run ./cmd/statetwin episode coordinator \
+  --journal remote-episodes.db \
+  --addr 127.0.0.1:8092
+
+go run ./cmd/statetwin episode worker \
+  --coordinator http://127.0.0.1:8092 \
+  --id worker-001 \
+  --once
+
+go run ./cmd/statetwin episode task \
+  --journal remote-episodes.db \
+  --id remote-episode-001
+```
+
+The worker uses a lease, heartbeats, and a fencing token. An expired hermetic attempt may be requeued within its attempt budget. A disconnected `external` attempt or an explicitly ambiguous effect becomes `COMMIT_UNKNOWN` and is not retried automatically. The coordinator is a separate control plane and never appears in agent-facing MCP `tools/list`. Non-loopback listeners require `--tls-cert` and `--tls-key`.
+
+### Run an OpenAI / Anthropic live smoke (external credentials required)
+
+```bash
+go run ./cmd/statetwin provider smoke \
+  --provider openai \
+  --model YOUR_EXACT_MODEL_ID \
+  --runtime-revision YOUR_EXACT_GIT_SHA \
+  --mcp-url https://synthetic-mcp.example/mcp/run-a/ \
+  --prompt "Use the MCP tools to inspect synthetic issue 1." \
+  --out openai-smoke.json \
+  --synthetic-only
+```
+
+Provider keys are read only from `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`; optional MCP authorization is read from `STATETWIN_MCP_AUTHORIZATION`. Reports persist digests, capability fields, tool-discovery/call counts, and terminal status rather than tokens, prompts, raw responses, or provider error bodies. A manually dispatched `provider-smoke` workflow is also included and requires a public HTTPS synthetic MCP endpoint. **A harness is not a passed live test and does not establish ChatGPT or Claude product compatibility.**
 
 ---
 
@@ -726,9 +780,9 @@ For a first read, the suggested path is:
 
 ### RFCs
 
-- [RFC-0001](docs/RFC-0001.md) — product boundary, hard invariants, architecture, semantics, and release gates
-- [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) — v0.1 normative release profile, limits, traceability, and gates
-- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 local evaluation platform; only the ADR-0018/ADR-0019 subsets are accepted
+- [RFC-0001](docs/RFC-0001.md) — revision 3 product boundary, hard invariants, architecture, and independent version dimensions
+- [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) — local hermetic v0.1 release profile, limits, traceability, and gates
+- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 evaluation platform; only ADR-0018/ADR-0019/ADR-0020 subsets are accepted
 
 ### ADRs
 
@@ -751,6 +805,16 @@ For a first read, the suggested path is:
 - [ADR-0017](docs/ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md) — strict host report admission without provider claims
 - [ADR-0018](docs/ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md) — deterministic TwinBundle and local scripted Episode preview
 - [ADR-0019](docs/ADR-0019-DURABLE-LOCAL-EPISODE-JOURNAL.md) — durable local Episode Journal, idempotent terminal reads, and incomplete boundary
+- [ADR-0020](docs/ADR-0020-REMOTE-EPISODE-EXECUTION.md) — fenced remote Episodes, `COMMIT_UNKNOWN`, and bounded terminal Evidence semantics
+- [ADR-0021](docs/ADR-0021-UNIFIED-LIFECYCLE-AND-RELEASE-BOUNDARIES.md) — unified authority, claim states, and v0.1–v1.0 release boundaries
+
+### Unified lifecycle and evidence
+
+- [Phase specifications](docs/ROADMAP.md) — Phase 0–7 entry, scope, exclusions, and exit evidence
+- [Requirement Traceability](docs/REQUIREMENT-TRACEABILITY.md) — invariant-to-test/evidence mapping
+- [Claim Registry](docs/CLAIM-REGISTRY.md) — exact public-claim states and boundaries
+- [Compatibility Matrix](docs/COMPATIBILITY-MATRIX.md) — separate API and product profiles
+- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md)
 
 ### Evidence / research
 
@@ -767,13 +831,11 @@ The RFCs and accepted ADRs define **intended semantics**. Implementation Status 
 
 ---
 
-## Roadmap to the first tagged release
+## Roadmap to the first stable tagged release
 
-Under accepted RFC-0002, the only stable-v0.1 required gate still marked `open` is:
+Under RFC-0002 revision 2, `v0.1` is the local hermetic-core release. OpenAI-family, Anthropic-family, and product-level live smoke evidence moves to Phase 4 / `v0.3`, where a separately reviewed remote-staging security profile is required. It is neither a circular v0.1 dependency nor something the mock harness can satisfy.
 
-1. complete and publish OpenAI-family and Anthropic-family live smoke evidence against a separately reviewed remote deployment profile.
-
-Storage compatibility, P0 traceability, MCP conformance, and hermetic CI now have executable evidence. Scheduled faults, an upstream inspector, recorder support, L2 differential validation, cloud hosting, and a larger scenario corpus remain later work; they must not be presented as implemented v0.1 capabilities or implicit release gates.
+Storage compatibility, P0 traceability, MCP wire tests, and hermetic CI have executable evidence. A formal tag still requires all gates to pass again on the **same release candidate commit**, followed by a documentation and claim audit. Scheduled faults, an upstream inspector, recorder support, L2 differential validation, cloud hosting, and a larger scenario corpus remain later work and must not be presented as current capabilities.
 
 Cloud hosting, registries, marketplaces, and automatic production mirroring are **not first-release priorities**.
 
@@ -798,7 +860,7 @@ No. Determinism describes the controlled tool world. The model can still choose 
 <details>
 <summary><strong>Can I claim verified ChatGPT or Claude compatibility today?</strong></summary>
 
-Not from the current README baseline. The design is provider-neutral, but live provider smoke tests have not been completed, so those hosts should not be presented as verified.
+No. The repository has OpenAI Responses and Anthropic Messages MCP-connector smoke harnesses plus mock contract tests, but no dated live reports. OpenAI API, Anthropic API, ChatGPT, Claude, and Claude Code must therefore not be presented as verified; an API harness also does not replace product-level testing.
 
 </details>
 

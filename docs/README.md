@@ -11,25 +11,54 @@ order:
    implementation/evidence ledger;
 3. [`DOCS-GOVERNANCE.md`](DOCS-GOVERNANCE.md) — authority, status and claim
    rules;
-4. [`RFC-0002-V0.1-RELEASE-PROFILE.md`](RFC-0002-V0.1-RELEASE-PROFILE.md) —
+4. [`REQUIREMENT-TRACEABILITY.md`](REQUIREMENT-TRACEABILITY.md),
+   [`CLAIM-REGISTRY.md`](CLAIM-REGISTRY.md), and
+   [`COMPATIBILITY-MATRIX.md`](COMPATIBILITY-MATRIX.md) — exact requirement,
+   public-claim and host-profile evidence;
+5. [`RFC-0002-V0.1-RELEASE-PROFILE.md`](RFC-0002-V0.1-RELEASE-PROFILE.md) —
    current release boundary and blockers;
-5. [`ADR-0015-V0.1-SCOPE-AND-FIDELITY.md`](ADR-0015-V0.1-SCOPE-AND-FIDELITY.md)
+6. [`ADR-0015-V0.1-SCOPE-AND-FIDELITY.md`](ADR-0015-V0.1-SCOPE-AND-FIDELITY.md)
    — accepted L1-only v0.1 scope and explicit fidelity exclusions;
-6. [`ADR-0016-V0.1-STORAGE-COMPATIBILITY.md`](ADR-0016-V0.1-STORAGE-COMPATIBILITY.md)
+7. [`ADR-0016-V0.1-STORAGE-COMPATIBILITY.md`](ADR-0016-V0.1-STORAGE-COMPATIBILITY.md)
    and [`ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md`](ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md)
    — accepted local storage evidence and host-report admission boundaries;
-7. [`RELEASE-MANAGEMENT.md`](RELEASE-MANAGEMENT.md) and the root
+8. [`STORAGE-COMPATIBILITY-MATRIX.md`](STORAGE-COMPATIBILITY-MATRIX.md) — the
+   separate world-store and Episode-Journal schema/migration evidence ledger.
+9. [`RELEASE-MANAGEMENT.md`](RELEASE-MANAGEMENT.md) and the root
    [`RELEASE.md`](../RELEASE.md) — maintainer and publication workflow.
-8. [`RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md`](RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md),
+10. [`RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md`](RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md),
    [`ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md`](ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md),
    [`ADR-0019-DURABLE-LOCAL-EPISODE-JOURNAL.md`](ADR-0019-DURABLE-LOCAL-EPISODE-JOURNAL.md),
    [`SPEC-0017-EPISODE-JOURNAL.md`](SPEC-0017-EPISODE-JOURNAL.md),
+   [`ADR-0020-REMOTE-EPISODE-EXECUTION.md`](ADR-0020-REMOTE-EPISODE-EXECUTION.md),
+   [`SPEC-0018-REMOTE-EPISODE-COORDINATOR.md`](SPEC-0018-REMOTE-EPISODE-COORDINATOR.md),
    and [`V0.2-REQUIREMENTS.md`](V0.2-REQUIREMENTS.md) — v0.2 proposal,
-   accepted local artifact/Journal subsets, and requirement/evidence ledger.
+   accepted artifact/Journal/remote-coordinator subsets, and the
+   requirement/evidence ledger.
 
 The accepted normative documents are the ADRs and SPECs linked from the status
 ledger. The large pack below is deliberately preserved as proposal material so
 that design work remains reviewable without silently changing the runtime.
+
+## Unified lifecycle adopted on 2026-08-31
+
+ADR-0021 adopts the bounded product definition, independent version dimensions
+and release split. Read the phase contracts in order:
+
+1. [`PHASE-00-SPEC-CONSOLIDATION.md`](PHASE-00-SPEC-CONSOLIDATION.md)
+2. [`PHASE-01-LOCAL-CORE.md`](PHASE-01-LOCAL-CORE.md)
+3. [`PHASE-02-DETERMINISM-RECOVERY.md`](PHASE-02-DETERMINISM-RECOVERY.md)
+4. [`PHASE-03-REMOTE-EXECUTION.md`](PHASE-03-REMOTE-EXECUTION.md)
+5. [`PHASE-04-PROVIDER-VALIDATION.md`](PHASE-04-PROVIDER-VALIDATION.md)
+6. [`PHASE-05-FIDELITY.md`](PHASE-05-FIDELITY.md)
+7. [`PHASE-06-SCENARIO-FAMILIES.md`](PHASE-06-SCENARIO-FAMILIES.md)
+8. [`PHASE-07-V1-STABILITY.md`](PHASE-07-V1-STABILITY.md)
+
+New cross-cutting contracts are
+[`SPEC-0019`](SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md),
+[`SPEC-0020`](SPEC-0020-REMOTE-SECURITY-PROFILE.md), and
+[`SPEC-0021`](SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md). They do not claim that
+the planned remote security or live-provider profiles are already implemented.
 
 # MCP State Twin Lifecycle SPEC Pack
 

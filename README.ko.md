@@ -53,16 +53,19 @@
 - strict HostCompatibilityReport admission(live provider compatibility 증명은 아님)
 - deterministic TwinBundle `v1alpha1`(엄격한 path/type/size/digest/payload 검증, 재현 가능한 ZIP, 미서명)
 - local scripted EvaluationEpisode(닫힌 lifecycle과 evidence digest, provider harness가 아님)
-- durable local Episode Journal(독립 SQLite, immutable request digest, lifecycle CAS, 명시적 `incomplete`, 자동 retry가 아님)
+- durable Episode Journal schema v2(v1 fixture migration, kill-point recovery, immutable request, Evidence consistency)
+- fenced remote Episode coordinator / hermetic worker(lease, heartbeat, fencing, bounded retry, cooperative cancellation, `COMMIT_UNKNOWN`)
+- OpenAI Responses / Anthropic Messages provider-smoke harness와 mock contract tests(dated live report는 아직 없음)
 
 ### 아직 구현되지 않았거나 검증되지 않은 항목
 
 - recorder, cassette replay, trace redaction, 자동 upstream surface inspection/refresh
 - 나머지 deterministic fault phases, scheduler, deterministic entropy, idempotency, crash/cancellation, eventual consistency는 미구현(private clock과 두 fault phases는 구현됨)
 - 실제 ChatGPT / OpenAI API / Claude / Claude Code smoke test
-- live provider harness, admitted OpenAI/Anthropic report, evidence-derived compatibility matrix
+- dated OpenAI/Anthropic live report, admitted compatibility report, evidence-derived compatibility matrix
 - differential validation, L2 fidelity promotion workflow
-- durable/remote Episode, HostProfile, bundle signing/registry, provenance attestation
+- multi-coordinator HA, external-effect retry/reconciliation, HostProfile, bundle signing/registry, provenance attestation
+- provider/tool/external side effect exactly-once 보장(terminal Evidence acceptance만 bounded 지원)
 - data-plane authentication, TLS, remote multi-tenancy, security audit
 
 자세한 내용은 [Implementation Status](docs/IMPLEMENTATION-STATUS.md)를 참고하세요. Roadmap 항목을 현재 기능처럼 표현하지 않습니다.
@@ -290,7 +293,7 @@ Core는 특정 model-provider SDK가 아니라 MCP와 통합됩니다. 하나의
 
 공식 Go SDK를 server/client 양쪽에서 사용하는 stateless Streamable HTTP integration test가 있고, Linux CI는 MCP conformance framework `v0.1.16`을 고정해 initialize, ping, tools-list, JSON Schema 2020-12를 검사합니다.
 
-Repository는 아직 실제 ChatGPT / OpenAI / Claude smoke test를 완료하지 않았습니다.
+Repository에는 OpenAI Responses / Anthropic Messages provider-smoke harness와 mock contract tests가 있지만 dated live report는 아직 없습니다. API harness는 ChatGPT / Claude 제품 호환성의 증거가 아닙니다.
 
 Design sources:
 
@@ -370,6 +373,8 @@ go build ./cmd/statetwin
 - [ADR-0016](docs/ADR-0016-V0.1-STORAGE-COMPATIBILITY.md) / [ADR-0017](docs/ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md)
 - [ADR-0018](docs/ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md)
 - [ADR-0019](docs/ADR-0019-DURABLE-LOCAL-EPISODE-JOURNAL.md)
+- [ADR-0020](docs/ADR-0020-REMOTE-EPISODE-EXECUTION.md) / [ADR-0021](docs/ADR-0021-UNIFIED-LIFECYCLE-AND-RELEASE-BOUNDARIES.md)
+- [Phase specifications](docs/ROADMAP.md) / [Claim Registry](docs/CLAIM-REGISTRY.md) / [Compatibility Matrix](docs/COMPATIBILITY-MATRIX.md)
 - [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md)
 - [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md)
 - [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md)

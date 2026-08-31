@@ -7,11 +7,36 @@ alpha prerelease but no stable release yet.
 
 ### Added
 
+- ADR-0021 and RFC-0001 revision 3, establishing the bounded product identity,
+  independent version dimensions and a non-circular v0.1–v1.0 release train;
+- SPEC-0019 through SPEC-0021 for exact HostProfiles, remote-staging security,
+  claim admission and evidence freshness;
+- Phase 0–7 contracts plus unified requirement, claim, compatibility and
+  decision ledgers;
 - an independent durable local Episode Journal with SQLite identity/schema,
   immutable request digests, transactional lifecycle CAS, terminal Evidence
   atomicity, idempotent completed-request reads, explicit incomplete records,
   tamper admission, and `episode inspect`;
 - SPEC-0017, ADR-0019 and `local-preview-v3` with a 10,000-record Journal bound;
+- ADR-0020, SPEC-0018 and `local-preview-v4`, adding a fenced single-coordinator
+  Episode profile with 16-attempt and 3,600-second lease bounds;
+- authenticated remote Episode submit/claim/heartbeat/complete/fail/cancel
+  control APIs, a hermetic remote worker, cooperative cancellation, safe lease
+  recovery, external `COMMIT_UNKNOWN`, and exactly-once terminal Evidence
+  acceptance without claiming exactly-once external effects;
+- Journal schema-v1 fixture migration to schema v2, interrupted-migration
+  recovery, task/attempt lineage admission, and foreign SQLite zero-mutation
+  refusal evidence;
+- OpenAI Responses and Anthropic Messages provider-smoke adapters with current
+  remote-MCP contract tests, bounded redacted reports, and an opt-in live-smoke
+  workflow; no dated live provider report is claimed yet;
+
+### Changed
+
+- live OpenAI-family and Anthropic-family evidence is no longer a local-core
+  v0.1 gate; it targets the v0.3 secure provider/host profile;
+- OpenAI cancellation idempotency is reported as `unknown`: the documented
+  cancel endpoint does not by itself prove repeated-cancel semantics;
 - deterministic TwinBundle `v1alpha1` build/verify commands with strict
   manifest and payload admission, portable path handling, exact member
   digests, resource bounds, deterministic ZIP bytes, and tamper/negative tests;

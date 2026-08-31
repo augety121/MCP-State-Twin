@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"archive/zip"
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -251,11 +252,24 @@ func Open(bundlePath string) (*Artifact, error) {
 	if info.Size() > int64(limits.MaxBundleCompressed) {
 		return nil, fmt.Errorf("TwinBundle compressed bytes %d exceed limit %d", info.Size(), limits.MaxBundleCompressed)
 	}
-	reader, err := zip.OpenReader(bundlePath)
+	data, err := os.ReadFile(bundlePath)
+	if err != nil {
+		return nil, fmt.Errorf("read TwinBundle: %w", err)
+	}
+	return OpenBytes(data)
+}
+
+// OpenBytes validates a complete TwinBundle held in memory. It is used by the
+// authenticated Episode coordinator after applying the compressed-byte bound;
+// callers must not use it to bypass source-file admission in Build or Open.
+func OpenBytes(data []byte) (*Artifact, error) {
+	if len(data) > limits.MaxBundleCompressed {
+		return nil, fmt.Errorf("TwinBundle compressed bytes %d exceed limit %d", len(data), limits.MaxBundleCompressed)
+	}
+	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		return nil, fmt.Errorf("open TwinBundle archive: %w", err)
 	}
-	defer reader.Close()
 	if len(reader.File) == 0 || len(reader.File) > limits.MaxBundleFiles {
 		return nil, fmt.Errorf("TwinBundle file count %d is outside 1..%d", len(reader.File), limits.MaxBundleFiles)
 	}
@@ -310,11 +324,7 @@ func Open(bundlePath string) (*Artifact, error) {
 	if err := validatePayloads(manifest, files); err != nil {
 		return nil, err
 	}
-	bundleData, err := os.ReadFile(bundlePath)
-	if err != nil {
-		return nil, fmt.Errorf("hash TwinBundle: %w", err)
-	}
-	return &Artifact{Manifest: manifest, Files: files, Digest: digestBytes(bundleData), Size: info.Size()}, nil
+	return &Artifact{Manifest: manifest, Files: files, Digest: digestBytes(data), Size: int64(len(data))}, nil
 }
 
 func validatePayloads(manifest Manifest, files map[string][]byte) error {

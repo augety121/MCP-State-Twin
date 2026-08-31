@@ -65,3 +65,11 @@ ADR-0019 advances the profile identifier to `local-preview-v3` and enables a
 10,000-record bound for the independent local Episode Journal. It does not
 enable remote task quotas, scheduling, retention automation or multi-tenant
 fairness.
+
+## Amendment: ADR-0020 (2026-08-26)
+
+ADR-0020 advances the profile identifier to `local-preview-v4`, caps one
+Episode task at 16 attempts, and caps a coordinator lease at 3,600 seconds.
+These bounds cover the accepted single-coordinator preview only. They do not
+establish distributed quotas, tenant fairness, retention, HA, or external
+effect retry safety.

@@ -9,13 +9,17 @@ not be treated as a production security boundary.
 The current development build has important limitations:
 
 - the MCP data plane has no built-in authentication;
-- TLS termination is not implemented;
+- the MCP data plane has no built-in TLS termination;
 - recorder and multi-tenant isolation are not implemented;
 - CI contains pinned repository secret scanning, a synthetic-fixture policy,
   and an only-loopback hermetic test job; these are release evidence, not a
   production sandbox or proof that arbitrary user TwinSpecs are safe;
-- the control plane uses one bearer token and is intended to remain on
+- the world control plane uses one bearer token and is intended to remain on
   loopback;
+- the separate Episode coordinator uses one bearer token, allows plaintext
+  only on loopback, and requires a certificate/key for a non-loopback listener;
+  this is a development-preview transport boundary, not multi-tenant identity,
+  authorization, rate limiting, or an external security audit;
 - native TwinSpec extensions are deliberately unsupported.
 - TwinBundle admission verifies deterministic bytes, declared members, digests,
   paths, bounds, and payload semantics, but bundles are currently unsigned and
@@ -25,9 +29,19 @@ The current development build has important limitations:
 - the optional Episode Journal stores that Evidence in a local unencrypted
   SQLite database; it persists only typed runtime failure classes, but operators
   must still protect/delete Journal files according to their data policy;
+- remote Episode workers currently accept only the synthetic `hermetic` effect
+  profile. An external attempt with ambiguous commit state is terminal
+  `COMMIT_UNKNOWN` and must not be retried automatically;
+- provider smoke keys and optional MCP authorization are read from environment
+  variables. Reports intentionally omit credentials, prompt text, raw provider
+  responses and raw error bodies, but operators must still restrict workflow
+  logs and artifact access;
 
-Do not expose either endpoint to an untrusted network. Use synthetic fixtures,
-bind to loopback, and enforce network egress denial outside the process.
+Do not expose the MCP data plane or world control plane to an untrusted network.
+Keep local evaluation on loopback with synthetic fixtures and egress denial.
+If the Episode coordinator is tested remotely, terminate with its required TLS
+configuration, use a dedicated short-lived bearer token, and treat it as a
+single-tenant preview service.
 
 ## Reporting a vulnerability
 

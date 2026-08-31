@@ -33,6 +33,9 @@ func TestDefaultProfileDigestIsStableAndBindsSemanticLimits(t *testing.T) {
 	if profile.MaxEpisodeRecords != 10_000 {
 		t.Fatal("enabled Episode record limit is not bound into the resource profile")
 	}
+	if profile.MaxEpisodeAttempts != 16 || profile.MaxLeaseSeconds != 3_600 {
+		t.Fatal("enabled remote Episode limits are not bound into the resource profile")
+	}
 }
 
 func TestValidateJSONBoundsBytesDepthMembersAndDomain(t *testing.T) {

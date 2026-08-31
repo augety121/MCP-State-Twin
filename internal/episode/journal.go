@@ -16,7 +16,7 @@ import (
 
 const (
 	journalApplicationID = 0x45504a4c // ASCII "EPJL"
-	journalSchemaVersion = 1
+	journalSchemaVersion = 2
 	JournalFormat        = "statetwin.dev/episode-journal/v1alpha1"
 )
 
@@ -30,6 +30,15 @@ var (
 type Journal struct {
 	db *sql.DB
 }
+
+type journalMigrationStage string
+
+const (
+	journalMigrationSchemaApplied journalMigrationStage = "schema-applied"
+	journalMigrationMetadataSet   journalMigrationStage = "metadata-set"
+)
+
+type journalMigrationHook func(journalMigrationStage) error
 
 type Request struct {
 	EpisodeID       string
@@ -62,6 +71,10 @@ type Record struct {
 }
 
 func OpenJournal(path string) (*Journal, error) {
+	return openJournalWithMigrationHook(path, nil)
+}
+
+func openJournalWithMigrationHook(path string, hook journalMigrationHook) (*Journal, error) {
 	if path == "" {
 		return nil, errors.New("episode journal path is required")
 	}
@@ -72,7 +85,7 @@ func OpenJournal(path string) (*Journal, error) {
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 	journal := &Journal{db: db}
-	if err := journal.migrate(); err != nil {
+	if err := journal.migrate(hook); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
@@ -92,7 +105,7 @@ func (j *Journal) Close() error {
 	return j.db.Close()
 }
 
-func (j *Journal) migrate() error {
+func (j *Journal) migrate(hook journalMigrationHook) error {
 	var applicationID, version int
 	if err := j.db.QueryRow(`PRAGMA application_id`).Scan(&applicationID); err != nil {
 		return fmt.Errorf("read episode journal application_id: %w", err)
@@ -146,15 +159,60 @@ CREATE TABLE IF NOT EXISTS episode_events (
   created_at TEXT NOT NULL,
   PRIMARY KEY(episode_id, sequence),
   FOREIGN KEY(episode_id) REFERENCES episodes(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS episode_tasks (
+  episode_id TEXT PRIMARY KEY,
+  bundle_bytes BLOB NOT NULL,
+  effect_profile TEXT NOT NULL,
+  max_attempts INTEGER NOT NULL CHECK(max_attempts >= 1 AND max_attempts <= 16),
+  task_state TEXT NOT NULL,
+  attempt_count INTEGER NOT NULL DEFAULT 0 CHECK(attempt_count >= 0 AND attempt_count <= 16),
+  fencing_token INTEGER NOT NULL DEFAULT 0 CHECK(fencing_token >= 0),
+  active_attempt_id TEXT NOT NULL DEFAULT '',
+  cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK(cancel_requested IN (0, 1)),
+  final_attempt_id TEXT NOT NULL DEFAULT '',
+  final_evidence_digest TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  CHECK(effect_profile IN ('hermetic', 'external')),
+  CHECK(task_state IN ('QUEUED','LEASED','COMPLETED','CANCELLED','FAILED','COMMIT_UNKNOWN')),
+  FOREIGN KEY(episode_id) REFERENCES episodes(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS episode_attempts (
+  attempt_id TEXT PRIMARY KEY,
+  episode_id TEXT NOT NULL,
+  attempt_number INTEGER NOT NULL CHECK(attempt_number >= 1 AND attempt_number <= 16),
+  worker_id TEXT NOT NULL,
+  fencing_token INTEGER NOT NULL CHECK(fencing_token >= 1),
+  state TEXT NOT NULL,
+  commit_state TEXT NOT NULL,
+  lease_until TEXT NOT NULL,
+  error_class TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(episode_id, attempt_number),
+  CHECK(state IN ('LEASED','COMPLETED','FAILED','CANCELLED','EXPIRED','COMMIT_UNKNOWN')),
+  CHECK(commit_state IN ('NOT_STARTED','NO_EFFECT','COMMITTED','UNKNOWN')),
+  FOREIGN KEY(episode_id) REFERENCES episodes(id) ON DELETE CASCADE
 );`
 	if _, err := tx.Exec(schema); err != nil {
 		return fmt.Errorf("create episode journal schema: %w", err)
+	}
+	if hook != nil {
+		if err := hook(journalMigrationSchemaApplied); err != nil {
+			return err
+		}
 	}
 	if _, err := tx.Exec(fmt.Sprintf(`PRAGMA application_id = %d`, journalApplicationID)); err != nil {
 		return fmt.Errorf("set episode journal application_id: %w", err)
 	}
 	if _, err := tx.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, journalSchemaVersion)); err != nil {
 		return fmt.Errorf("set episode journal user_version: %w", err)
+	}
+	if hook != nil {
+		if err := hook(journalMigrationMetadataSet); err != nil {
+			return err
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit episode journal migration: %w", err)

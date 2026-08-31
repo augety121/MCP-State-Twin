@@ -40,6 +40,20 @@ func TestRunCompatibilityRequiresValidatedReport(t *testing.T) {
 	}
 }
 
+func TestProviderSmokeRequiresExplicitEvidenceInputsAndEnvironmentKey(t *testing.T) {
+	if err := runProviderSmoke(context.Background(), nil); err == nil || !strings.Contains(err.Error(), "smoke subcommand") {
+		t.Fatalf("missing provider subcommand error = %v", err)
+	}
+	if err := runProviderSmoke(context.Background(), []string{"smoke"}); err == nil || !strings.Contains(err.Error(), "--provider") {
+		t.Fatalf("missing provider flags error = %v", err)
+	}
+	t.Setenv("OPENAI_API_KEY", "")
+	err := runProviderSmoke(context.Background(), []string{"smoke", "--provider", "openai", "--model", "gpt-test", "--mcp-url", "https://example.invalid/mcp", "--prompt", "use tool", "--out", filepath.Join(t.TempDir(), "report.json"), "--synthetic-only"})
+	if err == nil || !strings.Contains(err.Error(), "OPENAI_API_KEY") {
+		t.Fatalf("missing provider credential error = %v", err)
+	}
+}
+
 func TestBundleAndEpisodeCommandsFailClosed(t *testing.T) {
 	if err := runBundle(nil); err == nil || !strings.Contains(err.Error(), "build or verify") {
 		t.Fatalf("missing bundle subcommand error = %v", err)
@@ -53,13 +67,13 @@ func TestBundleAndEpisodeCommandsFailClosed(t *testing.T) {
 	if err := runBundle([]string{"verify", "bundle.stb"}); err == nil || !strings.Contains(err.Error(), "positional") {
 		t.Fatalf("positional bundle argument error = %v", err)
 	}
-	if err := runEpisode(context.Background(), nil); err == nil || !strings.Contains(err.Error(), "run or inspect") {
+	if err := runEpisode(context.Background(), nil); err == nil || !strings.Contains(err.Error(), "coordinator") {
 		t.Fatalf("missing episode subcommand error = %v", err)
 	}
 	if err := runEpisode(context.Background(), []string{"run"}); err == nil || !strings.Contains(err.Error(), "--bundle and --id") {
 		t.Fatalf("missing episode arguments error = %v", err)
 	}
-	if err := runEpisode(context.Background(), []string{"start"}); err == nil || !strings.Contains(err.Error(), "run or inspect") {
+	if err := runEpisode(context.Background(), []string{"start"}); err == nil || !strings.Contains(err.Error(), "coordinator") {
 		t.Fatalf("unsupported episode subcommand error = %v", err)
 	}
 	if err := runEpisode(context.Background(), []string{"inspect"}); err == nil || !strings.Contains(err.Error(), "--journal and --id") {
@@ -67,6 +81,23 @@ func TestBundleAndEpisodeCommandsFailClosed(t *testing.T) {
 	}
 	if err := runEpisode(context.Background(), []string{"inspect", "episode-1"}); err == nil || !strings.Contains(err.Error(), "positional") {
 		t.Fatalf("positional Episode inspect error = %v", err)
+	}
+	if err := runEpisode(context.Background(), []string{"submit"}); err == nil || !strings.Contains(err.Error(), "--bundle") {
+		t.Fatalf("missing Episode submit error = %v", err)
+	}
+	if err := runEpisode(context.Background(), []string{"worker"}); err == nil || !strings.Contains(err.Error(), "--coordinator") {
+		t.Fatalf("missing Episode worker error = %v", err)
+	}
+}
+
+func TestEpisodeCoordinatorRefusesInsecureNonLoopbackAndMissingToken(t *testing.T) {
+	t.Setenv("STATETWIN_COORDINATOR_TOKEN", "")
+	if err := runEpisodeCoordinator([]string{"--journal", "ignored.db", "--addr", "0.0.0.0:8092"}); err == nil || !strings.Contains(err.Error(), "require TLS") {
+		t.Fatalf("non-loopback plaintext coordinator error = %v", err)
+	}
+	path := filepath.Join(t.TempDir(), "episodes.db")
+	if err := runEpisodeCoordinator([]string{"--journal", path, "--tls-cert", "cert-only.pem"}); err == nil || !strings.Contains(err.Error(), "provided together") {
+		t.Fatalf("partial TLS configuration error = %v", err)
 	}
 }
 

@@ -1,4 +1,7 @@
-schemaVersion: statetwin.dev/host-profile/v1alpha2
+apiVersion: statetwin.dev/host-profile/v1alpha2
+kind: HostProfile
+metadata:
+  id: "<stable-profile-id>"
 status: unverified
 
 identity:
@@ -97,3 +100,7 @@ evidence:
   verifiedCapabilities: []
   unsupportedCapabilities: []
   limitations: []
+  runtimeRevision: "<exact-40-or-64-character-git-revision>"
+  adapterVersion: "<exact-version>"
+  reportDigest: "sha256:<...>"
+  freshnessTTL: "<for-example-30d>"

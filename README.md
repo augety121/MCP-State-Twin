@@ -230,7 +230,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 | Spec / MCP surface / world state canonical digest | ✅ | SHA-256 |
 | Upstream binding admission | ✅ | surface 不匹配时 fail closed |
 | SQLite 原子状态转换与审计 | ✅ | 带数据库身份与 schema version |
-| SQLite storage compatibility | ✅ | v1/v2/v3 migration、tagged alpha v4 reopen、进程退出恢复；仅限 ADR-0016 local profile |
+| World-store storage compatibility | ✅ | v1/v2/v3 → v4、tagged alpha v4 reopen、迁移 kill-point 恢复、foreign/future 零写入拒绝；仅限 ADR-0016 local profile |
 | Immutable snapshot / fork / reset / diff | ✅ | branch 间状态隔离 |
 | Stateless Streamable HTTP MCP data plane | ✅ | 官方 Go SDK |
 | 独立 HTTP control plane | ✅ | bearer token；与数据面分离 |
@@ -239,12 +239,15 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 | Scenario `v1alpha1` runner | ✅ | 有界 scripted scenario；不是 live model evaluation |
 | Deterministic TwinBundle `v1alpha1` | ✅ 开发预览 | 严格清单、payload 语义校验、成员 SHA-256、路径/类型/大小限制、可重现 ZIP；未签名 |
 | Local scripted EvaluationEpisode | ✅ 开发预览 | 单进程、单 Scenario、封闭生命周期与可摘要 evidence；不是 provider harness |
-| Durable local Episode Journal | ✅ 开发预览 | 独立 SQLite、immutable request digest、生命周期 CAS、终态 Evidence 幂等读取、`incomplete` 明示 |
+| Durable Episode Journal | ✅ 开发预览 | 独立 SQLite schema v2；v1 fixture 前向迁移、迁移 kill-point 恢复、不可变 request、终态 Evidence 一致性校验 |
+| Remote Episode coordinator/workers | ✅ 开发预览 | bearer + TLS 边界、lease/heartbeat/fencing、并发 claim、bounded retry、cooperative cancellation；仅 synthetic TwinBundle |
+| Exactly-once terminal acceptance | ✅ 有界语义 | 一个 parent Episode 最多接受一个匹配的 Evidence；**不**承诺 provider/tool/外部副作用 exactly-once |
 | HostCompatibilityReport admission | ✅ | 严格 schema、bounded evidence、credential/private-key/email pattern rejection；不等于 live provider 通过 |
-| Live OpenAI / ChatGPT / Claude smoke tests | ❌ 尚未验证 | 不声明 host compatibility |
+| OpenAI / Anthropic provider smoke harness | 🧪 合同级已实现 | OpenAI background/retrieve/cancel 与 Anthropic MCP connector mock contract tests；真实 live 报告尚未生成 |
 | Deterministic fault injection / virtual-clock advancement | 🧪 部分实现 | 私有 clock；两个 fault transaction phases；其余 scheduler/fault semantics 未实现 |
 | Versioned resource governance | 🧪 部分实现 | `statetwin limits`、environment digest、fail-closed local budgets；OS/remote quotas 未实现 |
-| Remote Episode/retry/cancellation、HostProfile、signed bundle | ⏳ | 尚未实现；不声明远程执行、exactly-once、供应链真实性或 host compatibility |
+| External-effect automatic retry / distributed HA | ⏳ | 外部 commit 不明确时停在 `COMMIT_UNKNOWN`；无多 coordinator、replication、manual reconciliation 或外部 exactly-once 声明 |
+| HostProfile / signed bundle | ⏳ | 不声明供应链真实性或 host compatibility |
 | Recorder / cassette replay / trace redaction | ⏳ | 尚未实现 |
 | Differential validation / L2 promotion | ⏳ | 尚未完成 |
 | Data-plane auth / TLS / remote multi-tenancy | ⏳ | 当前仅适合本地 loopback 使用 |
@@ -271,6 +274,9 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 - deterministic TwinBundle `v1alpha1`：严格检查声明路径、regular-file、大小、成员 SHA-256 和 payload 语义，并生成 byte-for-byte 可重现的 ZIP artifact；
 - local scripted EvaluationEpisode：只运行 bundle 声明的 Scenario，记录封闭生命周期、runtime revision、完整 Scenario report 与 canonical evidence digest；
 - optional durable local Episode Journal：独立 SQLite 身份/schema、request digest 绑定、事务化 lifecycle CAS、终态 Evidence 原子持久化和 `episode inspect`；
+- fenced remote Episode coordinator：schema-v2 task/attempt lineage、单活 lease、heartbeat、单调 fencing token、hermetic 自动恢复、合作式取消以及 `COMMIT_UNKNOWN` fail-closed 终态；
+- provider-neutral remote worker：只认领 `hermetic` profile，通过独立 HTTP control plane 执行 TwinBundle，并原子提交 Evidence；
+- OpenAI/Anthropic smoke harness：使用官方当前 API contract 的请求形状和 mock-server 正/负测试，报告只保留 digest、能力与计数，不保存 token、raw response 或 prompt；
 - bounded branch-local fault plans：`before-validation` 与 `after-commit-before-response`，带稳定 plan digest、事务内计数和 fault-event audit。
 - versioned resource profile：input/output/state、JSON depth/members、effect/query、diff/report、branch/snapshot limits 以 `RESOURCE_LIMIT` fail closed，并绑定 Scenario environment digest。
 - storage compatibility evidence：v1/v2/v3 forward migration、公开 alpha schema-v4 fixture reopen，以及两个 migration pre-commit 进程退出 kill-points。
@@ -283,11 +289,12 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 
 - recorder、cassette replay、trace redaction、自动 upstream surface inspection/refresh；
 - 其余 deterministic fault phases、scheduler、deterministic entropy、idempotency collapse、crash/cancellation 与 eventual consistency；private clock 和两个 fault phases 已实现；
-- live ChatGPT、OpenAI API、Claude、Claude Code smoke tests；
-- live provider harness、admitted OpenAI/Anthropic reports 与 evidence-derived compatibility matrix；
+- live ChatGPT、Claude 产品或 Claude Code smoke tests；
+- dated OpenAI/Anthropic live reports 与 evidence-derived compatibility matrix；当前环境未配置 provider key 和公网 synthetic MCP endpoint；
 - differential validation 或 L2 fidelity promotion workflow；
 - data-plane authentication、TLS、remote multi-tenancy、security audit。
-- Episode 自动 retry/resume、并发/remote worker、cancellation/commit recovery、lease/retention、HostProfile、bundle signing/registry 与 provenance attestation。
+- external-effect 自动重试、`COMMIT_UNKNOWN` 人工 reconciliation、multi-coordinator HA/replication、retention、HostProfile、bundle signing/registry 与 provenance attestation；
+- provider inference、HTTP、MCP tool 或任意外部副作用的 exactly-once 保证。
 
 </details>
 
@@ -356,7 +363,54 @@ go run ./cmd/statetwin episode inspect \
   --id durable-episode-001
 ```
 
-`bundle verify` 同时验证 archive 完整性和包内 TwinSpec、fixture、Scenario 的严格语义，但它**不证明发布者身份或上游 fidelity**。当前 Episode 只执行确定性的 `scripted-scenario`，不会调用 Codex、OpenAI、Claude 或任何远程模型。Journal 对完全相同的已完成请求返回原 Evidence；同 ID 不同请求会冲突，非终态记录会明确返回 `incomplete`，不会自动重试。为避免覆盖证据，已存在的 `--out` 路径会 fail closed。
+`bundle verify` 同时验证 archive 完整性和包内 TwinSpec、fixture、Scenario 的严格语义，但它**不证明发布者身份或上游 fidelity**。本地 Episode 只执行确定性的 `scripted-scenario`，不会调用 Codex、OpenAI、Claude 或任何远程模型。Journal 对完全相同的已完成请求返回原 Evidence；同 ID 不同请求会冲突。为避免覆盖证据，已存在的 `--out` 路径会 fail closed。
+
+### 运行有 fencing 的远程 Episode worker
+
+先提交一个只允许 hermetic 执行的任务：
+
+```bash
+go run ./cmd/statetwin episode submit \
+  --bundle issue-tracker.stb \
+  --id remote-episode-001 \
+  --journal remote-episodes.db \
+  --effect-profile hermetic \
+  --max-attempts 3
+```
+
+设置 `STATETWIN_COORDINATOR_TOKEN` 后，在独立终端启动 coordinator 与 worker：
+
+```bash
+go run ./cmd/statetwin episode coordinator \
+  --journal remote-episodes.db \
+  --addr 127.0.0.1:8092
+
+go run ./cmd/statetwin episode worker \
+  --coordinator http://127.0.0.1:8092 \
+  --id worker-001 \
+  --once
+
+go run ./cmd/statetwin episode task \
+  --journal remote-episodes.db \
+  --id remote-episode-001
+```
+
+worker 使用 lease、heartbeat 与 fencing token；过期的 hermetic attempt 可在预算内重新入队。`external` attempt 失联或报告不明确副作用时会进入 `COMMIT_UNKNOWN`，不会自动重试。Coordinator API 是独立 control plane，不会出现在 Agent 的 MCP `tools/list` 中。非 loopback listener 必须配置 `--tls-cert` 与 `--tls-key`。
+
+### 运行 OpenAI / Anthropic live smoke（需外部凭据）
+
+```bash
+go run ./cmd/statetwin provider smoke \
+  --provider openai \
+  --model YOUR_EXACT_MODEL_ID \
+  --runtime-revision YOUR_EXACT_GIT_SHA \
+  --mcp-url https://synthetic-mcp.example/mcp/run-a/ \
+  --prompt "Use the MCP tools to inspect synthetic issue 1." \
+  --out openai-smoke.json \
+  --synthetic-only
+```
+
+Provider key 只能通过 `OPENAI_API_KEY` 或 `ANTHROPIC_API_KEY` 注入；可选 MCP authorization 通过 `STATETWIN_MCP_AUTHORIZATION` 注入。报告只保留 digest、能力字段、工具发现/调用计数和终态，不保存 token、prompt、原始 response 或 provider error body。仓库另有手动触发的 `provider-smoke` workflow；它必须连接公网 HTTPS synthetic MCP endpoint。**存在 harness 不等于 live 已通过，也不等于 ChatGPT/Claude 产品兼容。**
 
 ---
 
@@ -725,9 +779,9 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 
 ### RFC
 
-- [RFC-0001](docs/RFC-0001.md) — product boundary、hard invariants、architecture、semantics、release gates
-- [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) — v0.1 normative release profile、limits、traceability、gates
-- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 local evaluation platform；仅 ADR-0018/ADR-0019 所列子集已接受
+- [RFC-0001](docs/RFC-0001.md) — revision 3 product boundary、hard invariants、architecture 与版本维度
+- [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) — local hermetic v0.1 release profile、limits、traceability、gates
+- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 evaluation platform；仅 ADR-0018/ADR-0019/ADR-0020 所列子集已接受
 
 ### ADR
 
@@ -750,6 +804,16 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [ADR-0017](docs/ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md) — strict host report admission without provider claims
 - [ADR-0018](docs/ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md) — deterministic TwinBundle 与 local scripted Episode preview
 - [ADR-0019](docs/ADR-0019-DURABLE-LOCAL-EPISODE-JOURNAL.md) — durable local Episode Journal、幂等终态读取与 incomplete boundary
+- [ADR-0020](docs/ADR-0020-REMOTE-EPISODE-EXECUTION.md) — fenced remote Episode、`COMMIT_UNKNOWN` 与有界 terminal Evidence 语义
+- [ADR-0021](docs/ADR-0021-UNIFIED-LIFECYCLE-AND-RELEASE-BOUNDARIES.md) — 统一 authority、claim states 与 v0.1–v1.0 release boundary
+
+### Unified lifecycle and evidence
+
+- [Phase specifications](docs/ROADMAP.md) — Phase 0–7 的 entry、scope、exclusions 与 exit evidence
+- [Requirement Traceability](docs/REQUIREMENT-TRACEABILITY.md) — invariant 到测试/证据的映射
+- [Claim Registry](docs/CLAIM-REGISTRY.md) — public claim 的精确状态和边界
+- [Compatibility Matrix](docs/COMPATIBILITY-MATRIX.md) — API/product profiles 分离的兼容矩阵
+- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md)
 
 ### Evidence / Research
 
@@ -766,13 +830,11 @@ RFC 和 accepted ADR 定义**设计意图**；Implementation Status 与 executab
 
 ---
 
-## 首个 Tagged Release 路线图
+## 首个稳定 Tagged Release 路线图
 
-按照 accepted RFC-0002，当前唯一仍为 `open` 的 stable v0.1 required gate 是：
+按照 RFC-0002 revision 2，`v0.1` 是 local hermetic core release。OpenAI-family、Anthropic-family 和产品级 live smoke 已移动到需要独立 remote-staging security profile 的 Phase 4 / `v0.3`，不再形成 v0.1 的循环依赖，也不会因为存在 mock harness 就被视为已验证。
 
-1. 在独立、已审查的 remote deployment profile 上完成并发布 OpenAI-family 与 Anthropic-family live smoke evidence。
-
-Storage compatibility、P0 traceability、MCP conformance 与 hermetic CI 已有可执行证据。scheduled faults、upstream inspector、recorder、L2 differential validation、cloud hosting 与扩大 scenario corpus 仍是后续工作，但不应被偷换成当前 v0.1 已实现能力或隐含 release gate。
+Storage compatibility、P0 traceability、MCP wire tests 与 hermetic CI 已有可执行证据；正式 tag 仍要求这些 gate 在**同一个待发布 commit**上重新通过并完成文档/claim 审计。scheduled faults、upstream inspector、recorder、L2 differential validation、cloud hosting 与扩大 scenario corpus 仍是后续工作，不能偷换成当前能力。
 
 Cloud hosting、registry、marketplace 与 automatic production mirroring **不是首个正式 release 的优先事项**。
 
@@ -797,7 +859,7 @@ Cloud hosting、registry、marketplace 与 automatic production mirroring **不�
 <details>
 <summary><strong>现在可以直接连 ChatGPT / Claude 做正式兼容性评测吗？</strong></summary>
 
-项目设计面向 provider-neutral MCP tool surface，但当前 README 基线明确没有完成 live provider smoke tests，因此不能把这些 host 描述成已验证兼容。
+项目有 OpenAI Responses 与 Anthropic Messages MCP connector 的 smoke harness 和 mock contract tests，但当前仓库没有 dated live reports。因此不能把 OpenAI API、Anthropic API、ChatGPT、Claude 或 Claude Code 描述成已验证兼容；API harness 也不能替代产品级测试。
 
 </details>
 

@@ -24,6 +24,7 @@ import (
 	"github.com/augety121/mcp-state-twin/internal/hostcompat"
 	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/logging"
+	"github.com/augety121/mcp-state-twin/internal/provider"
 	statetwinscenario "github.com/augety121/mcp-state-twin/internal/scenario"
 	"github.com/augety121/mcp-state-twin/internal/server"
 	"github.com/augety121/mcp-state-twin/internal/spec"
@@ -71,6 +72,8 @@ func main() {
 		err = runBundle(os.Args[2:])
 	case "episode":
 		err = runEpisode(ctx, os.Args[2:])
+	case "provider":
+		err = runProviderSmoke(ctx, os.Args[2:])
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -104,8 +107,65 @@ Usage:
   statetwin bundle verify --bundle twin.stb
   statetwin episode run --bundle twin.stb --id episode-001 [--scenario path] [--journal episodes.db]
   statetwin episode inspect --journal episodes.db --id episode-001
+  statetwin episode submit --bundle twin.stb --id episode-001 --journal episodes.db [--effect-profile hermetic]
+  statetwin episode task --journal episodes.db --id episode-001
+  statetwin episode cancel --journal episodes.db --id episode-001
+  statetwin episode coordinator --journal episodes.db [--addr 127.0.0.1:8092] [--tls-cert cert.pem --tls-key key.pem]
+  statetwin episode worker --coordinator http://127.0.0.1:8092 --id worker-001 [--once]
+  statetwin provider smoke --provider openai|anthropic --model MODEL --runtime-revision GIT_SHA --mcp-url https://... --prompt "..." --out report.json
 
-Control-plane authentication is read from STATETWIN_CONTROL_TOKEN.`)
+Control-plane authentication is read from STATETWIN_CONTROL_TOKEN.
+Episode coordinator authentication is read from STATETWIN_COORDINATOR_TOKEN.`)
+}
+
+func runProviderSmoke(parent context.Context, args []string) error {
+	if len(args) == 0 || args[0] != "smoke" {
+		return errors.New("provider requires the smoke subcommand")
+	}
+	flags := flag.NewFlagSet("provider smoke", flag.ContinueOnError)
+	providerName := flags.String("provider", "", "openai or anthropic")
+	model := flags.String("model", "", "exact provider model identifier")
+	runtimeRevision := flags.String("runtime-revision", server.Revision, "exact 40- or 64-character source revision")
+	mcpURL := flags.String("mcp-url", "", "public HTTPS MCP endpoint")
+	prompt := flags.String("prompt", "", "synthetic prompt that requires MCP tool use")
+	outputPath := flags.String("out", "", "new ProviderSmokeReport JSON path")
+	timeout := flags.Duration("timeout", 5*time.Minute, "bounded provider run timeout")
+	poll := flags.Duration("poll", 2*time.Second, "OpenAI background polling interval")
+	syntheticOnly := flags.Bool("synthetic-only", false, "attest that endpoint, prompt, and data are synthetic")
+	if err := flags.Parse(args[1:]); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return errors.New("provider smoke does not accept positional arguments")
+	}
+	if *providerName == "" || *model == "" || *mcpURL == "" || *prompt == "" || *outputPath == "" || !*syntheticOnly {
+		return errors.New("--provider, --model, --mcp-url, --prompt, --out, and --synthetic-only are required")
+	}
+	keyName := "OPENAI_API_KEY"
+	if *providerName == "anthropic" {
+		keyName = "ANTHROPIC_API_KEY"
+	}
+	apiKey := os.Getenv(keyName)
+	if apiKey == "" {
+		return fmt.Errorf("%s must be set", keyName)
+	}
+	ctx, cancel := context.WithTimeout(parent, *timeout)
+	defer cancel()
+	report, err := provider.Run(ctx, provider.Request{
+		Provider: *providerName, Model: *model, RuntimeVersion: server.Version, RuntimeRevision: *runtimeRevision,
+		Prompt: *prompt, MCPServerURL: *mcpURL,
+		MCPAuthorization: os.Getenv("STATETWIN_MCP_AUTHORIZATION"), APIKey: apiKey,
+		Timeout: *timeout, PollInterval: *poll, SyntheticOnly: true,
+	})
+	if report != nil {
+		if writeErr := writeJSONFile(*outputPath, report); writeErr != nil {
+			return errors.Join(err, writeErr)
+		}
+		if printErr := printJSON(report); printErr != nil {
+			return errors.Join(err, printErr)
+		}
+	}
+	return err
 }
 
 func runBundle(args []string) error {
@@ -155,15 +215,25 @@ func runBundle(args []string) error {
 
 func runEpisode(ctx context.Context, args []string) error {
 	if len(args) == 0 {
-		return errors.New("episode requires the run or inspect subcommand")
+		return errors.New("episode requires run, inspect, submit, task, cancel, coordinator, or worker subcommand")
 	}
 	switch args[0] {
 	case "run":
 		return runEpisodeRun(ctx, args[1:])
 	case "inspect":
 		return runEpisodeInspect(ctx, args[1:])
+	case "submit":
+		return runEpisodeSubmit(ctx, args[1:])
+	case "task":
+		return runEpisodeTask(ctx, args[1:])
+	case "cancel":
+		return runEpisodeCancel(ctx, args[1:])
+	case "coordinator":
+		return runEpisodeCoordinator(args[1:])
+	case "worker":
+		return runEpisodeWorker(args[1:])
 	default:
-		return errors.New("episode requires the run or inspect subcommand")
+		return errors.New("episode requires run, inspect, submit, task, cancel, coordinator, or worker subcommand")
 	}
 }
 
@@ -238,6 +308,253 @@ func runEpisodeInspect(ctx context.Context, args []string) error {
 		return err
 	}
 	return printJSON(record)
+}
+
+func runEpisodeSubmit(ctx context.Context, args []string) error {
+	flags := flag.NewFlagSet("episode submit", flag.ContinueOnError)
+	bundlePath := flags.String("bundle", "", "TwinBundle .stb path")
+	episodeID := flags.String("id", "", "immutable Episode identifier")
+	scenarioPath := flags.String("scenario", "", "declared Scenario path")
+	journalPath := flags.String("journal", "", "Episode Journal SQLite path")
+	effectProfile := flags.String("effect-profile", string(episode.EffectHermetic), "hermetic or external")
+	maxAttempts := flags.Int("max-attempts", 3, "bounded attempt budget")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return errors.New("episode submit does not accept positional arguments")
+	}
+	if *bundlePath == "" || *episodeID == "" || *journalPath == "" {
+		return errors.New("--bundle, --id, and --journal are required")
+	}
+	info, err := os.Lstat(*bundlePath)
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || info.Size() > int64(limits.MaxBundleCompressed) {
+		return errors.New("TwinBundle must be a bounded regular non-symlink file")
+	}
+	data, err := os.ReadFile(*bundlePath)
+	if err != nil {
+		return err
+	}
+	journal, err := episode.OpenJournal(*journalPath)
+	if err != nil {
+		return err
+	}
+	defer journal.Close()
+	task, _, err := journal.Submit(ctx, data, *episodeID, *scenarioPath, server.Version, server.Revision, episode.EffectProfile(*effectProfile), *maxAttempts)
+	if err != nil {
+		return err
+	}
+	return printJSON(task)
+}
+
+func runEpisodeTask(ctx context.Context, args []string) error {
+	flags := flag.NewFlagSet("episode task", flag.ContinueOnError)
+	journalPath := flags.String("journal", "", "Episode Journal SQLite path")
+	episodeID := flags.String("id", "", "Episode identifier")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 || *journalPath == "" || *episodeID == "" {
+		return errors.New("--journal and --id are required and positional arguments are not accepted")
+	}
+	journal, err := episode.OpenJournal(*journalPath)
+	if err != nil {
+		return err
+	}
+	defer journal.Close()
+	task, err := journal.GetTask(ctx, *episodeID)
+	if err != nil {
+		return err
+	}
+	return printJSON(task)
+}
+
+func runEpisodeCancel(ctx context.Context, args []string) error {
+	flags := flag.NewFlagSet("episode cancel", flag.ContinueOnError)
+	journalPath := flags.String("journal", "", "Episode Journal SQLite path")
+	episodeID := flags.String("id", "", "Episode identifier")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 || *journalPath == "" || *episodeID == "" {
+		return errors.New("--journal and --id are required and positional arguments are not accepted")
+	}
+	journal, err := episode.OpenJournal(*journalPath)
+	if err != nil {
+		return err
+	}
+	defer journal.Close()
+	task, err := journal.CancelTask(ctx, *episodeID)
+	if err != nil {
+		return err
+	}
+	return printJSON(task)
+}
+
+func runEpisodeCoordinator(args []string) error {
+	flags := flag.NewFlagSet("episode coordinator", flag.ContinueOnError)
+	journalPath := flags.String("journal", "", "Episode Journal SQLite path")
+	address := flags.String("addr", "127.0.0.1:8092", "coordinator listen address")
+	tlsCert := flags.String("tls-cert", "", "TLS certificate PEM")
+	tlsKey := flags.String("tls-key", "", "TLS private key PEM")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 || *journalPath == "" {
+		return errors.New("--journal is required and positional arguments are not accepted")
+	}
+	if (*tlsCert == "") != (*tlsKey == "") {
+		return errors.New("--tls-cert and --tls-key must be provided together")
+	}
+	host, _, err := net.SplitHostPort(*address)
+	if err != nil {
+		return fmt.Errorf("invalid coordinator address: %w", err)
+	}
+	ip := net.ParseIP(host)
+	if *tlsCert == "" && (ip == nil || !ip.IsLoopback()) {
+		return errors.New("non-loopback coordinator listeners require TLS")
+	}
+	token := os.Getenv("STATETWIN_COORDINATOR_TOKEN")
+	journal, err := episode.OpenJournal(*journalPath)
+	if err != nil {
+		return err
+	}
+	defer journal.Close()
+	coordinator, err := episode.NewCoordinator(journal, token)
+	if err != nil {
+		return err
+	}
+	httpServer := hardenedHTTPServer(*address, coordinator)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	errorsCh := make(chan error, 1)
+	go func() {
+		if *tlsCert != "" {
+			errorsCh <- httpServer.ListenAndServeTLS(*tlsCert, *tlsKey)
+			return
+		}
+		errorsCh <- httpServer.ListenAndServe()
+	}()
+	select {
+	case <-ctx.Done():
+	case err := <-errorsCh:
+		if !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+	}
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	return httpServer.Shutdown(shutdownCtx)
+}
+
+func runEpisodeWorker(args []string) error {
+	flags := flag.NewFlagSet("episode worker", flag.ContinueOnError)
+	coordinatorURL := flags.String("coordinator", "", "Episode coordinator base URL")
+	workerID := flags.String("id", "", "stable worker identifier")
+	leaseSeconds := flags.Int("lease-seconds", 60, "lease and heartbeat extension seconds")
+	once := flags.Bool("once", false, "exit after one claim or an empty queue")
+	poll := flags.Duration("poll", 2*time.Second, "empty-queue polling interval")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 || *coordinatorURL == "" || *workerID == "" {
+		return errors.New("--coordinator and --id are required and positional arguments are not accepted")
+	}
+	if *poll <= 0 || *leaseSeconds < 3 || *leaseSeconds > limits.MaxLeaseSeconds {
+		return errors.New("--poll must be positive and --lease-seconds must be within 3..resource limit")
+	}
+	client, err := episode.NewCoordinatorClient(*coordinatorURL, os.Getenv("STATETWIN_COORDINATOR_TOKEN"), nil)
+	if err != nil {
+		return err
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	for {
+		claim, err := client.Claim(ctx, *workerID, *leaseSeconds, episode.EffectHermetic)
+		if err != nil {
+			var requestError *episode.CoordinatorRequestError
+			if errors.As(err, &requestError) && requestError.Code == "NO_TASK" {
+				if *once {
+					return nil
+				}
+				select {
+				case <-ctx.Done():
+					return nil
+				case <-time.After(*poll):
+					continue
+				}
+			}
+			return err
+		}
+		if err := executeHermeticClaim(ctx, client, claim, *leaseSeconds); err != nil {
+			return err
+		}
+		if *once {
+			return nil
+		}
+	}
+}
+
+func executeHermeticClaim(parent context.Context, client *episode.CoordinatorClient, claim *episode.Claim, leaseSeconds int) error {
+	if claim.EffectProfile != episode.EffectHermetic {
+		return errors.New("scripted worker refuses non-hermetic claim")
+	}
+	if claim.Runtime.Version != server.Version || claim.Runtime.Revision != server.Revision {
+		return client.Fail(parent, claim, episode.CommitNoEffect, "WORKER_ERROR")
+	}
+	artifact, err := bundle.OpenBytes(claim.Bundle)
+	if err != nil {
+		_ = client.Fail(parent, claim, episode.CommitNoEffect, "WORKER_ERROR")
+		return err
+	}
+	runCtx, cancel := context.WithCancel(parent)
+	defer cancel()
+	heartbeatErrors := make(chan error, 1)
+	stopHeartbeat := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(time.Duration(leaseSeconds) * time.Second / 3)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stopHeartbeat:
+				heartbeatErrors <- nil
+				return
+			case <-runCtx.Done():
+				heartbeatErrors <- nil
+				return
+			case <-ticker.C:
+				result, err := client.Heartbeat(runCtx, claim, leaseSeconds)
+				if err != nil {
+					heartbeatErrors <- err
+					cancel()
+					return
+				}
+				if result.CancelRequested {
+					cancel()
+				}
+			}
+		}
+	}()
+	evidence, runErr := episode.Run(runCtx, artifact, claim.EpisodeID, claim.ScenarioPath, claim.Runtime.Version, claim.Runtime.Revision)
+	close(stopHeartbeat)
+	heartbeatErr := <-heartbeatErrors
+	if runErr != nil {
+		class := "WORKER_ERROR"
+		if errors.Is(runCtx.Err(), context.Canceled) {
+			class = "CANCELLED"
+		}
+		if failErr := client.Fail(parent, claim, episode.CommitNoEffect, class); failErr != nil {
+			return errors.Join(runErr, heartbeatErr, failErr)
+		}
+		return errors.Join(runErr, heartbeatErr)
+	}
+	if heartbeatErr != nil {
+		return heartbeatErr
+	}
+	return client.Complete(parent, claim, evidence)
 }
 
 func runCompatibility(args []string) error {

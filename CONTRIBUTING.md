@@ -10,6 +10,10 @@ Maintainer workflows and release evidence are documented in
 [docs/MAINTAINER-EVIDENCE.md](docs/MAINTAINER-EVIDENCE.md). Document authority
 and proposal status are defined in
 [docs/DOCS-GOVERNANCE.md](docs/DOCS-GOVERNANCE.md).
+Public claims and compatibility changes must also update
+[docs/CLAIM-REGISTRY.md](docs/CLAIM-REGISTRY.md),
+[docs/REQUIREMENT-TRACEABILITY.md](docs/REQUIREMENT-TRACEABILITY.md), and the
+exact-profile [docs/COMPATIBILITY-MATRIX.md](docs/COMPATIBILITY-MATRIX.md).
 Project roles, decision rights, support boundaries, and community expectations
 are defined in [GOVERNANCE.md](GOVERNANCE.md),
 [MAINTAINERS.md](MAINTAINERS.md), [SUPPORT.md](SUPPORT.md), and
@@ -33,6 +37,7 @@ go run ./cmd/statetwin bundle verify --bundle issue-tracker.stb
 go run ./cmd/statetwin episode run --bundle issue-tracker.stb --id contributor-smoke --out episode-evidence.json
 go run ./cmd/statetwin episode run --bundle issue-tracker.stb --id contributor-durable --journal episodes.db
 go run ./cmd/statetwin episode inspect --journal episodes.db --id contributor-durable
+go test ./internal/episode ./internal/provider ./internal/store
 ```
 
 Before submitting a change:
@@ -58,6 +63,10 @@ Open an ADR or RFC change before implementing anything that changes:
 - resource limits or profile/environment identity.
 - TwinBundle manifest/admission, Episode lifecycle/Journal, request identity,
   or evidence identity.
+- remote Episode attempts, leases, fencing, cancellation, effect-profile or
+  exactly-once claim vocabulary;
+- provider request shape, capability reporting, credential handling or live
+  compatibility evidence.
 
 ## Pull requests
 
@@ -71,3 +80,8 @@ A pull request should include:
 
 Do not include production recordings, access tokens, cookies, personal data,
 or third-party fixtures that cannot legally be redistributed.
+
+Live provider tests are opt-in and synthetic-only. Use the manual
+`provider-smoke` workflow or the CLI with an exact model ID, a public HTTPS
+synthetic MCP endpoint, and repository/environment secrets. A mock server test
+must never be described as dated live compatibility evidence.

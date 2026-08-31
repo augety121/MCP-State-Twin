@@ -492,6 +492,42 @@ func TestDatabaseRejectsForeignIdentityAndNewerSchema(t *testing.T) {
 	}
 }
 
+func TestForeignDatabaseRefusalDoesNotMutateJournalModeOrIdentity(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "foreign.db")
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`CREATE TABLE foreign_data(value TEXT)`); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Open(path); err == nil || !strings.Contains(err.Error(), "unidentified non-empty") {
+		t.Fatalf("foreign database error = %v", err)
+	}
+	db, err = sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var appID, version int
+	var mode string
+	if err := db.QueryRow(`PRAGMA application_id`).Scan(&appID); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.QueryRow(`PRAGMA journal_mode`).Scan(&mode); err != nil {
+		t.Fatal(err)
+	}
+	if appID != 0 || version != 0 || strings.EqualFold(mode, "wal") {
+		t.Fatalf("foreign database mutated: appID=%d version=%d mode=%s", appID, version, mode)
+	}
+}
+
 func TestVersionOneSnapshotSchemaMigratesWithoutDataLoss(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.db")
 	db, err := sql.Open("sqlite", path)

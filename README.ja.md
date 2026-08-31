@@ -53,16 +53,19 @@
 - strict HostCompatibilityReport admission（live provider compatibility の証明ではない）
 - deterministic TwinBundle `v1alpha1`（厳格な path/type/size/digest/payload 検証、再現可能 ZIP、未署名）
 - local scripted EvaluationEpisode（閉じた lifecycle と evidence digest。provider harness ではない）
-- durable local Episode Journal（独立 SQLite、immutable request digest、lifecycle CAS、明示的 `incomplete`。自動 retry ではない）
+- durable Episode Journal schema v2（v1 fixture migration、kill-point recovery、immutable request、Evidence consistency）
+- fenced remote Episode coordinator / hermetic worker（lease、heartbeat、fencing、bounded retry、cooperative cancellation、`COMMIT_UNKNOWN`）
+- OpenAI Responses / Anthropic Messages provider-smoke harness と mock contract tests（dated live report は未取得）
 
 ### 未実装または未検証
 
 - recorder、cassette replay、trace redaction、自動 upstream surface inspection/refresh
 - 残りの deterministic fault phases、scheduler、deterministic entropy、idempotency、crash/cancellation、eventual consistency は未実装（private clock と 2 つの fault phases は実装済み）
 - 実際の ChatGPT / OpenAI API / Claude / Claude Code smoke test
-- live provider harness、admitted OpenAI/Anthropic report、evidence-derived compatibility matrix
+- dated OpenAI/Anthropic live report、admitted compatibility report、evidence-derived compatibility matrix
 - differential validation、L2 fidelity promotion workflow
-- durable/remote Episode、HostProfile、bundle signing/registry、provenance attestation
+- multi-coordinator HA、external-effect retry/reconciliation、HostProfile、bundle signing/registry、provenance attestation
+- provider/tool/external side effect の exactly-once guarantee（terminal Evidence acceptance のみ bounded support）
 - data-plane authentication、TLS、remote multi-tenancy、security audit
 
 詳細は [Implementation Status](docs/IMPLEMENTATION-STATUS.md) を参照してください。Roadmap 上の項目を現在の機能として表現することはありません。
@@ -290,7 +293,7 @@ Core は model-provider SDK ではなく MCP と統合します。同じ tool su
 
 Official Go SDK を server / client の両方で用いた stateless Streamable HTTP integration test があり、Linux CI では MCP conformance framework `v0.1.16` を固定して initialize、ping、tools-list、JSON Schema 2020-12 を検証します。
 
-Repository はまだ live ChatGPT / OpenAI / Claude smoke test を完了していません。
+Repository には OpenAI Responses / Anthropic Messages の provider-smoke harness と mock contract tests がありますが、dated live report はまだありません。API harness は ChatGPT / Claude 製品互換性の証明ではありません。
 
 Design sources:
 
@@ -370,6 +373,8 @@ go build ./cmd/statetwin
 - [ADR-0016](docs/ADR-0016-V0.1-STORAGE-COMPATIBILITY.md) / [ADR-0017](docs/ADR-0017-HOST-COMPATIBILITY-REPORT-ADMISSION.md)
 - [ADR-0018](docs/ADR-0018-TWINBUNDLE-AND-LOCAL-EPISODE-PREVIEW.md)
 - [ADR-0019](docs/ADR-0019-DURABLE-LOCAL-EPISODE-JOURNAL.md)
+- [ADR-0020](docs/ADR-0020-REMOTE-EPISODE-EXECUTION.md) / [ADR-0021](docs/ADR-0021-UNIFIED-LIFECYCLE-AND-RELEASE-BOUNDARIES.md)
+- [Phase specifications](docs/ROADMAP.md) / [Claim Registry](docs/CLAIM-REGISTRY.md) / [Compatibility Matrix](docs/COMPATIBILITY-MATRIX.md)
 - [Failure Mode Matrix](docs/FAILURE-MODE-MATRIX.md)
 - [v0.1 P0 Traceability](docs/V0.1-P0-TRACEABILITY.md)
 - [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md)

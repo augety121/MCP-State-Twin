@@ -1,7 +1,7 @@
 # MCP State Twin Project Map
 
 **Status:** current product and architecture map
-**Authority:** subordinate to accepted ADRs and RFC-0002; implementation claims
+**Authority:** subordinate to accepted ADRs and RFC-0001 revision 3; implementation claims
 come only from `IMPLEMENTATION-STATUS.md` and executable tests.
 
 ## 1. One-sentence definition
@@ -38,8 +38,15 @@ solve model intelligence, planning quality, or general agent alignment.
 | MCP data plane | Model-visible business tools | Tools-first, loopback-oriented development profile |
 | Control plane | Snapshot, fork, reset, diff, clock and fault controls | Private and separately authenticated; never agent-facing |
 | Scenario runner | Ordered calls, assertions, expected errors, report digest | Scripted deterministic scenarios; no live-model score claim |
-| Evidence layer | Canonical digests, audit records, protocol evidence, deterministic unsigned TwinBundle, scripted EpisodeEvidence and durable local Journal | Partial preview; recorder, signatures/provenance, remote Episodes and OTel remain open |
+| Evidence layer | Canonical digests, audit records, protocol evidence, deterministic unsigned TwinBundle, scripted EpisodeEvidence and schema-v2 Journal | Partial preview; recorder, signatures/provenance and OTel remain open |
+| Episode coordinator | Immutable tasks, leases, fencing, cancellation, safe recovery and terminal Evidence admission | Single coordinator and hermetic scripted remote workers; external ambiguity is not retried |
+| Provider smoke | Exercise the same public synthetic MCP endpoint through provider APIs | OpenAI/Anthropic contract harness and manual workflow exist; no dated live report yet |
 | Release governance | SemVer gates, CI, changelog and evidence inventory | Development preview; no stable `v0.1.0` yet |
+
+The independent product lines are local core (`v0.1`), deterministic recovery
+and remote Episodes (`v0.2`), secure provider/host evidence (`v0.3`), fidelity
+and replay (`v0.4`), then stable public contracts (`v1.0`). Provider live
+evidence is not a local-core v0.1 gate.
 
 ## 4. End-to-end lifecycle
 
@@ -94,9 +101,11 @@ The compatibility claim is layered:
 4. **Behavioral compatibility:** the host/model produces a useful trajectory in
    a defined scenario.
 
-The repository currently has evidence for the first two layers only. It must
-not advertise “ChatGPT compatible”, “Claude compatible”, or “all agents
-compatible” without a versioned host profile and an executable smoke test.
+The repository has local evidence for the first two layers plus mock contract
+evidence for OpenAI Responses and Anthropic Messages remote-MCP adapters. It
+does not yet have a dated live provider report or product-host evidence. It
+must not advertise “ChatGPT compatible”, “Claude compatible”, or “all agents
+compatible” without the corresponding admitted live evidence.
 
 ## 7. Why this is an AGI-facing foundation without claiming AGI
 

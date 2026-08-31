@@ -17,12 +17,21 @@ proposal text into an implementation claim.
 6. Update CHANGELOG.md with verified behavior and explicit limitations.
 7. Update the relevant ADR/SPEC and implementation status together.
 8. Create a GitHub release only from the reviewed commit.
-9. For stable v0.1, validate both required provider-family evidence reports and
-   review their remote deployment profile; an absent report keeps the gate open.
+9. For stable v0.1, verify that no provider/product compatibility is implied by
+   local MCP evidence. Live provider reports are a v0.3 profile gate, not a
+   local-core v0.1 gate.
 10. Treat unsigned TwinBundle verification as integrity/semantic evidence only;
     it is not publisher identity or supply-chain provenance.
 11. For Journal changes, run a completed Episode twice with the same request,
     inspect after reopen, and verify incomplete/conflict/tamper negative tests.
+12. For ADR-0020 changes, run the remote Episode lease, fencing, cancellation,
+    ambiguity, duplicate-completion and Journal-v1-to-v2 migration suites.
+    Release notes may claim exactly-once terminal Evidence acceptance only,
+    never exactly-once provider/tool/external execution.
+13. Provider mock tests are not live evidence. A release that claims a verified
+    provider profile requires
+    dated OpenAI and Anthropic workflow artifacts and admitted compatibility
+    reports from the same reviewed revision.
 
 For a tagged release, use a SemVer tag such as `v0.1.0-alpha.1` or `v0.1.1`.
 The tag workflow in `.github/workflows/release.yml` reruns the release gates,

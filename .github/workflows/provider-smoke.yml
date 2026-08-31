@@ -1,0 +1,85 @@
+name: provider-smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: Provider contract to exercise
+        required: true
+        type: choice
+        options:
+          - openai
+          - anthropic
+      model:
+        description: Exact provider model identifier
+        required: true
+        type: string
+      mcp_url:
+        description: Public HTTPS synthetic MCP endpoint
+        required: true
+        type: string
+      prompt:
+        description: Synthetic prompt that requires at least one MCP tool call
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-smoke-${{ github.ref }}-${{ inputs.provider }}
+  cancel-in-progress: false
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: provider-smoke
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.26.x"
+          cache: true
+      - name: Require the selected provider secret
+        shell: bash
+        env:
+          SELECTED_PROVIDER: ${{ inputs.provider }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [[ "${SELECTED_PROVIDER}" == "openai" && -z "${OPENAI_API_KEY}" ]]; then
+            echo "OPENAI_API_KEY is not configured for the provider-smoke environment" >&2
+            exit 1
+          fi
+          if [[ "${SELECTED_PROVIDER}" == "anthropic" && -z "${ANTHROPIC_API_KEY}" ]]; then
+            echo "ANTHROPIC_API_KEY is not configured for the provider-smoke environment" >&2
+            exit 1
+          fi
+      - name: Run synthetic live provider smoke
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          STATETWIN_MCP_AUTHORIZATION: ${{ secrets.STATETWIN_MCP_AUTHORIZATION }}
+          PROVIDER: ${{ inputs.provider }}
+          MODEL: ${{ inputs.model }}
+          MCP_URL: ${{ inputs.mcp_url }}
+          PROMPT: ${{ inputs.prompt }}
+        run: >-
+          go run ./cmd/statetwin provider smoke
+          --provider "${PROVIDER}"
+          --model "${MODEL}"
+          --runtime-revision "${GITHUB_SHA}"
+          --mcp-url "${MCP_URL}"
+          --prompt "${PROMPT}"
+          --out "${RUNNER_TEMP}/provider-smoke-${PROVIDER}.json"
+          --synthetic-only
+          --timeout 10m
+      - name: Upload redacted smoke report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: provider-smoke-${{ inputs.provider }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/provider-smoke-${{ inputs.provider }}.json
+          if-no-files-found: warn
+          retention-days: 35

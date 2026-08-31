@@ -140,6 +140,12 @@ func openWithMigrationHook(path string, hook migrationHook) (*Store, error) {
 	// keeps :memory: databases coherent across all calls.
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
+	// Identity and future-version admission must run before persistent PRAGMAs
+	// such as journal_mode. Refusing a foreign database must not mutate it.
+	if err := validateDatabaseIdentity(db); err != nil {
+		db.Close()
+		return nil, err
+	}
 	for _, pragma := range []string{
 		"PRAGMA foreign_keys = ON",
 		"PRAGMA busy_timeout = 5000",
@@ -156,6 +162,35 @@ func openWithMigrationHook(path string, hook migrationHook) (*Store, error) {
 		return nil, err
 	}
 	return s, nil
+}
+
+func validateDatabaseIdentity(db *sql.DB) error {
+	var appID, version int
+	if err := db.QueryRow(`PRAGMA application_id`).Scan(&appID); err != nil {
+		return fmt.Errorf("read SQLite application_id: %w", err)
+	}
+	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
+		return fmt.Errorf("read SQLite user_version: %w", err)
+	}
+	if appID != 0 && appID != applicationID {
+		return fmt.Errorf("database application_id %d does not belong to MCP State Twin", appID)
+	}
+	if version > schemaVersion {
+		return fmt.Errorf("database schema version %d is newer than supported version %d", version, schemaVersion)
+	}
+	if appID == 0 {
+		if version != 0 {
+			return errors.New("unidentified SQLite database has a non-zero schema version")
+		}
+		var tables int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`).Scan(&tables); err != nil {
+			return fmt.Errorf("inspect unidentified SQLite database: %w", err)
+		}
+		if tables != 0 {
+			return errors.New("unidentified non-empty SQLite database does not belong to MCP State Twin")
+		}
+	}
+	return nil
 }
 
 func (s *Store) Close() error { return s.db.Close() }

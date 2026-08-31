@@ -30,8 +30,15 @@ the following bounded slice in this change:
     adapters, signatures, registries, and provider claims remain proposals.
 11. ADR-0019 accepts an independent durable local Episode Journal with
     immutable request identity, lifecycle CAS, idempotent completed-evidence
-    reads and explicit incomplete records. Automatic recovery, cancellation,
-    leases, remote workers and exactly-once execution remain proposals.
+    reads and explicit incomplete records.
+12. ADR-0020 accepts a fenced single-coordinator profile with attempts, leases,
+    heartbeats, bounded hermetic recovery, cooperative cancellation, remote
+    scripted workers, `COMMIT_UNKNOWN`, and exactly-once terminal Evidence
+    acceptance. Multi-coordinator HA, provider-thread recovery and exactly-once
+    external effects remain proposals or explicit non-claims.
+13. ADR-0021 accepts the unified authority and release train. SPEC-0019 through
+    SPEC-0021 define exact HostProfiles, remote-staging prerequisites and claim
+    freshness; their unimplemented portions remain explicit.
 
 The authoritative implementation status is
 [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md). A proposal becomes an

@@ -146,18 +146,32 @@ implemented the corresponding feature.
 | F-124 | Bundle | valid hashes wrap an invalid TwinSpec, fixture, or Scenario | P0 | strict semantic payload admission during build and verify |
 | F-125 | Bundle | unsigned integrity check is misrepresented as publisher authenticity | P0 | explicit unsigned status; signing/provenance remains blocked |
 | F-126 | Episode | requested Scenario is not part of the admitted Bundle | P0 | declared-Scenario lookup only; omission allowed only for one Scenario |
-| F-127 | Episode | retry overwrites earlier evidence and erases the failure record | P1 | current CLI refuses existing output; durable append-only store is future work |
-| F-128 | Episode | process exit loses lifecycle/commit ambiguity | P0 | local preview makes no durability claim; remote/durable design requires kill-point evidence |
+| F-127 | Episode | retry overwrites earlier evidence and erases the failure record | P1 | immutable parent request, append-only attempts, exact terminal duplicate admission |
+| F-128 | Episode | process exit loses lifecycle/commit ambiguity | P0 | Journal schema-v2 attempts persist effect classification; external ambiguity becomes `COMMIT_UNKNOWN` |
 | F-129 | Evidence | development scripted report is mistaken for a provider run | P0 | fixed `development` claim and `scripted-scenario` identity |
 | F-130 | Evidence | report publishes secrets or personal data from inputs/results | P0 | synthetic-only policy and secret scan; encryption/retention controls remain unimplemented |
 | F-131 | Episode Journal | same Episode ID is reused with different Bundle/runtime inputs | P0 | immutable request digest and identity-conflict refusal |
-| F-132 | Episode Journal | process dies after lifecycle progress and retry duplicates effects | P0 | preserve non-terminal record as `incomplete`; never auto-retry |
+| F-132 | Episode Journal | process dies after lifecycle progress and retry duplicates effects | P0 | only proven `NO_EFFECT` or expired hermetic work retries; external expiry is terminal `COMMIT_UNKNOWN` |
 | F-133 | Episode Journal | terminal status commits without its Evidence | P0 | terminal event/status/Evidence commit in one SQLite transaction |
 | F-134 | Episode Journal | stale writer overwrites newer lifecycle state | P0 | status + monotonic-sequence compare-and-swap |
 | F-135 | Episode Journal | stored Evidence bytes are modified after completion | P0 | verify envelope and canonical Evidence digest on every read |
 | F-136 | Episode Journal | raw runtime error persists a credential or private input | P0 | persist typed error class only; raw message remains operational/redacted |
 | F-137 | Episode Journal | unlimited records exhaust local storage | P1 | 10,000-record admission bound; retention automation remains open |
-| F-138 | Episode Journal | users infer exactly-once execution from idempotent terminal reads | P0 | explicit non-claim; no automatic recovery, lease or distributed worker semantics |
+| F-138 | Episode Journal | users infer external exactly-once execution from terminal idempotency | P0 | claim exactly-once Evidence acceptance only; explicitly forbid provider/tool/side-effect exactly-once claims |
+| F-139 | Remote Episode | two workers own the same task after a race | P0 | transactional one-active-attempt claim plus concurrent-owner test |
+| F-140 | Remote Episode | expired worker commits after a replacement starts | P0 | monotonic fencing token on heartbeat/fail/complete and stale-fence negative tests |
+| F-141 | Remote Episode | lease expiry causes unsafe external replay | P0 | external profile transitions to `COMMIT_UNKNOWN`; no automatic redelivery |
+| F-142 | Remote Episode | cancellation races with terminal completion | P0 | durable cancel flag and transactional precedence; committed completion wins, prior cancel rejects later completion |
+| F-143 | Remote Episode | cancellation is reported although an effect may have committed | P0 | `NO_EFFECT` required for `CANCELLED`; `UNKNOWN` maps to `COMMIT_UNKNOWN` |
+| F-144 | Remote Episode | corrupted task/attempt lineage is returned as valid | P0 | read-time attempt count/order/fence/timestamp/parent/evidence consistency validation |
+| F-145 | Coordinator | agent discovers claim/reset/cancel controls through MCP | P0 | coordinator is a distinct HTTP control plane and is never registered in `tools/list` |
+| F-146 | Coordinator | bearer token leaks through records, errors or responses | P0 | runtime-only token, constant-time compare, sanitized errors, no response echo and negative tests |
+| F-147 | Coordinator | plaintext credentials cross an untrusted network | P0 | plaintext listener permitted only on loopback; non-loopback requires TLS certificate/key |
+| F-148 | Provider smoke | mock contract test is published as live compatibility | P0 | report marks synthetic run; status ledger and release gate require dated live artifact separately |
+| F-149 | Provider smoke | API/MCP credential or raw provider body enters evidence | P0 | env-only credentials, digest/count-only report, bounded error sanitization and no-secret tests |
+| F-150 | Provider smoke | OpenAI cancellation behavior is assumed for Anthropic | P1 | independent capability profiles; Anthropic records disconnect-only cancellation and no background retrieve |
+| F-151 | Storage | foreign SQLite is mutated before identity refusal | P0 | identity/version validation before persistent pragmas plus zero-mutation journal-mode test |
+| F-152 | Journal migration | process exits between schema apply and version metadata | P0 | transactional migration kill-points, reopen, fixture preservation and `integrity_check` |
 
 ## Release interpretation
 

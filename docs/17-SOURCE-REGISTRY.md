@@ -403,7 +403,7 @@ A stale source must never silently remain the basis of a current compatibility c
 
 - **Source:** Anthropic Messages API MCP connector
 - **URL:** https://platform.claude.com/docs/en/agents-and-tools/mcp-connector
-- **Checked:** 2026-08-24
+- **Checked:** 2026-08-26
 - **Documented at this research cut:**
   - current beta header `mcp-client-2025-11-20`;
   - tool calls are supported;
@@ -412,6 +412,30 @@ A stale source must never silently remain the basis of a current compatibility c
   - local stdio cannot be directly connected;
   - allowlist/denylist/per-tool configuration and OAuth bearer tokens are supported.
 - **Design implication:** this is a distinct remote Host Profile and must not inherit Claude Code compatibility.
+
+## SRC-OPENAI-RESPONSES-BACKGROUND-2026
+
+- **Source:** OpenAI API documentation — Background mode
+- **URL:** https://developers.openai.com/api/docs/guides/background
+- **Checked:** 2026-08-31
+- **Documented:** Responses can be created with `background: true`, retrieved
+  while queued/in-progress, and cancelled through the Response cancel endpoint.
+- **Not established by the cited pages:** repeated-cancellation idempotency.
+- **Design implication:** the OpenAI smoke adapter may poll and attempt remote
+  cancellation and reports `cancelIdempotent: unknown`; the endpoint does not
+  establish exactly-once request or tool effects.
+
+## SRC-OPENAI-RESPONSES-MCP-2026
+
+- **Source:** OpenAI API documentation — Connectors and remote MCP servers
+- **URL:** https://developers.openai.com/api/docs/guides/tools-connectors-mcp
+- **Checked:** 2026-08-26
+- **Documented:** a Responses request can provide a remote MCP tool with
+  `server_url`, optional authorization, and approval policy; MCP list/call
+  output items are distinct response records; the authorization value is not
+  stored in the Response object.
+- **Design implication:** credentials stay runtime-only and report evidence
+  uses digests/counts rather than raw Response content.
 
 ## SRC-ANTHROPIC-MANAGED-AGENTS-MCP-2026
 

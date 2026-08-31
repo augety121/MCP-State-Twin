@@ -1,326 +1,94 @@
-# Engineering Roadmap
-
-**Status:** implementation in progress; see `IMPLEMENTATION-STATUS.md` for evidence.
-**Rule:** 先完成最小可信闭环，再扩功能。每一阶段都必须有可运行 demo、自动测试和退出标准。
-
-## Phase 0 — Design freeze
-
-Progress: protocol, control-plane isolation, expression engine, storage,
-canonicalization, and operational logging decisions have ADRs. RFC-0001 remains
-the umbrella Draft. ADR-0015 accepts RFC-0002 as the authoritative, L1-only
-v0.1 release profile; SPEC-0001 through SPEC-0006 still require maintainer
-review before a stable v0.1. ADR-0011 accepts only bounded preview slices of
-SPEC-0007 and SPEC-0012. ADR-0018 accepts deterministic TwinBundle/local
-scripted Episode slices and ADR-0019 accepts an independent durable local
-Journal slice of RFC-0003; the remaining vNext pack is not accepted or
-implemented.
-
-Deliverables:
-
-- RFC-0001 umbrella reconciled with the RFC-0002 release profile by ADR-0015;
-  accepting RFC-0002 does not accept every umbrella requirement.
-- SPEC-0001 through SPEC-0006 prepared as the proposed v0.1 normative set;
-  maintainer acceptance remains a governance gate.
-- Failure matrix P0/P1 reviewed.
-- ADRs for expression engine, storage snapshot strategy, MCP protocol support, and artifact format.
-- Two reference domains selected.
-- Naming/license check.
-
-Exit criteria:
-
-- 团队能用一句话解释产品，不出现 “agent framework / universal simulator / perfect twin” 等 scope creep。
-- 每个 hard invariant 有对应测试设计。
+# MCP State Twin Roadmap
 
-## Phase 1 — Deterministic kernel
-
-Progress: implemented in the development preview. A 1,000-call two-branch
-deterministic replay test currently passes. Bounded TwinSpec and CEL fuzz
-targets pass in Linux CI run #6. Migration transaction kill-points are covered;
-general tool-transition process-crash injection remains outside the current
-fault preview.
+**Status:** planned work ordered by accepted lifecycle boundaries
+**Authority:** ADR-0021 and the linked Phase SPECs
+**Current release:** development preview; latest public prerelease
+`v0.1.0-alpha.1`
 
-Build:
+MCP State Twin remains a deterministic, forkable, evidence-backed stateful
+environment for testing tool-using agents. The roadmap does not turn planned
+features into implementation claims; `IMPLEMENTATION-STATUS.md` and
+`CLAIM-REGISTRY.md` control those claims.
 
-- Go module and CLI skeleton.
-- TwinSpec v1alpha1 parser and schema validator.
-- Canonical JSON + digest.
-- VirtualClock.
-- Deterministic ID/random provider.
-- SQLite state backend.
-- Bounded expression evaluator.
-- Atomic transition engine.
-- State assertions and canonical diff.
+## Release train
 
-Phase 1 remains network-independent; the current development preview also
-contains the Phase 3 MCP server described below.
+| Product line | Primary contract | Scope |
+|---|---|---|
+| `v0.1.x` | [Phase 1](PHASE-01-LOCAL-CORE.md) | local hermetic deterministic core |
+| `v0.2.x` | [Phase 2](PHASE-02-DETERMINISM-RECOVERY.md), [Phase 3](PHASE-03-REMOTE-EXECUTION.md) | determinism/recovery completion and fenced remote Episodes |
+| `v0.3.x` | [Phase 4](PHASE-04-PROVIDER-VALIDATION.md) | secure remote staging and exact provider/host evidence |
+| `v0.4.x` | [Phase 5](PHASE-05-FIDELITY.md) | recorder/replay, drift, differential L2 |
+| post-v0.4 | [Phase 6](PHASE-06-SCENARIO-FAMILIES.md) | scenario families and bounded multi-Agent evaluation |
+| `v1.0.0` | [Phase 7](PHASE-07-V1-STABILITY.md) | stable formats, compatibility and maintainer contract |
 
-Exit criteria:
+## Phase 0 — specification and claim consolidation
 
-- 1,000 repeated executions of the same transition corpus produce identical hashes.
-- crash/failure tests prove no half-commit in normal atomic mode.
-- fuzz parser/evaluator finds no panic for bounded test budget.
+Current progress: ADR-0021, SPEC-0019 through SPEC-0021, unified traceability,
+claim, compatibility and decision ledgers, and phase contracts exist in the
+candidate worktree. Exit still requires final link/translation review and CI on
+the merged revision.
 
-## Phase 2 — Snapshot/fork world model
+## Phase 1 — local core
 
-Progress: logical snapshots, isolated forks, reset, and canonical diff are
-implemented. The 100-way concurrent isolation gate passes. A bounded Scenario
-v1alpha1 format and scripted evidence report are implemented. A deterministic,
-unsigned TwinBundle and one-shot local scripted EvaluationEpisode now package
-and execute declared Scenarios with canonical evidence. State export/import,
-durable/remote Episode orchestration, signatures, and retention/GC remain
-incomplete.
+Current progress: strict TwinSpec/CEL/JSON Schema admission, canonical digests,
+SQLite atomic transitions, snapshots/forks/reset/diff, control isolation,
+Scenario, TwinBundle, local Episode, two synthetic reference domains and direct
+MCP wire tests are implemented. The exact candidate must pass every Phase 1
+gate before a stable v0.1 tag.
 
-An optional independent Episode Journal now persists lifecycle transitions and
-terminal Evidence with request identity/CAS. It deliberately refuses to resume
-an incomplete Episode; retry lineage, cancellation and remote workers remain
-open.
+Provider live evidence is explicitly not a v0.1 gate. The local release neither
+claims nor requires Internet-ready data-plane security.
 
-Build:
+## Phase 2 — determinism and recovery completion
 
-- immutable snapshots.
-- isolated branches.
-- fork/reset/export/import.
-- deterministic branch state digest.
-- retention/GC.
-- scenario format.
-- deterministic local TwinBundle artifact and one-shot scripted Episode.
+Partial preview capability exists for monotonic branch heads, a private virtual
+clock, two transaction fault phases and versioned resource limits. A complete
+virtual scheduler, entropy streams, timer ordering, full fault taxonomy and
+cross-platform deterministic artifact evidence remain open.
 
-Exit criteria:
+## Phase 3 — durable remote Episodes
 
-- parent snapshot immutability property test.
-- 100 parallel scenario branches cannot observe each other's state.
-- canonical export/import round-trip preserves digest.
+Candidate implementation includes Journal schema v2, leases, heartbeat,
+fencing, bounded hermetic recovery, cooperative cancellation, remote workers,
+`COMMIT_UNKNOWN` and exactly-once terminal Evidence acceptance. It remains an
+experimental candidate until merged and evidenced by CI. Multi-coordinator HA,
+replication, retention and external-effect exactly-once remain excluded.
 
-## Phase 3 — MCP data plane
+## Phase 4 — provider/host validation
 
-Progress: the official Go SDK serves the TwinSpec tool surface over stateless
-Streamable HTTP, and an official-SDK client integration test passes. Official
-conformance `v0.1.16` initialize, ping, tools-list, and JSON Schema 2020-12
-scenarios pass on Linux CI. Broader negotiated-version coverage remains open.
+OpenAI Responses and Anthropic Messages adapters have mock contract tests and
+an opt-in harness. There are no dated admitted live reports. The complete
+remote-staging security profile in SPEC-0020 is a prerequisite. ChatGPT, Codex,
+Claude and Claude Code remain separate unverified product profiles.
 
-Build:
+## Phase 5 — fidelity
 
-- official Go MCP SDK integration.
-- `tools/list` copied from TwinSpec surface.
-- `tools/call` -> transition engine.
-- Streamable HTTP current protocol path.
-- backwards-compatible transport only where official SDK makes it safe.
-- cancellation and error mapping.
+Recorder, cassette replay, redaction, upstream inspection, drift automation,
+differential validation and L2 admission are not implemented. The current
+reference twins remain `L1`, `unverified` and `unbound`.
 
-Exit criteria:
+## Phase 6 — scenario families
 
-- official relevant MCP conformance tests pass.
-- local generic MCP client smoke test.
-- tool descriptions/schemas exactly match canonical captured surface unless an explicit override exists.
+Issue-tracker and package-registry scenarios exist. Additional scenario
+families, deterministic generation, held-out evaluation, metamorphic coverage
+and shared-world multi-Agent scheduling require separate evidence.
 
-## Phase 4 — Private control plane
+## Phase 7 — v1 stability
 
-Progress: a separate bearer-authenticated HTTP plane implements state,
-snapshot, fork, reset, and diff, and tests verify that control functions are
-absent from MCP `tools/list`. Snapshot/fork/reset control audit is committed in
-the same transaction as each mutation.
+v1.0 freezes only contracts that have survived preview releases and have real
+consumers. Cloud hosting, marketplaces, general A2A orchestration, arbitrary
+native plugins and production mirroring remain independent RFCs.
 
-Build:
+## Priority order
 
-- separate local/private API.
-- snapshots/forks/reset/clock/fault APIs.
-- auth boundary for remote control plane.
-- audit log.
-- ensure no control function appears in agent data plane.
+1. close Phase 0 and run the exact-candidate Phase 1 gates;
+2. publish a narrow v0.1 local core instead of waiting for unsafe provider
+   validation;
+3. stabilize Phase 2 recovery and Phase 3 remote Episode semantics;
+4. implement SPEC-0020 before collecting or claiming live provider evidence;
+5. add fidelity only after recorder privacy and consent semantics are reviewable.
 
-Exit criteria:
-
-- security test attempts to discover control tools through MCP and fails.
-- control-plane mutation audit completeness test.
-
-## Phase 5 — Surface drift now; recorder after v0.1
-
-Progress: the canonical model-facing tool-surface envelope, digest, and
-fail-closed startup binding are implemented. The upstream inspector, recorder,
-redaction pipeline, and automatic refresh remain unimplemented.
-
-ADR-0015 excludes recorder/L0 and all upstream access from stable v0.1. The
-recorder items below are a separate post-v0.1 security and legal workstream;
-their position in this roadmap is not a v0.1 commitment.
-
-Build:
-
-- upstream inspector.
-- canonical surface fingerprint.
-- safe recorder for explicitly selected fixture interactions.
-- header/body redaction.
-- drift state: CURRENT / DRIFTED / UNKNOWN / UNBOUND.
-
-Exit criteria:
-
-- injected secrets never persist in golden trace tests.
-- description-only tool change triggers surface drift.
-- L2 twin in DRIFTED state fails CI by default.
-
-## Phase 6 — Reference twins
-
-The repository now contains two independent synthetic reference domains:
-
-- **GitHub-like issue/repository workflow** for maintainer and coding-agent
-  scenarios;
-- **package-registry workflow** for publish, yank, install and advisory-aware
-  dependency scenarios.
-
-These are synthetic state models. They do not claim fidelity to GitHub,
-registries, package managers or any upstream production API.
-
-Minimum modeled workflow:
-
-- list/get repository.
-- list/search/create/update/close issue.
-- comments.
-- labels.
-- synthetic permissions.
-- pagination.
-- rate-limit scenario.
-- timeout-before/after-effect scenarios.
-
-Why this domain:
-
-- OSS maintainers immediately understand it.
-- state transitions are concrete and testable.
-- useful for Codex/Claude coding-agent demos.
-- avoids financial/medical correctness risk for the first reference twin.
-
-Exit criteria:
-
-- 20+ multi-step scenarios.
-- state-based scoring.
-- differential test against a disposable fixture implementation/account for declared observable fields.
-- explicit fidelity report.
-
-## Phase 7 — Cross-provider smoke matrix
-
-Progress: ADR-0017 accepts a strict HostCompatibilityReport decoder, validator,
-and CLI admission command. No live OpenAI-family or Anthropic-family report is
-committed, no remote deployment profile is accepted, and the provider release
-gate remains open.
-
-Run the **same twin endpoint and same initial snapshot** with:
-
-- ChatGPT Developer Mode.
-- OpenAI API/Codex-compatible harness where appropriate.
-- Claude MCP connector.
-- Claude Code/local MCP path.
-- one generic MCP client.
-
-Important: success criterion is protocol/tool usability, not identical trajectories.
-
-Exit criteria:
-
-- each supported host can list and call the twin's tools.
-- all runs produce environment digest and terminal state diff.
-- host-specific limitations documented.
-
-## Phase 8 — Trace-assisted TwinSpec bootstrap
-
-Only after the deterministic core is trusted.
-
-Build:
-
-- trace normalizer.
-- candidate entity/key extraction.
-- candidate read/write dependency extraction.
-- candidate output templates.
-- optional LLM assist.
-- provenance labels: observed / inferred / declared / verified.
-
-Exit criteria:
-
-- generated spec always starts unverified.
-- malicious/prompt-injected trace cannot become compiler instruction.
-- benchmark reports precision/recall of extracted relations on reference twins; no marketing claim before measurement.
-
-## Phase 9 — Fidelity and differential validation
-
-Build:
-
-- observable projection definitions.
-- real-vs-twin differential runner.
-- transition coverage report.
-- unmodeled state/effect report.
-- L0/L1/L2 promotion checks.
-
-Exit criteria:
-
-- L2 promotion is machine-checkable + human-reviewable.
-- fidelity badge contains date and upstream surface digest.
-
-## Phase 10 — Fault model
-
-Build deterministic faults:
-
-Current evidence: ADR-0012 implements and tests `before-validation` rate-limit/
-timeout and `after-commit-before-response` timeout plans with branch-local
-persistence. The remainder of this phase is open.
-
-- rate limit.
-- timeout before effect.
-- timeout after effect.
-- partial effect.
-- stale visibility/eventual consistency.
-- transient 5xx.
-- auth denied.
-- output truncation/corruption as explicitly configured.
-
-Exit criteria:
-
-- same seed and call sequence replays the exact fired faults.
-- run report distinguishes configured vs fired faults.
-
-## v0.1 release gate
-
-v0.1 should be released only when:
-
-- deterministic kernel passes all golden replay tests.
-- snapshot/fork is stable.
-- MCP conformance passes for supported subset.
-- two model-provider families successfully use the same twin.
-- one useful synthetic reference twin has executable scenarios.
-- P0 failure modes have tests or are architecturally impossible.
-- docs state limitations prominently.
-- CI can run with network egress denied.
-
-## After v0.1 — only based on user evidence
-
-Potential expansions:
-
-- second domain (commerce/order or ticketing).
-- OpenAPI importer.
-- multi-agent deterministic scheduler.
-- MCP Tasks/async operation simulation.
-- native high-fidelity adapters.
-- RL environment API.
-- cloud-hosted remote twins.
-- registry, signed TwinBundle publication, and provenance attestations.
-
-Do not implement these because they sound impressive. Require issues, users, benchmarks or integration pull requests that prove demand.
-
-## OSS adoption plan
-
-The fastest path to ecosystem relevance is not a giant AGI claim. It is:
-
-1. make the GitHub-like reference twin genuinely useful for coding-agent CI;
-2. ship reproducible demos for OpenAI and Claude against the same snapshot;
-3. invite maintainers of MCP servers to contribute TwinSpecs/scenarios;
-4. publish a simple fidelity report format;
-5. integrate with existing eval frameworks rather than competing with them;
-6. collect real issues/PRs/releases before applying to OSS support programs.
-
-## Proposed first public demo
-
-**“Same issue tracker. Same initial state. Three agents. Zero real writes.”**
-
-- Start snapshot contains a repository with one bug report and fixture code metadata.
-- Model A, B, C receive the same task.
-- Each gets its own fork.
-- They may choose different tool trajectories.
-- Final state assertions verify whether the issue was correctly updated/closed and whether forbidden side effects occurred.
-- Report shows terminal state diff, tool-call count, fault handling and environment digest.
-
-This demonstrates the project in one minute without claiming AGI.
+The adoption strategy is evidence-first: useful reference scenarios, small
+reproducible releases, public issues/PRs, and compatibility claims tied to
+exact profiles. The project does not use an AGI capability claim as a release
+or adoption metric.

@@ -98,3 +98,11 @@ Those require separate failure and kill-point matrices. In particular,
 - Existing one-shot commands remain compatible.
 - Durable local evidence can be inspected after process restart without
   overstating crash recovery.
+
+## Amendment: ADR-0020 (2026-08-26)
+
+ADR-0020 accepts a separate schema-v2 coordinator profile and supersedes the
+retry, cancellation, lease, remote-worker and `ST-EPISODE-005` exclusions above
+only for that bounded profile. The one-shot local Journal behavior remains
+compatible. Arbitrary external exactly-once execution, retention, multi-tenant
+HA and provider-thread recovery remain excluded.

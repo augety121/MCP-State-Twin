@@ -273,3 +273,12 @@ ADR MUST define:
 - retry budgets and backoff under virtual versus wall time;
 - multi-process crash/kill-point tests; and
 - retention/deletion/audit policy.
+
+## 15. Accepted coordinator amendment
+
+ADR-0020 and SPEC-0018 satisfy the attempt identity, lease, fencing,
+cancellation, bounded retry, credential and commit-ambiguity gates for a
+single-coordinator synthetic TwinBundle profile. Journal schema v2 adds task
+and attempt tables through a forward migration that preserves schema-v1
+Episode data. Retention/deletion, multi-coordinator HA, provider-thread
+recovery and exactly-once external effects remain unaccepted.

@@ -2,7 +2,7 @@ schemaVersion: statetwin.dev/compatibility-claim/v1alpha1
 
 claim:
   id: "<...>"
-  status: "<documented|adapter_ready|connected|scenario_verified|stale|blocked|unsupported|unknown>"
+  status: "<unsupported|unverified|experimental|verified|regressed|stale>"
 
 host:
   provider: "<...>"

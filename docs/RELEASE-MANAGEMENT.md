@@ -43,16 +43,30 @@ Before tagging:
    traces.
 8. Every tagged storage schema has a provenance-labelled reopen/migration
    fixture, and interrupted-migration recovery passes on the candidate commit.
-9. For stable v0.1, admitted OpenAI-family and Anthropic-family reports pass
-   `statetwin compatibility validate`; their remote deployment profile is
-   reviewed, and no raw provider request ID, transcript, or credential is
-   committed.
+9. For stable v0.1, provider/product compatibility remains explicitly outside
+   the release profile. A v0.3 release that claims a verified provider profile
+   requires an admitted report, reviewed remote-staging profile, and proof that
+   no raw provider request ID, transcript, or credential is committed.
 10. For a release containing TwinBundle/Episode preview changes, build and
     verify both reference bundles, run one Episode per reference domain, and
     record that artifacts are unsigned and local-only.
 11. For a release containing Journal changes, verify reopen, identical-request
     terminal replay, identity conflict, incomplete refusal, foreign/future
     schema refusal, and Evidence tamper detection.
+12. For a release containing remote Episode changes, verify one-owner claiming,
+    lease/heartbeat bounds, fencing, stale-worker refusal, hermetic expiry
+    recovery, attempt-budget exhaustion, queued/leased cancellation, external
+    `COMMIT_UNKNOWN`, duplicate completion, coordinator authentication and
+    non-loopback TLS admission.
+13. A verified provider-profile gate requires dated artifacts from the manual
+    `provider-smoke` workflow for both OpenAI and Anthropic plus the admitted
+    HostCompatibilityReports required by SPEC-0019. Mock provider tests
+    establish API contract shape only and cannot satisfy this gate.
+
+The release notes must use the phrase **exactly-once terminal Evidence
+acceptance** for ADR-0020. They must not shorten it to “exactly-once execution”.
+External `COMMIT_UNKNOWN` is an unresolved outcome, never success or a retry
+signal.
 
 ## Tag and publish procedure
 
