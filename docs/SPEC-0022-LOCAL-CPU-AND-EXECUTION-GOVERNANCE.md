@@ -1,7 +1,7 @@
 # SPEC-0022 — Local CPU and Execution Governance
 
 - **Status:** Accepted by ADR-0022
-- **Version:** `statetwin.dev/execution-profile/v1alpha1`, `local-v1`
+- **Version:** `statetwin.dev/execution-profile/v1alpha1`, `local-v2`
 - **Applies to:** `statetwin` CLI, servers, coordinator, Episode workers and
   provider-smoke adapter code running in the same Go process
 
@@ -22,10 +22,13 @@ The machine-readable profile has these fields:
 | `logicalCpus` | logical CPUs observed during resolution |
 | `maxProcs` | Go scheduler execution-slot limit actually applied |
 | `workerConcurrency` | simultaneous Episode claims executed by this worker |
-| `hardCpuQuota` | always `false` in `local-v1` |
+| `softMemoryLimitBytes` | Go runtime soft heap target from SPEC-0023 |
+| `maxInFlightRequests` | independent per-listener HTTP capacity from SPEC-0024 |
+| `hardCpuQuota` / `hardMemoryQuota` | always `false` in `local-v2` |
 | `appliesToGoRuntime` | `true` |
 | `appliesToChildProcesses` | `false` |
-| `source` | `default`, `environment`, or `command-line` |
+| `source` | `default`, `environment`, `command-line`, or `mixed` |
+| `sources` | field-level provenance for mode, CPU, memory and admission |
 
 `statetwin execution-profile` MUST emit the resolved structure as JSON after
 the same policy has been applied to that process.
@@ -34,8 +37,9 @@ the same policy has been applied to that process.
 
 The implementation MUST resolve settings in this order:
 
-1. root CLI options `--execution-mode` and `--max-procs`;
-2. `STATETWIN_EXECUTION_MODE` and `STATETWIN_MAX_PROCS`;
+1. root CLI options, including `--execution-mode`, `--max-procs`,
+   `--memory-limit-mib` and `--max-inflight`;
+2. their `STATETWIN_*` environment equivalents;
 3. default mode `quiet`.
 
 Root options MUST appear before the command:
@@ -43,10 +47,13 @@ Root options MUST appear before the command:
 ```text
 statetwin --execution-mode balanced scenario ...
 statetwin --max-procs 2 episode worker ...
+statetwin --memory-limit-mib 768 --max-inflight 6 serve ...
 ```
 
 An explicit maximum overrides the mode-derived slot count but does not rename
-the selected mode. Duplicate root options are invalid.
+the selected mode. Duplicate root options are invalid. When fields come from
+different precedence levels, `source` is `mixed` and `sources` MUST retain the
+exact per-field origin rather than hiding provenance.
 
 ## 4. Mode semantics
 
@@ -61,6 +68,8 @@ throughput = C
 An explicit maximum MUST be an integer in `1..C`. Invalid configuration MUST
 terminate before command dispatch. There is no `unlimited`, `auto`, or zero
 sentinel in this version.
+
+Memory and HTTP defaults and bounds are normative in SPEC-0023 and SPEC-0024.
 
 ## 5. Enforcement boundary
 

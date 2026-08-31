@@ -20,6 +20,9 @@
 | DEC-014 | TwinBundle signing and publisher identity | open | Phase 7 |
 | DEC-015 | Supported v1.0 platform and deprecation windows | open | Phase 7 |
 | DEC-016 | Local processes default to a one-slot soft Go runtime governor; OS hard quotas remain a separate capability | resolved | ADR-0022 / SPEC-0022 |
+| DEC-017 | Go heap pressure uses a documented soft runtime target, never an RSS/hard-quota claim | resolved | ADR-0023 / SPEC-0023 |
+| DEC-018 | HTTP overload is rejected immediately per listener rather than queued without bound | resolved | ADR-0024 / SPEC-0024 |
+| DEC-019 | Health/readiness remain authenticated private control routes and never Agent tools | resolved | ADR-0025 / SPEC-0025 |
 
 Open decisions are roadmap work. They MUST NOT be silently resolved by an
 implementation-only change.

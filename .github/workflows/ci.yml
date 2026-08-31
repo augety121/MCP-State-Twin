@@ -43,7 +43,7 @@ jobs:
         run: |
           go run ./cmd/statetwin limits
           go run ./cmd/statetwin execution-profile
-          go run ./cmd/statetwin --execution-mode balanced --max-procs 2 execution-profile
+          go run ./cmd/statetwin --execution-mode balanced --max-procs 2 --memory-limit-mib 768 --max-inflight 6 execution-profile
       - name: MCP 2026 wire smoke
         run: |
           go test ./internal/server -run 'TestProtocolEvidencePinsSDKAndProfiles|TestMCP20260728|TestMCP20251125LegacyInitializeCompatibility' -count=1

@@ -77,12 +77,13 @@ Each deferred item requires a feature-specific ADR and executable evidence.
 
 ## 5. Operational execution amendment
 
-ADR-0022 and SPEC-0022 separately accept a portable local execution governor.
-The default `quiet` policy applies `GOMAXPROCS=1` before command dispatch and is
-inspectable through `statetwin execution-profile`. This prevents the Go process
-from scheduling runnable Go work across every logical CPU by default, but it
-is not an OS hard CPU quota and does not cover child or future native processes.
+ADR-0022 through ADR-0024 and SPEC-0022 through SPEC-0024 separately accept a
+portable local execution governor. The default `quiet` policy applies
+`GOMAXPROCS=1`, a 512 MiB Go heap soft target, and four in-flight requests per
+listener before command dispatch. The profile is inspectable through
+`statetwin execution-profile`. These controls do not form an OS/RSS hard quota
+and do not cover child or future native processes.
 
-This operational profile does not change `local-preview-v4` or its semantic
-environment digest. Exact CPU percentages, memory isolation, remote fairness
-and empirical performance budgets remain deferred.
+This `local-v2` operational profile does not change `local-preview-v4` or its
+semantic environment digest. Exact CPU percentages, memory isolation, durable
+queues, remote fairness and empirical performance budgets remain deferred.

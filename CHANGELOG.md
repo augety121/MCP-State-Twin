@@ -33,6 +33,11 @@ alpha prerelease but no stable release yet.
 - ADR-0022 and SPEC-0022 with a conservative `quiet` local execution default,
   validated `balanced`/`throughput` modes, exact `--max-procs` override,
   environment precedence and machine-readable `execution-profile` output;
+- ADR/SPEC-0023 through 0025: mode-bound Go heap soft limits, independent
+  non-queueing HTTP listener admission with redacted `SERVER_BUSY`, and
+  authenticated control-plane live/readiness checks;
+- `local-v2` ExecutionProfile fields and overrides for memory MiB and maximum
+  in-flight requests, with explicit soft-governor and non-production claims;
 
 ### Changed
 

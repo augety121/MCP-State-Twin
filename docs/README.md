@@ -66,6 +66,13 @@ define the accepted conservative local execution policy. `quiet` is the
 default and uses one Go scheduler slot; this is explicitly not an OS hard CPU
 quota.
 
+The same operational-safety batch also includes
+[`SPEC-0023`](SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md),
+[`SPEC-0024`](SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md), and
+[`SPEC-0025`](SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md), with one accepted
+ADR per contract. They cover a Go heap soft target, independent listener
+backpressure, and authenticated redacted health/readiness.
+
 # MCP State Twin Lifecycle SPEC Pack
 
 > **Status:** Proposal / Unverified  

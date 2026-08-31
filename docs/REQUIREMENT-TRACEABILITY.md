@@ -16,7 +16,7 @@
 | I-9 secret exclusion | ADR-0009 / SPEC-0020 | sanitizer and provider-report tests | partial; remote profile open |
 | I-10 error preservation | SPEC-0002/0018 | domain/internal/unknown tests | verified implemented paths |
 | I-11 immutable Evidence | SPEC-0017/0018 | duplicate/conflict/tamper tests | experimental candidate |
-| I-12 bounded execution | SPEC-0015 / SPEC-0022 | semantic limit tests, ResourceProfile digest, execution-governor tests and inspection smoke | partial semantic subset; accepted soft local CPU governor; no OS hard quota |
+| I-12 bounded execution | SPEC-0015 / SPEC-0022–0024 | semantic limit tests, ResourceProfile digest, CPU/heap governor tests, admission saturation/recovery tests and inspection smoke | accepted local soft-governor subset; no OS hard quota or distributed fairness |
 | I-13 fencing | SPEC-0018 | stale-worker/concurrent-claim tests | experimental candidate |
 | I-14 external ambiguity | SPEC-0018 | external expiry/failure tests | experimental candidate |
 | I-15 scoped compatibility | SPEC-0019 | compatibility validator/matrix | partial; live evidence open |

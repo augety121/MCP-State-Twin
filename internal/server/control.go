@@ -34,7 +34,25 @@ func NewControlPlane(stateStore *store.Store, token string, allowedTools ...stri
 	c.mux.HandleFunc("POST /v1/faults/remove", c.removeFault)
 	c.mux.HandleFunc("GET /v1/fault-events", c.listFaultEvents)
 	c.mux.HandleFunc("GET /v1/diff", c.diff)
+	c.mux.HandleFunc("GET /v1/health/live", c.live)
+	c.mux.HandleFunc("GET /v1/health/ready", c.ready)
 	return c
+}
+
+func (c *ControlPlane) live(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{
+		"format": "statetwin.dev/health/v1alpha1", "check": "live", "status": "ok", "version": Version,
+	})
+}
+
+func (c *ControlPlane) ready(w http.ResponseWriter, r *http.Request) {
+	if err := c.store.Ping(r.Context()); err != nil {
+		writeError(w, http.StatusServiceUnavailable, "NOT_READY", "storage is unavailable")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"format": "statetwin.dev/health/v1alpha1", "check": "ready", "status": "ok", "version": Version,
+	})
 }
 
 func (c *ControlPlane) installFault(w http.ResponseWriter, r *http.Request) {

@@ -172,6 +172,14 @@ implemented the corresponding feature.
 | F-150 | Provider smoke | OpenAI cancellation behavior is assumed for Anthropic | P1 | independent capability profiles; Anthropic records disconnect-only cancellation and no background retrieve |
 | F-151 | Storage | foreign SQLite is mutated before identity refusal | P0 | identity/version validation before persistent pragmas plus zero-mutation journal-mode test |
 | F-152 | Journal migration | process exits between schema apply and version metadata | P0 | transactional migration kill-points, reopen, fixture preservation and `integrity_check` |
+| F-153 | Runtime CPU | default process schedules work on every logical CPU and disrupts maintainer workstation | P1 | default one-slot Go scheduler profile; explicit opt-in to higher modes |
+| F-154 | Runtime memory | a soft heap target is advertised as an RSS or OOM guarantee | P0 | `hardMemoryQuota=false`, precise soft-limit wording and separate OS-isolation gate |
+| F-155 | Runtime memory | invalid/too-small heap setting creates GC thrash or startup instability | P1 | bounded 64 MiB..1 PiB admission and fail before command dispatch |
+| F-156 | HTTP overload | unbounded concurrent requests create goroutine/memory pressure | P0 | independent bounded non-queueing admission per listener |
+| F-157 | HTTP overload | rejected request reaches a mutating handler | P0 | acquire permit before handler; saturation test asserts handler call count is unchanged |
+| F-158 | HTTP isolation | Agent traffic consumes all control-plane capacity | P0 | separate AdmissionHandler instance and permit pool for each listener |
+| F-159 | Health | health endpoint leaks branch, tool, token, state or storage error details | P0 | authenticated control route, static minimized schema and forbidden-value tests |
+| F-160 | Health | readiness is mistaken for provider/upstream or scenario health | P1 | readiness means context-bound local SQLite ping only; explicit documentation non-claim |
 
 ## Release interpretation
 

@@ -246,7 +246,9 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 | OpenAI / Anthropic provider smoke harness | 🧪 contract tested | OpenAI background/retrieve/cancel and Anthropic MCP connector mock contract tests; no dated live report yet |
 | Deterministic fault injection / virtual-clock advancement | 🧪 Partial | Private clock and two fault transaction phases implemented; remaining scheduler/fault semantics are not |
 | Versioned semantic resource governance | 🧪 Partial | `statetwin limits`, environment digest, and fail-closed local budgets; OS/remote quotas are not implemented |
-| Conservative local CPU governor | ✅ soft boundary | Defaults to `quiet` / `GOMAXPROCS=1`; supports `balanced`, `throughput`, and `--max-procs`; not an OS CPU/thermal quota and does not cover child processes |
+| Conservative local execution governor | ✅ soft boundary | `local-v2` quiet default: `GOMAXPROCS=1`, 512 MiB Go-heap soft target, four in-flight requests per listener; not an OS/RSS hard quota and does not cover native/child processes |
+| HTTP admission/backpressure | ✅ local boundary | independent non-queueing pool for data/control/coordinator listeners; redacted `503 SERVER_BUSY`; not distributed rate limiting or DDoS protection |
+| Operational health/readiness | ✅ local control plane | authenticated `/v1/health/live` and `/v1/health/ready`; process/local-SQLite check only; never an MCP tool |
 | External-effect retry / distributed HA | ⏳ | Ambiguous external commits stop at `COMMIT_UNKNOWN`; no multi-coordinator, replication, manual reconciliation, or external exactly-once claim |
 | HostProfile / signed bundles | ⏳ | No supply-chain-authenticity or host-compatibility claim |
 | Recorder / cassette replay / trace redaction | ⏳ | Not implemented |
@@ -281,6 +283,8 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - bounded branch-local fault plans for `before-validation` and `after-commit-before-response`, with a stable plan digest, transactional counters, and fault-event audit.
 - a versioned resource profile: input/output/state, JSON depth/member, effect/query, diff/report, and branch/snapshot limits fail closed as `RESOURCE_LIMIT` and bind to Scenario environment identity.
 - a separate versioned ExecutionProfile applied before every command, defaulting to a one-slot `quiet` Go scheduler policy without claiming an OS hard quota.
+- a Go heap soft target and independent HTTP listener admission; the quiet defaults are 512 MiB and four non-queued in-flight requests per listener.
+- authenticated, redacted control-plane live/readiness routes that expose no branch, tool, state, database path, or driver error.
 - storage compatibility evidence for v1/v2/v3 forward migration, the public alpha schema-v4 fixture, and two migration pre-commit process-exit kill-points.
 - strict HostCompatibilityReport admission for immutable revisions/digests, profile-specific checks, remote deployment binding, bounded trials, and credential/private-key/email pattern rejection.
 
@@ -707,7 +711,7 @@ Design references:
 
 ```text
 statetwin --execution-mode quiet COMMAND
-statetwin --execution-mode balanced --max-procs 2 COMMAND
+statetwin --execution-mode balanced --max-procs 2 --memory-limit-mib 768 --max-inflight 6 COMMAND
 statetwin validate   validate structure, CEL, and print the spec digest
 statetwin init       initialize a branch and optional immutable snapshot
 statetwin call       execute one tool directly against a branch
@@ -731,12 +735,20 @@ statetwin version    print the development version
 
 CLI output is structured JSON except for server logs and fatal diagnostics.
 
-The default execution mode is `quiet`, limiting simultaneous Go execution to
-one logical slot so an ordinary local run does not occupy every core. The
-precedence is root CLI options, then `STATETWIN_EXECUTION_MODE` /
-`STATETWIN_MAX_PROCS`, then `quiet`. This is a portable soft governor, not an
-exact CPU percentage, thermal, or power guarantee; child processes and future
-native threads are outside its boundary. See [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md).
+The default execution mode is `quiet`: one Go execution slot, a 512 MiB Go
+heap soft target, and four simultaneous requests per HTTP listener. Root CLI
+options override `STATETWIN_EXECUTION_MODE`, `STATETWIN_MAX_PROCS`,
+`STATETWIN_MEMORY_LIMIT_MIB`, and `STATETWIN_MAX_INFLIGHT`; environment values
+override mode defaults. This is a portable soft governor, not an exact CPU,
+RSS, thermal, power, distributed-fairness, or DDoS guarantee. See
+[SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md),
+[SPEC-0023](docs/SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md), and
+[SPEC-0024](docs/SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md).
+
+Authenticated control-plane clients may call `GET /v1/health/live` and
+`GET /v1/health/ready`. These routes never enter the Agent MCP surface;
+readiness proves only a local SQLite ping at that instant. See
+[SPEC-0025](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md).
 
 ---
 
@@ -789,6 +801,9 @@ For a first read, the suggested path is:
 - [SPEC-0008 — Deterministic Fault Preview](docs/SPEC-0008-DETERMINISTIC-FAULTS.md)
 - [SPEC-0015 — Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md)
 - [SPEC-0022 — Local CPU and Execution Governance](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md)
+- [SPEC-0023 — Go Heap Memory Governance](docs/SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md)
+- [SPEC-0024 — HTTP Admission and Backpressure](docs/SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md)
+- [SPEC-0025 — Operational Health and Readiness](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md)
 - [SPEC-0012 — Storage/Concurrency/Recovery](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md)
 - [SPEC-0017 — Durable Local Episode Journal](docs/SPEC-0017-EPISODE-JOURNAL.md)
 
@@ -825,6 +840,7 @@ For a first read, the suggested path is:
 - [ADR-0020](docs/ADR-0020-REMOTE-EPISODE-EXECUTION.md) — fenced remote Episodes, `COMMIT_UNKNOWN`, and bounded terminal Evidence semantics
 - [ADR-0021](docs/ADR-0021-UNIFIED-LIFECYCLE-AND-RELEASE-BOUNDARIES.md) — unified authority, claim states, and v0.1–v1.0 release boundaries
 - [ADR-0022](docs/ADR-0022-LOCAL-EXECUTION-GOVERNANCE.md) — conservative local Go execution policy and hard-quota non-claims
+- [ADR-0023](docs/ADR-0023-GO-HEAP-SOFT-LIMIT.md) / [ADR-0024](docs/ADR-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md) / [ADR-0025](docs/ADR-0025-AUTHENTICATED-HEALTH-READINESS.md)
 
 ### Unified lifecycle and evidence
 
@@ -832,7 +848,7 @@ For a first read, the suggested path is:
 - [Requirement Traceability](docs/REQUIREMENT-TRACEABILITY.md) — invariant-to-test/evidence mapping
 - [Claim Registry](docs/CLAIM-REGISTRY.md) — exact public-claim states and boundaries
 - [Compatibility Matrix](docs/COMPATIBILITY-MATRIX.md) — separate API and product profiles
-- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md) / [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md)
+- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md) / [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md) / [SPEC-0023](docs/SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md) / [SPEC-0024](docs/SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md) / [SPEC-0025](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md)
 
 ### Evidence / research
 

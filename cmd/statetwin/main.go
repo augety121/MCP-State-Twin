@@ -35,6 +35,14 @@ import (
 
 const maxFixtureBytes = 16 << 20
 
+var activeExecutionProfile = func() governor.Profile {
+	profile, err := governor.Resolve(governor.Options{})
+	if err != nil {
+		panic(err)
+	}
+	return profile
+}()
+
 func main() {
 	global, args, err := parseGlobalExecutionArgs(os.Args[1:])
 	if err != nil {
@@ -43,7 +51,9 @@ func main() {
 	}
 	profile, err := governor.Resolve(governor.Options{
 		CLIMode: global.mode, CLIMaxProcs: global.maxProcs,
+		CLIMemoryMiB: global.memoryMiB, CLIMaxInFlight: global.maxInFlight,
 		EnvMode: os.Getenv("STATETWIN_EXECUTION_MODE"), EnvMaxProcs: os.Getenv("STATETWIN_MAX_PROCS"),
+		EnvMemoryMiB: os.Getenv("STATETWIN_MEMORY_LIMIT_MIB"), EnvMaxInFlight: os.Getenv("STATETWIN_MAX_INFLIGHT"),
 	})
 	if err != nil {
 		log.Printf("error: %s", logging.SafeError(err))
@@ -53,6 +63,7 @@ func main() {
 		log.Printf("error: %s", logging.SafeError(err))
 		os.Exit(2)
 	}
+	activeExecutionProfile = profile
 	if len(args) < 1 {
 		usage()
 		os.Exit(2)
@@ -110,12 +121,14 @@ func usage() {
 	fmt.Fprintln(os.Stderr, `statetwin - deterministic stateful MCP test worlds
 
 Usage:
-	statetwin [--execution-mode quiet|balanced|throughput] [--max-procs N] COMMAND
+	statetwin [--execution-mode MODE] [--max-procs N] [--memory-limit-mib N] [--max-inflight N] COMMAND
 
 Execution policy:
   The default mode is quiet and limits the Go runtime to one logical CPU slot.
-  STATETWIN_EXECUTION_MODE and STATETWIN_MAX_PROCS provide environment defaults;
-  root command-line flags take precedence. This is not an OS hard CPU quota.
+  STATETWIN_EXECUTION_MODE, STATETWIN_MAX_PROCS, STATETWIN_MEMORY_LIMIT_MIB,
+  and STATETWIN_MAX_INFLIGHT provide environment defaults;
+  root command-line flags take precedence. These are soft process-local controls,
+  not OS/RSS hard quotas or distributed rate limiting.
 
 Commands:
   statetwin validate --spec twin.yaml
@@ -147,8 +160,10 @@ Episode coordinator authentication is read from STATETWIN_COORDINATOR_TOKEN.`)
 }
 
 type globalExecutionOptions struct {
-	mode     string
-	maxProcs string
+	mode        string
+	maxProcs    string
+	memoryMiB   string
+	maxInFlight string
 }
 
 func parseGlobalExecutionArgs(args []string) (globalExecutionOptions, []string, error) {
@@ -156,7 +171,7 @@ func parseGlobalExecutionArgs(args []string) (globalExecutionOptions, []string, 
 	for len(args) > 0 {
 		name, value, hasValue := strings.Cut(args[0], "=")
 		switch name {
-		case "--execution-mode", "--max-procs":
+		case "--execution-mode", "--max-procs", "--memory-limit-mib", "--max-inflight":
 			if !hasValue {
 				if len(args) < 2 {
 					return options, nil, fmt.Errorf("%s requires a value", name)
@@ -171,11 +186,21 @@ func parseGlobalExecutionArgs(args []string) (globalExecutionOptions, []string, 
 					return options, nil, errors.New("--execution-mode may be specified only once")
 				}
 				options.mode = value
-			} else {
+			} else if name == "--max-procs" {
 				if options.maxProcs != "" {
 					return options, nil, errors.New("--max-procs may be specified only once")
 				}
 				options.maxProcs = value
+			} else if name == "--memory-limit-mib" {
+				if options.memoryMiB != "" {
+					return options, nil, errors.New("--memory-limit-mib may be specified only once")
+				}
+				options.memoryMiB = value
+			} else {
+				if options.maxInFlight != "" {
+					return options, nil, errors.New("--max-inflight may be specified only once")
+				}
+				options.maxInFlight = value
 			}
 			args = args[1:]
 		default:
@@ -494,7 +519,10 @@ func runEpisodeCoordinator(args []string) error {
 	if err != nil {
 		return err
 	}
-	httpServer := hardenedHTTPServer(*address, coordinator)
+	httpServer, err := hardenedHTTPServer(*address, coordinator)
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	errorsCh := make(chan error, 1)
@@ -897,12 +925,18 @@ func runServe(args []string) error {
 		return err
 	}
 
-	dataServer := hardenedHTTPServer(*dataAddr, server.NewDataPlane(runtime))
+	dataServer, err := hardenedHTTPServer(*dataAddr, server.NewDataPlane(runtime))
+	if err != nil {
+		return err
+	}
 	toolNames := make([]string, 0, len(runtime.Spec().Tools))
 	for _, tool := range runtime.Spec().Tools {
 		toolNames = append(toolNames, tool.Name)
 	}
-	controlServer := hardenedHTTPServer(*controlAddr, server.NewControlPlane(stateStore, token, toolNames...))
+	controlServer, err := hardenedHTTPServer(*controlAddr, server.NewControlPlane(stateStore, token, toolNames...))
+	if err != nil {
+		return err
+	}
 	for name, addr := range map[string]string{"data": *dataAddr, "control": *controlAddr} {
 		host, _, err := net.SplitHostPort(addr)
 		if err != nil {
@@ -937,16 +971,20 @@ func runServe(args []string) error {
 	return nil
 }
 
-func hardenedHTTPServer(address string, handler http.Handler) *http.Server {
+func hardenedHTTPServer(address string, handler http.Handler) (*http.Server, error) {
+	admission, err := server.NewAdmissionHandler(handler, activeExecutionProfile.MaxInFlightRequests)
+	if err != nil {
+		return nil, err
+	}
 	return &http.Server{
 		Addr:              address,
-		Handler:           handler,
+		Handler:           admission,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       60 * time.Second,
 		MaxHeaderBytes:    1 << 20,
-	}
+	}, nil
 }
 
 func loadRuntime(specPath, dbPath string) (*engine.Runtime, *store.Store, error) {

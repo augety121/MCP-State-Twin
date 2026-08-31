@@ -246,7 +246,9 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 | OpenAI / Anthropic provider smoke harness | 🧪 合同级已实现 | OpenAI background/retrieve/cancel 与 Anthropic MCP connector mock contract tests；真实 live 报告尚未生成 |
 | Deterministic fault injection / virtual-clock advancement | 🧪 部分实现 | 私有 clock；两个 fault transaction phases；其余 scheduler/fault semantics 未实现 |
 | Versioned semantic resource governance | 🧪 部分实现 | `statetwin limits`、environment digest、fail-closed local budgets；OS/remote quotas 未实现 |
-| Conservative local CPU governor | ✅ soft boundary | 默认 `quiet` / `GOMAXPROCS=1`；支持 `balanced`、`throughput` 与 `--max-procs`；不是 OS 硬 CPU/温度配额，不覆盖子进程 |
+| Conservative local execution governor | ✅ soft boundary | `local-v2` 默认 `quiet`：`GOMAXPROCS=1`、512 MiB Go heap 软目标、每个 listener 4 个 in-flight；不是 OS/RSS 硬配额，不覆盖 native/子进程 |
+| HTTP admission/backpressure | ✅ local boundary | data/control/coordinator 独立非排队 permit pool；过载返回 redacted `503 SERVER_BUSY`；不是分布式限流或 DDoS 防护 |
+| Operational health/readiness | ✅ local control plane | 鉴权 `/v1/health/live`、`/v1/health/ready`；只检查进程与本地 SQLite ping，不暴露为 MCP tool |
 | External-effect automatic retry / distributed HA | ⏳ | 外部 commit 不明确时停在 `COMMIT_UNKNOWN`；无多 coordinator、replication、manual reconciliation 或外部 exactly-once 声明 |
 | HostProfile / signed bundle | ⏳ | 不声明供应链真实性或 host compatibility |
 | Recorder / cassette replay / trace redaction | ⏳ | 尚未实现 |
@@ -281,6 +283,8 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 - bounded branch-local fault plans：`before-validation` 与 `after-commit-before-response`，带稳定 plan digest、事务内计数和 fault-event audit。
 - versioned resource profile：input/output/state、JSON depth/members、effect/query、diff/report、branch/snapshot limits 以 `RESOURCE_LIMIT` fail closed，并绑定 Scenario environment digest。
 - 独立的 versioned ExecutionProfile：所有命令执行前默认应用 `quiet` 单槽 Go scheduler；可通过 CLI/环境显式提高，且不会冒充 OS 硬配额。
+- Go heap soft target 与 HTTP admission：默认 512 MiB runtime target，每个 listener 独立 4-request 非排队容量；拒绝请求不会进入业务 handler。
+- 鉴权 control-plane health/readiness：使用静态、redacted 响应，不返回 branch、tool、state、database path 或 driver error。
 - storage compatibility evidence：v1/v2/v3 forward migration、公开 alpha schema-v4 fixture reopen，以及两个 migration pre-commit 进程退出 kill-points。
 - strict HostCompatibilityReport admission：immutable revision/digests、profile-specific checks、remote deployment binding、bounded trial 和 credential/private-key/email pattern fail-closed validation。
 
@@ -706,7 +710,7 @@ MCP State Twin 的核心集成对象是 **MCP**，不是某一家 model provider
 
 ```text
 statetwin --execution-mode quiet COMMAND
-statetwin --execution-mode balanced --max-procs 2 COMMAND
+statetwin --execution-mode balanced --max-procs 2 --memory-limit-mib 768 --max-inflight 6 COMMAND
 statetwin validate   validate structure, CEL, and print the spec digest
 statetwin init       initialize a branch and optional immutable snapshot
 statetwin call       execute one tool directly against a branch
@@ -730,14 +734,25 @@ statetwin version    print the development version
 
 除 server log 与 fatal diagnostic 外，CLI output 为 structured JSON。
 
-默认执行模式是 `quiet`，Go runtime 同时只使用一个逻辑执行槽，避免普通本地运行占满所有核心。优先级为：root CLI 参数 > `STATETWIN_EXECUTION_MODE` / `STATETWIN_MAX_PROCS` > `quiet`。例如：
+默认执行模式是 `quiet`，使用一个 Go 逻辑执行槽、512 MiB Go heap 软目标，并把每个 HTTP listener 的同时处理请求限制为 4。优先级为 root CLI 参数 > 对应 `STATETWIN_*` 环境变量 > mode 默认值。例如：
 
 ```powershell
-statetwin --execution-mode balanced --max-procs 2 scenario --spec twin.yaml --fixture state.json --scenario scenario.yaml
+statetwin --execution-mode balanced --max-procs 2 --memory-limit-mib 768 --max-inflight 6 scenario --spec twin.yaml --fixture state.json --scenario scenario.yaml
 statetwin execution-profile
 ```
 
-这是可移植的软治理，不是精确 CPU 百分比、温度或功耗保证；子进程和未来 native threads 不在覆盖范围。完整边界见 [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md)。
+环境变量为 `STATETWIN_EXECUTION_MODE`、`STATETWIN_MAX_PROCS`、`STATETWIN_MEMORY_LIMIT_MIB` 和 `STATETWIN_MAX_INFLIGHT`。
+
+这是可移植的软治理，不是精确 CPU、RSS、温度、功耗、分布式公平性或 DDoS 保证；子进程和 future native threads 不在覆盖范围。完整边界见 [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md)、[SPEC-0023](docs/SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md) 和 [SPEC-0024](docs/SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md)。
+
+启动 `serve` 后，可在携带 control-plane bearer token 时访问：
+
+```text
+GET /v1/health/live
+GET /v1/health/ready
+```
+
+它们只存在于 private control plane，不进入 Agent MCP surface。`ready` 只表示本地 SQLite 在该时刻可 ping，不代表 provider、upstream 或整个场景可用；见 [SPEC-0025](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md)。
 
 ---
 
@@ -788,6 +803,9 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [SPEC-0008 — Deterministic Fault Preview](docs/SPEC-0008-DETERMINISTIC-FAULTS.md)
 - [SPEC-0015 — Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md)
 - [SPEC-0022 — Local CPU and Execution Governance](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md)
+- [SPEC-0023 — Go Heap Memory Governance](docs/SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md)
+- [SPEC-0024 — HTTP Admission and Backpressure](docs/SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md)
+- [SPEC-0025 — Operational Health and Readiness](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md)
 - [SPEC-0012 — Storage/Concurrency/Recovery](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md)
 - [SPEC-0017 — Durable Local Episode Journal](docs/SPEC-0017-EPISODE-JOURNAL.md)
 
@@ -824,6 +842,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [ADR-0020](docs/ADR-0020-REMOTE-EPISODE-EXECUTION.md) — fenced remote Episode、`COMMIT_UNKNOWN` 与有界 terminal Evidence 语义
 - [ADR-0021](docs/ADR-0021-UNIFIED-LIFECYCLE-AND-RELEASE-BOUNDARIES.md) — 统一 authority、claim states 与 v0.1–v1.0 release boundary
 - [ADR-0022](docs/ADR-0022-LOCAL-EXECUTION-GOVERNANCE.md) — 默认安静的本地 Go 执行策略及硬配额非声明
+- [ADR-0023](docs/ADR-0023-GO-HEAP-SOFT-LIMIT.md) / [ADR-0024](docs/ADR-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md) / [ADR-0025](docs/ADR-0025-AUTHENTICATED-HEALTH-READINESS.md)
 
 ### Unified lifecycle and evidence
 
@@ -831,7 +850,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [Requirement Traceability](docs/REQUIREMENT-TRACEABILITY.md) — invariant 到测试/证据的映射
 - [Claim Registry](docs/CLAIM-REGISTRY.md) — public claim 的精确状态和边界
 - [Compatibility Matrix](docs/COMPATIBILITY-MATRIX.md) — API/product profiles 分离的兼容矩阵
-- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md) / [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md)
+- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md) / [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md) / [SPEC-0023](docs/SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md) / [SPEC-0024](docs/SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md) / [SPEC-0025](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md)
 
 ### Evidence / Research
 

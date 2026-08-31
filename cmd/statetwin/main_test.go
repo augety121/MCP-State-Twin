@@ -12,27 +12,43 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	statetwinserver "github.com/augety121/mcp-state-twin/internal/server"
 )
 
 func TestHardenedHTTPServerDefaults(t *testing.T) {
-	server := hardenedHTTPServer("127.0.0.1:0", http.NotFoundHandler())
-	if server.ReadHeaderTimeout != 5*time.Second ||
-		server.ReadTimeout != 30*time.Second ||
-		server.WriteTimeout != 30*time.Second ||
-		server.IdleTimeout != 60*time.Second ||
-		server.MaxHeaderBytes != 1<<20 {
-		t.Fatalf("unexpected HTTP server limits: %#v", server)
+	httpServer, err := hardenedHTTPServer("127.0.0.1:0", http.NotFoundHandler())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if httpServer.ReadHeaderTimeout != 5*time.Second ||
+		httpServer.ReadTimeout != 30*time.Second ||
+		httpServer.WriteTimeout != 30*time.Second ||
+		httpServer.IdleTimeout != 60*time.Second ||
+		httpServer.MaxHeaderBytes != 1<<20 {
+		t.Fatalf("unexpected HTTP server limits: %#v", httpServer)
+	}
+	admission, ok := httpServer.Handler.(*statetwinserver.AdmissionHandler)
+	if !ok || admission.Stats().Limit != activeExecutionProfile.MaxInFlightRequests {
+		t.Fatalf("HTTP admission is not bound to the execution profile: %#v", httpServer.Handler)
+	}
+	second, err := hardenedHTTPServer("127.0.0.1:0", http.NotFoundHandler())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.Handler == httpServer.Handler {
+		t.Fatal("separate listeners unexpectedly share one admission pool")
 	}
 }
 
 func TestParseGlobalExecutionArgs(t *testing.T) {
 	options, remaining, err := parseGlobalExecutionArgs([]string{
-		"--execution-mode", "balanced", "--max-procs=2", "scenario", "--spec", "twin.yaml",
+		"--execution-mode", "balanced", "--max-procs=2", "--memory-limit-mib", "768", "--max-inflight=6", "scenario", "--spec", "twin.yaml",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if options.mode != "balanced" || options.maxProcs != "2" {
+	if options.mode != "balanced" || options.maxProcs != "2" || options.memoryMiB != "768" || options.maxInFlight != "6" {
 		t.Fatalf("unexpected options: %#v", options)
 	}
 	if strings.Join(remaining, " ") != "scenario --spec twin.yaml" {
@@ -41,6 +57,7 @@ func TestParseGlobalExecutionArgs(t *testing.T) {
 	for _, args := range [][]string{
 		{"--execution-mode"},
 		{"--max-procs="},
+		{"--memory-limit-mib"},
 		{"--execution-mode", "quiet", "--execution-mode", "balanced", "version"},
 	} {
 		if _, _, err := parseGlobalExecutionArgs(args); err == nil {
@@ -145,10 +162,13 @@ func TestHardenedHTTPServerRejectsSlowHeaders(t *testing.T) {
 		t.Fatal(err)
 	}
 	handlerCalled := make(chan struct{}, 1)
-	httpServer := hardenedHTTPServer(listener.Addr().String(), http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	httpServer, err := hardenedHTTPServer(listener.Addr().String(), http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		handlerCalled <- struct{}{}
 		w.WriteHeader(http.StatusNoContent)
 	}))
+	if err != nil {
+		t.Fatal(err)
+	}
 	serveErrors := make(chan error, 1)
 	go func() {
 		serveErrors <- httpServer.Serve(listener)

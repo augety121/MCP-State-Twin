@@ -47,6 +47,15 @@ type Store struct {
 	db *sql.DB
 }
 
+// Ping checks storage readiness without reading or exposing modeled world
+// state. It is intended for the authenticated control-plane readiness probe.
+func (s *Store) Ping(ctx context.Context) error {
+	if s == nil || s.db == nil {
+		return errors.New("store is not initialized")
+	}
+	return s.db.PingContext(ctx)
+}
+
 type migrationStage string
 
 const (

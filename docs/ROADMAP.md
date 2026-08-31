@@ -23,10 +23,11 @@ features into implementation claims; `IMPLEMENTATION-STATUS.md` and
 
 ## Phase 0 — specification and claim consolidation
 
-Current progress: ADR-0021/0022, SPEC-0019 through SPEC-0022, unified
-traceability, claim, compatibility and decision ledgers, phase contracts, and
-the conservative local ExecutionProfile exist. Exit still requires final
-link/translation review and CI on the merged revision.
+Current progress: ADR-0021 through ADR-0025, SPEC-0019 through SPEC-0025,
+unified traceability, claim, compatibility and decision ledgers, phase
+contracts, conservative local ExecutionProfile, HTTP admission, and private
+health/readiness exist. Exit still requires final link/translation review and
+CI on the merged revision.
 
 ## Phase 1 — local core
 
@@ -45,6 +46,11 @@ Partial preview capability exists for monotonic branch heads, a private virtual
 clock, two transaction fault phases and versioned resource limits. A complete
 virtual scheduler, entropy streams, timer ordering, full fault taxonomy and
 cross-platform deterministic artifact evidence remain open.
+
+The accepted operational-safety subset now includes a soft Go heap target and
+bounded per-listener HTTP admission. Hard OS quotas, durable overload queues,
+distributed fairness and empirical performance budgets remain open and require
+separate platform evidence.
 
 ## Phase 3 — durable remote Episodes
 

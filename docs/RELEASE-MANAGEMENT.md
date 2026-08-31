@@ -65,6 +65,11 @@ Before tagging:
 14. `statetwin execution-profile` must report the documented default on the
     release binary. Release notes must call it a soft Go-runtime governor, not
     an OS CPU percentage, thermal limit, child-process limit, or hard quota.
+15. Operational-safety releases must verify the Go heap soft target, separate
+    listener admission pools, exact redacted overload envelope, permit recovery,
+    authenticated live/ready routes, closed-store readiness failure and MCP
+    discovery exclusion. Notes must not call these controls production quotas,
+    distributed rate limiting, DDoS protection or upstream health.
 
 The release notes must use the phrase **exactly-once terminal Evidence
 acceptance** for ADR-0020. They must not shorten it to “exactly-once execution”.

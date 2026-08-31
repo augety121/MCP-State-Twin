@@ -2,6 +2,7 @@ package governor
 
 import (
 	"runtime"
+	"runtime/debug"
 	"testing"
 )
 
@@ -13,7 +14,13 @@ func TestResolveDefaultsToQuietOneSlot(t *testing.T) {
 	if profile.Mode != ModeQuiet || profile.MaxProcs != 1 || profile.Source != "default" {
 		t.Fatalf("unexpected default profile: %#v", profile)
 	}
-	if profile.HardCPUQuota || profile.AppliesToChildProcs || !profile.AppliesToGoRuntime {
+	if profile.SoftMemoryLimitBytes != 512<<20 || profile.MaxInFlightRequests != 4 {
+		t.Fatalf("unexpected quiet safety bounds: %#v", profile)
+	}
+	if profile.Sources != (ProfileSources{Mode: "default", MaxProcs: "default", SoftMemoryLimit: "default", MaxInFlight: "default"}) {
+		t.Fatalf("default field provenance is incomplete: %#v", profile.Sources)
+	}
+	if profile.HardCPUQuota || profile.HardMemoryQuota || profile.AppliesToChildProcs || !profile.AppliesToGoRuntime {
 		t.Fatalf("capability claims are inaccurate: %#v", profile)
 	}
 }
@@ -36,13 +43,13 @@ func TestResolveBalancedIsBounded(t *testing.T) {
 
 func TestResolvePrecedenceAndValidation(t *testing.T) {
 	profile, err := Resolve(Options{
-		CLIMode: "quiet", CLIMaxProcs: "2",
-		EnvMode: "throughput", EnvMaxProcs: "3", LogicalCPUs: 8,
+		CLIMode: "quiet", CLIMaxProcs: "2", CLIMemoryMiB: "768", CLIMaxInFlight: "6",
+		EnvMode: "throughput", EnvMaxProcs: "3", EnvMemoryMiB: "900", EnvMaxInFlight: "9", LogicalCPUs: 8,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if profile.Mode != ModeQuiet || profile.MaxProcs != 2 || profile.Source != "command-line" {
+	if profile.Mode != ModeQuiet || profile.MaxProcs != 2 || profile.SoftMemoryLimitBytes != 768<<20 || profile.MaxInFlightRequests != 6 || profile.Source != "command-line" {
 		t.Fatalf("command line did not win: %#v", profile)
 	}
 	for _, options := range []Options{
@@ -50,6 +57,10 @@ func TestResolvePrecedenceAndValidation(t *testing.T) {
 		{CLIMaxProcs: "0", LogicalCPUs: 8},
 		{CLIMaxProcs: "9", LogicalCPUs: 8},
 		{CLIMaxProcs: "many", LogicalCPUs: 8},
+		{CLIMemoryMiB: "63", LogicalCPUs: 8},
+		{CLIMemoryMiB: "unlimited", LogicalCPUs: 8},
+		{CLIMaxInFlight: "0", LogicalCPUs: 8},
+		{CLIMaxInFlight: "1025", LogicalCPUs: 8},
 	} {
 		if _, err := Resolve(options); err == nil {
 			t.Fatalf("expected rejection for %#v", options)
@@ -57,9 +68,24 @@ func TestResolvePrecedenceAndValidation(t *testing.T) {
 	}
 }
 
+func TestResolveReportsMixedProvenance(t *testing.T) {
+	profile, err := Resolve(Options{CLIMode: "quiet", EnvMemoryMiB: "700", LogicalCPUs: 8})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if profile.Source != "mixed" || profile.SoftMemoryLimitBytes != 700<<20 || profile.Sources.Mode != "command-line" || profile.Sources.SoftMemoryLimit != "environment" {
+		t.Fatalf("mixed provenance was hidden: %#v", profile)
+	}
+}
+
 func TestApplyChangesAndRestoresScheduler(t *testing.T) {
 	original := runtime.GOMAXPROCS(0)
-	t.Cleanup(func() { runtime.GOMAXPROCS(original) })
+	originalMemory := debug.SetMemoryLimit(-1)
+	debug.SetMemoryLimit(originalMemory)
+	t.Cleanup(func() {
+		runtime.GOMAXPROCS(original)
+		debug.SetMemoryLimit(originalMemory)
+	})
 	profile, err := Resolve(Options{CLIMaxProcs: "1", LogicalCPUs: runtime.NumCPU()})
 	if err != nil {
 		t.Fatal(err)
@@ -68,7 +94,10 @@ func TestApplyChangesAndRestoresScheduler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if previous != original || runtime.GOMAXPROCS(0) != 1 {
-		t.Fatalf("scheduler setting previous=%d current=%d original=%d", previous, runtime.GOMAXPROCS(0), original)
+	if previous.MaxProcs != original || runtime.GOMAXPROCS(0) != 1 {
+		t.Fatalf("scheduler setting previous=%d current=%d original=%d", previous.MaxProcs, runtime.GOMAXPROCS(0), original)
+	}
+	if previous.MemoryLimit != originalMemory {
+		t.Fatalf("previous memory limit=%d, want %d", previous.MemoryLimit, originalMemory)
 	}
 }

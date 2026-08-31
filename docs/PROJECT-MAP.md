@@ -41,7 +41,8 @@ solve model intelligence, planning quality, or general agent alignment.
 | Evidence layer | Canonical digests, audit records, protocol evidence, deterministic unsigned TwinBundle, scripted EpisodeEvidence and schema-v2 Journal | Partial preview; recorder, signatures/provenance and OTel remain open |
 | Episode coordinator | Immutable tasks, leases, fencing, cancellation, safe recovery and terminal Evidence admission | Single coordinator and hermetic scripted remote workers; external ambiguity is not retried |
 | Provider smoke | Exercise the same public synthetic MCP endpoint through provider APIs | OpenAI/Anthropic contract harness and manual workflow exist; no dated live report yet |
-| Execution governor | Keep local Go execution conservative and expose the applied policy | Defaults to one Go scheduler slot; no OS hard CPU, power, thermal, child-process, or tenant-quota claim |
+| Execution governor | Keep local execution conservative and expose the applied policy | Defaults to one Go scheduler slot, 512 MiB Go heap soft target and four in-flight requests per listener; no OS/RSS hard quota, child/native control or tenant-fairness claim |
+| Operational health | Distinguish live handler from reachable local storage | Authenticated control-plane only; redacted local ping, not Agent-facing or upstream/provider health |
 | Release governance | SemVer gates, CI, changelog and evidence inventory | Development preview; no stable `v0.1.0` yet |
 
 The independent product lines are local core (`v0.1`), deterministic recovery

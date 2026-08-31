@@ -23,6 +23,9 @@ merged and its required CI evidence passes on that revision.
 | CLM-SECURITY-001 | Hermetic test paths contain no upstream production passthrough | verified locally | namespace/loopback and source-absence checks | not a remote-production security audit |
 | CLM-SECURITY-002 | Remote-staging security profile is available | unverified | SPEC-0020 only | not implemented as a complete deployment profile |
 | CLM-RESOURCE-001 | A local `statetwin` process defaults to one Go execution slot | verified locally | governor unit tests, CLI parser tests and `execution-profile` smoke | soft Go-runtime boundary only; no CPU percentage, thermal, child-process or OS hard-quota claim |
+| CLM-RESOURCE-002 | The default profile applies a 512 MiB Go heap soft target | verified locally | governor mode/bound/application tests and profile smoke | not RSS, native/child memory, OOM recovery, reservation, or hard quota |
+| CLM-RESOURCE-003 | Each CLI HTTP listener rejects excess in-flight requests without an application queue | verified locally | admission saturation/recovery/error-contract tests | process-local only; no distributed rate limit, fairness, priority, or DDoS claim |
+| CLM-OPS-001 | Authenticated control-plane live/ready checks are redacted and absent from MCP | verified locally | health auth/readiness/redaction tests plus existing MCP discovery negative tests | ready means local SQLite ping only; not provider/upstream or production orchestration health |
 
 ## Maintenance
 

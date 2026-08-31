@@ -74,3 +74,10 @@ Executable tests cover conservative defaults, mode calculation, precedence,
 invalid input and application/restoration of `GOMAXPROCS`. CI also executes
 the profile inspection command. Documentation must preserve the soft-governor
 versus hard-quota distinction.
+
+## Amendments: ADR-0023 and ADR-0024 (2026-08-31)
+
+The profile advances from `local-v1` to `local-v2`. ADR-0023 adds a Go heap
+soft limit; ADR-0024 adds a per-listener non-queueing HTTP admission bound.
+Neither amendment creates an OS hard quota or changes semantic environment
+identity. ADR-0025 separately adds authenticated control-plane health routes.
