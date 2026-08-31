@@ -21,6 +21,10 @@
 | I-14 external ambiguity | SPEC-0018 | external expiry/failure tests | experimental candidate |
 | I-15 scoped compatibility | SPEC-0019 | compatibility validator/matrix | partial; live evidence open |
 | I-16 evidence-backed claims | SPEC-0021 | claim registry and release review | implemented as governance |
+| ST-VTIME-001 forward-only virtual clock | ADR-0011 / SPEC-0007 | clock control/head/audit tests | verified bounded subset |
+| ST-VTIME-002 deterministic modeled entropy | ADR-0026 / SPEC-0026 | spec/engine equal-draw, persistence and rollback tests | verified bounded subset |
+| ST-VTIME-003 total signal ordering and lifecycle | ADR-0027 / SPEC-0027 | scheduler ordering/cancel/fork/control HTTP tests | verified bounded subset |
+| ST-VTIME-004 atomic bounded due delivery | ADR-0028 / SPEC-0028 | delivery ordering and 257-event rollback tests | verified bounded subset |
 
 ## Release use
 

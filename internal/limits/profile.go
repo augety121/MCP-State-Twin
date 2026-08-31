@@ -10,7 +10,7 @@ import (
 
 const (
 	Format  = "statetwin.dev/resource-profile/v1alpha1"
-	Version = "local-preview-v4"
+	Version = "local-preview-v5"
 
 	MaxSpecBytes         = 1 << 20
 	MaxToolCount         = 256
@@ -44,7 +44,10 @@ const (
 	MaxEpisodeAttempts   = 16
 	MaxLeaseSeconds      = 3_600
 	MaxCassetteBytes     = 0
-	MaxScheduledEvents   = 0
+	MaxScheduledEvents   = 1024
+	MaxScheduledDelivery = 256
+	MaxEntropyStreams    = 64
+	MaxEntropyBytes      = 32
 	FutureMaxTaskCount   = 0
 )
 
@@ -74,6 +77,9 @@ type Profile struct {
 	MaxReportBytes       int    `json:"maxReportBytes"`
 	MaxScenarioSteps     int    `json:"maxScenarioSteps"`
 	MaxScheduledEvents   int    `json:"maxScheduledEvents"`
+	MaxScheduledDelivery int    `json:"maxScheduledDeliveriesPerAdvance"`
+	MaxEntropyStreams    int    `json:"maxEntropyStreams"`
+	MaxEntropyBytes      int    `json:"maxEntropyBytesPerDraw"`
 	MaxFaultRules        int    `json:"maxFaultRules"`
 	MaxForks             int    `json:"maxForks"`
 	MaxSnapshots         int    `json:"maxSnapshots"`
@@ -103,8 +109,11 @@ func Default() Profile {
 		MaxQueryResultItems: MaxQueryResultItems, MaxDiffEntries: MaxDiffEntries,
 		MaxDiffBytes: MaxDiffBytes, MaxAuditEventBytes: MaxAuditEventBytes,
 		MaxReportBytes: MaxReportBytes, MaxScenarioSteps: MaxScenarioSteps,
-		MaxScheduledEvents: MaxScheduledEvents, MaxFaultRules: MaxFaultRules,
-		MaxForks: MaxForks, MaxSnapshots: MaxSnapshots,
+		MaxScheduledEvents:   MaxScheduledEvents,
+		MaxScheduledDelivery: MaxScheduledDelivery,
+		MaxEntropyStreams:    MaxEntropyStreams, MaxEntropyBytes: MaxEntropyBytes,
+		MaxFaultRules: MaxFaultRules,
+		MaxForks:      MaxForks, MaxSnapshots: MaxSnapshots,
 		MaxConcurrentCalls: MaxConcurrentCalls, MaxCassetteBytes: MaxCassetteBytes,
 		MaxBundleFiles: MaxBundleFiles, MaxBundleCompressed: MaxBundleCompressed,
 		MaxBundleExtracted: MaxBundleExtracted, MaxBundleMember: MaxBundleMember,

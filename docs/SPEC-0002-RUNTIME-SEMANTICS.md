@@ -15,8 +15,10 @@ H(runtimeSemanticVersion,
   ScenarioDigest,
   Seed,
   ClockInitial,
+  EntropyProfileDigest,
   SchedulerPolicy,
-  FaultProfile)
+  FaultProfile,
+  LimitProfileDigest)
 ```
 
 Provider/model identity is recorded separately and MUST NOT be confused with
@@ -35,8 +37,8 @@ fault-profile extensions in v0.1, not implemented claims.
 ## 3. Deterministic sources
 
 All values that become simulated state or tool output MUST derive from the
-virtual clock, deterministic allocation rules, the scenario seed, or declared
-input. Host wall clock, random UUIDs, process scheduling, and memory addresses
+virtual clock, deterministic allocation/entropy rules, the scenario seed, or
+declared input. Host wall clock, random UUIDs, process scheduling, and memory addresses
 MUST NOT enter the simulated state.
 
 The current v0.1 profile uses deterministic serial execution. Deterministic

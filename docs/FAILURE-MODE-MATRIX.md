@@ -180,6 +180,17 @@ implemented the corresponding feature.
 | F-158 | HTTP isolation | Agent traffic consumes all control-plane capacity | P0 | separate AdmissionHandler instance and permit pool for each listener |
 | F-159 | Health | health endpoint leaks branch, tool, token, state or storage error details | P0 | authenticated control route, static minimized schema and forbidden-value tests |
 | F-160 | Health | readiness is mistaken for provider/upstream or scenario health | P1 | readiness means context-bound local SQLite ping only; explicit documentation non-claim |
+| F-161 | Entropy | host RNG or process-global seed leaks into modeled state | P0 | only declared `sha256-ctr-v1` seed/stream/counter derivation; equal-branch tests |
+| F-162 | Entropy | failed transition consumes a stream counter and changes replay | P0 | counter lives in cloned canonical state and commits only with the transition; rollback test |
+| F-163 | Entropy | synthetic deterministic bytes are used as real credentials/security entropy | P0 | explicit public-seed/non-cryptographic contract and no secret-generation API |
+| F-164 | Scheduler | equal-time events use map/DB/goroutine order | P0 | total `(dueAt, priority DESC, creationSequence, id)` order with executable test |
+| F-165 | Scheduler | an oversized due batch delivers a prefix and leaves ambiguous state | P0 | 256-delivery preflight; whole clock/queue/head transaction rolls back at 257 |
+| F-166 | Scheduler | canceled or delivered signal fires again | P0 | terminal lifecycle states and cancellation/delivery exclusion tests |
+| F-167 | Scheduler isolation | Agent discovers event/clock controls through MCP | P0 | authenticated private routes only and negative `tools/list` assertions |
+| F-168 | Snapshot | fork omits entropy counter or scheduler queue state | P0 | both are canonical branch state; fork digest/status equality and isolation tests |
+| F-169 | Product trust | opaque signal delivery is advertised as tool execution or Agent wakeup | P0 | claim registry/README non-claims; scheduled effects remain blocked |
+| F-170 | Scheduler storage | terminal event retention exhausts branch capacity | P1 | 1,024 retained-event fail-closed bound; retention/GC explicitly unsupported |
+| F-171 | Deterministic state | malformed hidden scheduler lifecycle or exhausted entropy counter is silently normalized | P0 | unified state validation and explicit no-wrap/no-repair tests |
 
 ## Release interpretation
 

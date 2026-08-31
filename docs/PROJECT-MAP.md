@@ -43,6 +43,7 @@ solve model intelligence, planning quality, or general agent alignment.
 | Provider smoke | Exercise the same public synthetic MCP endpoint through provider APIs | OpenAI/Anthropic contract harness and manual workflow exist; no dated live report yet |
 | Execution governor | Keep local execution conservative and expose the applied policy | Defaults to one Go scheduler slot, 512 MiB Go heap soft target and four in-flight requests per listener; no OS/RSS hard quota, child/native control or tenant-fairness claim |
 | Operational health | Distinguish live handler from reachable local storage | Authenticated control-plane only; redacted local ping, not Agent-facing or upstream/provider health |
+| World time/entropy | Reproducible modeled entropy and future-signal ordering | `sha256-ctr-v1` plus private `signal-queue-v1`; no cryptographic RNG, Agent wakeup or scheduled tool effects |
 | Release governance | SemVer gates, CI, changelog and evidence inventory | Development preview; no stable `v0.1.0` yet |
 
 The independent product lines are local core (`v0.1`), deterministic recovery
@@ -84,7 +85,7 @@ Harness / maintainer
 ```
 
 The following are never exposed as agent-facing tools: snapshot, fork, reset,
-state inspection, diff, fault configuration, clock control, and expected-answer
+state inspection, diff, fault/scheduler configuration, clock control, and expected-answer
 controls. This is an integrity boundary, not a prompt convention.
 
 Hermetic mode has no production passthrough. If behavior is not modeled, the

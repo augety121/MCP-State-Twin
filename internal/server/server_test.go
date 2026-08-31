@@ -75,7 +75,7 @@ func TestMCPDataPlaneListsOnlyBusinessToolsAndMutatesBranch(t *testing.T) {
 		if !want[tool.Name] {
 			t.Fatalf("unexpected agent-visible tool %q", tool.Name)
 		}
-		for _, forbidden := range []string{"snapshot", "fork", "reset", "diff", "fault", "state"} {
+		for _, forbidden := range []string{"snapshot", "fork", "reset", "diff", "fault", "scheduler", "state"} {
 			if tool.Name == forbidden {
 				t.Fatalf("control tool %q leaked into data plane", tool.Name)
 			}

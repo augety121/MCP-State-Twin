@@ -29,6 +29,9 @@ func NewControlPlane(stateStore *store.Store, token string, allowedTools ...stri
 	c.mux.HandleFunc("POST /v1/forks", c.fork)
 	c.mux.HandleFunc("POST /v1/resets", c.reset)
 	c.mux.HandleFunc("POST /v1/clock/advance", c.advanceClock)
+	c.mux.HandleFunc("POST /v1/scheduler/events", c.scheduleEvent)
+	c.mux.HandleFunc("GET /v1/scheduler/events", c.listScheduledEvents)
+	c.mux.HandleFunc("POST /v1/scheduler/events/cancel", c.cancelScheduledEvent)
 	c.mux.HandleFunc("POST /v1/faults", c.installFault)
 	c.mux.HandleFunc("GET /v1/faults", c.listFaults)
 	c.mux.HandleFunc("POST /v1/faults/remove", c.removeFault)
@@ -233,16 +236,65 @@ func (c *ControlPlane) advanceClock(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := c.store.AdvanceClock(r.Context(), request.Branch, target, request.ExpectedHeadVersion); err != nil {
-		writeStoreError(w, err)
-		return
-	}
-	updated, err := c.store.Branch(r.Context(), request.Branch)
+	result, err := c.store.AdvanceClock(r.Context(), request.Branch, target, request.ExpectedHeadVersion)
 	if err != nil {
 		writeStoreError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"branch": request.Branch, "clock": updated.Clock, "headVersion": updated.HeadVersion})
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (c *ControlPlane) scheduleEvent(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		ID                  string `json:"id"`
+		Branch              string `json:"branch"`
+		DueAt               string `json:"dueAt"`
+		Priority            int    `json:"priority"`
+		Kind                string `json:"kind"`
+		Payload             any    `json:"payload"`
+		ExpectedHeadVersion *int64 `json:"expectedHeadVersion"`
+	}
+	if !decodeJSON(w, r, &request) {
+		return
+	}
+	event, err := c.store.ScheduleEvent(r.Context(), store.ScheduleRequest{
+		ID: request.ID, BranchID: request.Branch, DueAt: request.DueAt,
+		Priority: request.Priority, Kind: request.Kind, Payload: request.Payload,
+	}, request.ExpectedHeadVersion)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, event)
+}
+
+func (c *ControlPlane) listScheduledEvents(w http.ResponseWriter, r *http.Request) {
+	events, digest, err := c.store.ScheduledEvents(r.Context(), r.URL.Query().Get("branch"))
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"format": store.SchedulerFormat, "policy": store.SchedulerPolicy,
+		"digest": digest, "events": events,
+	})
+}
+
+func (c *ControlPlane) cancelScheduledEvent(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		ID                  string `json:"id"`
+		Branch              string `json:"branch"`
+		ExpectedHeadVersion *int64 `json:"expectedHeadVersion"`
+	}
+	if !decodeJSON(w, r, &request) {
+		return
+	}
+	event, err := c.store.CancelScheduledEvent(r.Context(), request.Branch, request.ID, request.ExpectedHeadVersion)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, event)
 }
 
 func (c *ControlPlane) diff(w http.ResponseWriter, r *http.Request) {
@@ -281,6 +333,12 @@ func writeStoreError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "FAULT_NOT_FOUND", err.Error())
 	case errors.Is(err, store.ErrFaultInvalid):
 		writeError(w, http.StatusBadRequest, "FAULT_INVALID", err.Error())
+	case errors.Is(err, store.ErrSchedulerNotFound):
+		writeError(w, http.StatusNotFound, "SCHEDULE_NOT_FOUND", err.Error())
+	case errors.Is(err, store.ErrSchedulerConflict):
+		writeError(w, http.StatusConflict, "SCHEDULE_CONFLICT", err.Error())
+	case errors.Is(err, store.ErrSchedulerInvalid):
+		writeError(w, http.StatusBadRequest, "SCHEDULE_INVALID", err.Error())
 	case errors.Is(err, store.ErrResourceLimit):
 		writeError(w, http.StatusRequestEntityTooLarge, "RESOURCE_LIMIT", err.Error())
 	default:

@@ -1,8 +1,8 @@
 # SPEC-0007: Virtual Time, Entropy, and Scheduler Boundary
 
-- **Status:** Proposed; clock-control subset implemented
+- **Status:** Accepted bounded subsets; complete scheduled-effect runtime remains proposed
 - **Implementation status:** partial
-- **Verification status:** clock advancement is tested; scheduler and entropy are not implemented
+- **Verification status:** clock, deterministic entropy, signal queue and bounded due delivery are tested; scheduled effects are not implemented
 - **Source:** `MCP-State-Twin-Lifecycle-SPEC-Pack-vNext/03-SPEC-0007...`
 
 ## 1. Boundary
@@ -37,22 +37,30 @@ branch head atomically, and appends `clock.advance` control audit evidence.
 Stale `expectedHeadVersion` returns `BRANCH_CONFLICT`; backwards or oversized
 advances return `CLOCK_INVALID`.
 
-## 3. Not yet implemented
+## 3. Implemented bounded additions
 
-- deterministic PRNG/entropy profile;
-- scheduled-event queue;
-- equal-time tie ordering;
-- event cancellation and cascades;
-- scheduled effects and due-event processing;
-- scheduler snapshot identity;
+ADR-0026 through ADR-0028 add:
+
+- `sha256-ctr-v1` modeled-world entropy streams;
+- branch-local `signal-queue-v1` events with deterministic lifecycle/order;
+- atomic bounded due-signal delivery during private clock advancement;
+- scheduler/entropy limits in `local-preview-v5` and environment identity.
+
+Signals are opaque private-harness records. Delivery does not execute a tool,
+wake an Agent or create an external effect.
+
+## 4. Not yet implemented
+
+- cascading scheduled effects and recurring events;
+- scheduled TwinSpec tool execution;
 - deterministic fault/time interaction.
 
 Until those components are implemented and tested, the project MUST NOT claim
 deterministic scheduled workflows or deterministic model randomness.
 
-## 4. Required future invariants
+## 5. Required future invariants
 
-Future scheduler work MUST bind algorithm IDs, seeds, queue state, and semantic
-limits into environment identity. Equal-time events MUST be ordered by
-`(due_time, priority, creation_sequence, event_id)`, and every cascade MUST have
-a bounded budget. A scheduler failure MUST roll back its world transition.
+Future scheduled-effect work MUST preserve the accepted identity and ordering
+contracts. Every cascade MUST have a separate bounded budget, and a scheduled
+transition failure MUST define whether the event is terminal, retryable or
+dead-lettered without inventing success.

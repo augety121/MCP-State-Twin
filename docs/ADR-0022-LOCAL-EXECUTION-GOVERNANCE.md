@@ -41,7 +41,8 @@ does not introduce parallel task execution.
 The ExecutionProfile is operational evidence, not deterministic environment
 identity. It must not change modeled state, generated IDs, virtual time, tool
 results, or canonical Evidence digests. The semantic ResourceProfile and its
-digest remain unchanged at `local-preview-v4`.
+digest are independently versioned; the current deterministic-world amendments
+use `local-preview-v5`.
 
 Wall-clock performance comparisons must record the ExecutionProfile because
 different modes can change latency. A future benchmark report format may make

@@ -244,7 +244,8 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 | Exactly-once terminal acceptance | ✅ bounded semantics | At most one matching Evidence envelope is accepted per parent Episode; **not** exactly-once provider/tool/external effects |
 | HostCompatibilityReport admission | ✅ | Strict schema, bounded evidence, and credential/private-key/email pattern rejection; not a live-provider result |
 | OpenAI / Anthropic provider smoke harness | 🧪 contract tested | OpenAI background/retrieve/cancel and Anthropic MCP connector mock contract tests; no dated live report yet |
-| Deterministic fault injection / virtual-clock advancement | 🧪 Partial | Private clock and two fault transaction phases implemented; remaining scheduler/fault semantics are not |
+| Deterministic fault injection / virtual-clock advancement | 🧪 Partial | Private clock and two fault transaction phases implemented; remaining fault/scheduled-effect semantics are not |
+| Deterministic entropy / signal scheduler | ✅ bounded semantics | `sha256-ctr-v1`, private `signal-queue-v1`, and atomic due delivery; not cryptographic RNG, Agent wakeup, or a workflow queue |
 | Versioned semantic resource governance | 🧪 Partial | `statetwin limits`, environment digest, and fail-closed local budgets; OS/remote quotas are not implemented |
 | Conservative local execution governor | ✅ soft boundary | `local-v2` quiet default: `GOMAXPROCS=1`, 512 MiB Go-heap soft target, four in-flight requests per listener; not an OS/RSS hard quota and does not cover native/child processes |
 | HTTP admission/backpressure | ✅ local boundary | independent non-queueing pool for data/control/coordinator listeners; redacted `503 SERVER_BUSY`; not distributed rate limiting or DDoS protection |
@@ -281,6 +282,8 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - provider-neutral remote worker that claims only `hermetic` tasks, runs TwinBundles through a separate HTTP control plane, and atomically submits Evidence;
 - OpenAI/Anthropic smoke harness with current official API contract shapes and mock-server positive/negative tests; persisted reports contain digests, capabilities, and counts rather than tokens, raw responses, or prompts;
 - bounded branch-local fault plans for `before-validation` and `after-commit-before-response`, with a stable plan digest, transactional counters, and fault-event audit.
+- deterministic-world inputs: public-synthetic-seed `sha256-ctr-v1` streams and a private branch-local signal queue whose counters/queue state are captured by snapshot, fork, and reset.
+- atomic due-signal delivery ordered by due time, priority, creation sequence, and ID, with a 256-event all-or-nothing batch bound.
 - a versioned resource profile: input/output/state, JSON depth/member, effect/query, diff/report, and branch/snapshot limits fail closed as `RESOURCE_LIMIT` and bind to Scenario environment identity.
 - a separate versioned ExecutionProfile applied before every command, defaulting to a one-slot `quiet` Go scheduler policy without claiming an OS hard quota.
 - a Go heap soft target and independent HTTP listener admission; the quiet defaults are 512 MiB and four non-queued in-flight requests per listener.
@@ -294,7 +297,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 <summary><strong>Expand: not implemented or not verified</strong></summary>
 
 - recorder, cassette replay, trace redaction, or automatic upstream surface inspection/refresh;
-- remaining deterministic fault phases, scheduler, deterministic entropy, idempotency collapse, crash/cancellation, and eventual consistency; the private clock and two fault phases are implemented;
+- remaining deterministic fault phases, scheduled tool/Agent effects, recurrence/cascades, idempotency collapse, crash/cancellation, and eventual consistency; the private clock, modeled entropy, opaque signals, and two fault phases are implemented;
 - live ChatGPT, Claude product, or Claude Code smoke tests;
 - dated OpenAI/Anthropic live reports or an evidence-derived compatibility matrix; the current environment has no provider key or public synthetic MCP endpoint;
 - differential validation or an L2 fidelity promotion workflow;
@@ -601,7 +604,7 @@ E = (runtime version,
 execute(E) -> (ordered structured results, final state digest)
 ```
 
-Current code virtualizes state allocation and time exposed to expressions. Deterministic replay tests execute the same call corpus on separate branches and compare transition results and final state.
+Current code virtualizes state allocation, modeled entropy, private future signals, and time exposed to expressions. Deterministic replay tests execute the same call corpus on separate branches and compare transition results and final state.
 
 ### What “deterministic” means
 
@@ -750,6 +753,20 @@ Authenticated control-plane clients may call `GET /v1/health/live` and
 readiness proves only a local SQLite ping at that instant. See
 [SPEC-0025](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md).
 
+### Deterministic entropy and future signals
+
+An opted-in TwinSpec may use `sha256-ctr-v1` with an explicit public synthetic
+seed. Stream counters are canonical branch state and advance only with a
+committed transition. The authenticated control plane may also create, inspect,
+and cancel bounded `signal-queue-v1` events. Advancing virtual time atomically
+delivers every bounded due signal in a fixed total order.
+
+These primitives never generate production credentials, push an MCP
+notification, dispatch a TwinSpec tool, call a provider, or wake an Agent. See
+[SPEC-0026](docs/SPEC-0026-DETERMINISTIC-ENTROPY-STREAMS.md),
+[SPEC-0027](docs/SPEC-0027-BRANCH-LOCAL-SIGNAL-SCHEDULER.md), and
+[SPEC-0028](docs/SPEC-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md).
+
 ---
 
 ## Test and build
@@ -804,6 +821,9 @@ For a first read, the suggested path is:
 - [SPEC-0023 — Go Heap Memory Governance](docs/SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md)
 - [SPEC-0024 — HTTP Admission and Backpressure](docs/SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md)
 - [SPEC-0025 — Operational Health and Readiness](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md)
+- [SPEC-0026 — Deterministic Entropy Streams](docs/SPEC-0026-DETERMINISTIC-ENTROPY-STREAMS.md)
+- [SPEC-0027 — Branch-local Signal Scheduler](docs/SPEC-0027-BRANCH-LOCAL-SIGNAL-SCHEDULER.md)
+- [SPEC-0028 — Atomic Due-signal Delivery](docs/SPEC-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md)
 - [SPEC-0012 — Storage/Concurrency/Recovery](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md)
 - [SPEC-0017 — Durable Local Episode Journal](docs/SPEC-0017-EPISODE-JOURNAL.md)
 
@@ -814,7 +834,7 @@ For a first read, the suggested path is:
 
 - [RFC-0001](docs/RFC-0001.md) — revision 3 product boundary, hard invariants, architecture, and independent version dimensions
 - [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) — local hermetic v0.1 release profile, limits, traceability, and gates
-- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 evaluation platform; only ADR-0018/ADR-0019/ADR-0020 subsets are accepted
+- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 evaluation platform; only ADR-0018–ADR-0020 and ADR-0026–ADR-0028 subsets are accepted
 
 ### ADRs
 
@@ -841,6 +861,7 @@ For a first read, the suggested path is:
 - [ADR-0021](docs/ADR-0021-UNIFIED-LIFECYCLE-AND-RELEASE-BOUNDARIES.md) — unified authority, claim states, and v0.1–v1.0 release boundaries
 - [ADR-0022](docs/ADR-0022-LOCAL-EXECUTION-GOVERNANCE.md) — conservative local Go execution policy and hard-quota non-claims
 - [ADR-0023](docs/ADR-0023-GO-HEAP-SOFT-LIMIT.md) / [ADR-0024](docs/ADR-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md) / [ADR-0025](docs/ADR-0025-AUTHENTICATED-HEALTH-READINESS.md)
+- [ADR-0026](docs/ADR-0026-DETERMINISTIC-ENTROPY-STREAMS.md) / [ADR-0027](docs/ADR-0027-BRANCH-LOCAL-SIGNAL-SCHEDULER.md) / [ADR-0028](docs/ADR-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md)
 
 ### Unified lifecycle and evidence
 
@@ -848,7 +869,7 @@ For a first read, the suggested path is:
 - [Requirement Traceability](docs/REQUIREMENT-TRACEABILITY.md) — invariant-to-test/evidence mapping
 - [Claim Registry](docs/CLAIM-REGISTRY.md) — exact public-claim states and boundaries
 - [Compatibility Matrix](docs/COMPATIBILITY-MATRIX.md) — separate API and product profiles
-- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md) / [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md) / [SPEC-0023](docs/SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md) / [SPEC-0024](docs/SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md) / [SPEC-0025](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md)
+- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md) / [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md) / [SPEC-0023](docs/SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md) / [SPEC-0024](docs/SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md) / [SPEC-0025](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md) / [SPEC-0026](docs/SPEC-0026-DETERMINISTIC-ENTROPY-STREAMS.md) / [SPEC-0027](docs/SPEC-0027-BRANCH-LOCAL-SIGNAL-SCHEDULER.md) / [SPEC-0028](docs/SPEC-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md)
 
 ### Evidence / research
 

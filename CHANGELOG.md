@@ -38,6 +38,11 @@ alpha prerelease but no stable release yet.
   authenticated control-plane live/readiness checks;
 - `local-v2` ExecutionProfile fields and overrides for memory MiB and maximum
   in-flight requests, with explicit soft-governor and non-production claims;
+- ADR/SPEC-0026 through 0028: `sha256-ctr-v1` modeled entropy, a private
+  branch-local `signal-queue-v1`, deterministic equal-time ordering,
+  cancellation and atomic bounded due delivery;
+- `local-preview-v5` semantic limits for entropy streams, draw bytes, retained
+  scheduler events and deliveries per clock advance;
 
 ### Changed
 

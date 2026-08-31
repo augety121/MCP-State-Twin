@@ -2,6 +2,9 @@ package engine
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"reflect"
 	"sort"
@@ -214,6 +217,12 @@ func (r *Runtime) apply(tool spec.ToolSpec, state *world.State, clock time.Time,
 		case "allocate":
 			state.Sequences[effect.Sequence]++
 			vars[effect.As] = state.Sequences[effect.Sequence]
+		case "entropy":
+			value, err := r.drawEntropy(state, effect.Stream, effect.Bytes)
+			if err != nil {
+				return failure("INTERNAL_TWIN_ERROR", "entropy draw failed: "+err.Error())
+			}
+			vars[effect.As] = value
 		case "insert", "update", "delete":
 			keyValue, err := r.eval(effect.Key, activation(nil))
 			if err != nil {
@@ -355,6 +364,38 @@ func (r *Runtime) apply(tool spec.ToolSpec, state *world.State, clock time.Time,
 		return failure("INTERNAL_TWIN_ERROR", "declared outputSchema rejected tool result: "+err.Error())
 	}
 	return store.CallOutcome{Result: result, CommitState: true}
+}
+
+// drawEntropy implements the modeled sha256-ctr-v1 profile. It is a stable
+// simulation primitive, not a cryptographic random-number API.
+func (r *Runtime) drawEntropy(state *world.State, stream string, size int) (string, error) {
+	if r.spec.Entropy == nil || r.spec.Entropy.Algorithm != "sha256-ctr-v1" {
+		return "", fmt.Errorf("unsupported entropy profile")
+	}
+	seed, err := hex.DecodeString(strings.TrimPrefix(r.spec.Entropy.Seed, "sha256:"))
+	if err != nil || len(seed) != sha256.Size {
+		return "", fmt.Errorf("invalid entropy seed")
+	}
+	state.Normalize()
+	if _, exists := state.Entropy[stream]; !exists && len(state.Entropy) >= limits.MaxEntropyStreams {
+		return "", fmt.Errorf("stream limit %d exceeded", limits.MaxEntropyStreams)
+	}
+	counter := state.Entropy[stream]
+	if counter == ^uint64(0) {
+		return "", fmt.Errorf("stream counter exhausted")
+	}
+	message := make([]byte, 0, 64+len(stream))
+	message = append(message, []byte("statetwin.dev/entropy/sha256-ctr-v1\x00")...)
+	message = append(message, seed...)
+	message = append(message, 0)
+	message = append(message, stream...)
+	message = append(message, 0)
+	var encodedCounter [8]byte
+	binary.BigEndian.PutUint64(encodedCounter[:], counter)
+	message = append(message, encodedCounter[:]...)
+	digest := sha256.Sum256(message)
+	state.Entropy[stream] = counter + 1
+	return hex.EncodeToString(digest[:size]), nil
 }
 
 func failure(code, message string) store.CallOutcome {

@@ -244,7 +244,8 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 | Exactly-once terminal acceptance | ✅ 有界语义 | 一个 parent Episode 最多接受一个匹配的 Evidence；**不**承诺 provider/tool/外部副作用 exactly-once |
 | HostCompatibilityReport admission | ✅ | 严格 schema、bounded evidence、credential/private-key/email pattern rejection；不等于 live provider 通过 |
 | OpenAI / Anthropic provider smoke harness | 🧪 合同级已实现 | OpenAI background/retrieve/cancel 与 Anthropic MCP connector mock contract tests；真实 live 报告尚未生成 |
-| Deterministic fault injection / virtual-clock advancement | 🧪 部分实现 | 私有 clock；两个 fault transaction phases；其余 scheduler/fault semantics 未实现 |
+| Deterministic fault injection / virtual-clock advancement | 🧪 部分实现 | 私有 clock、两个 fault transaction phases；其余 fault/scheduled-effect semantics 未实现 |
+| Deterministic entropy / signal scheduler | ✅ 有界语义 | `sha256-ctr-v1`、私有 `signal-queue-v1`、原子 due delivery；不是密码学 RNG、Agent 唤醒或工作流队列 |
 | Versioned semantic resource governance | 🧪 部分实现 | `statetwin limits`、environment digest、fail-closed local budgets；OS/remote quotas 未实现 |
 | Conservative local execution governor | ✅ soft boundary | `local-v2` 默认 `quiet`：`GOMAXPROCS=1`、512 MiB Go heap 软目标、每个 listener 4 个 in-flight；不是 OS/RSS 硬配额，不覆盖 native/子进程 |
 | HTTP admission/backpressure | ✅ local boundary | data/control/coordinator 独立非排队 permit pool；过载返回 redacted `503 SERVER_BUSY`；不是分布式限流或 DDoS 防护 |
@@ -281,6 +282,8 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 - provider-neutral remote worker：只认领 `hermetic` profile，通过独立 HTTP control plane 执行 TwinBundle，并原子提交 Evidence；
 - OpenAI/Anthropic smoke harness：使用官方当前 API contract 的请求形状和 mock-server 正/负测试，报告只保留 digest、能力与计数，不保存 token、raw response 或 prompt；
 - bounded branch-local fault plans：`before-validation` 与 `after-commit-before-response`，带稳定 plan digest、事务内计数和 fault-event audit。
+- deterministic world inputs：显式 public synthetic seed 的 `sha256-ctr-v1` 熵流，以及私有 branch-local signal queue；snapshot/fork/reset 绑定计数器和队列状态。
+- atomic due-signal delivery：clock advance 按 due time、priority、creation sequence、ID 的全序交付，单次上限 256，超限整次回滚。
 - versioned resource profile：input/output/state、JSON depth/members、effect/query、diff/report、branch/snapshot limits 以 `RESOURCE_LIMIT` fail closed，并绑定 Scenario environment digest。
 - 独立的 versioned ExecutionProfile：所有命令执行前默认应用 `quiet` 单槽 Go scheduler；可通过 CLI/环境显式提高，且不会冒充 OS 硬配额。
 - Go heap soft target 与 HTTP admission：默认 512 MiB runtime target，每个 listener 独立 4-request 非排队容量；拒绝请求不会进入业务 handler。
@@ -294,7 +297,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 <summary><strong>展开：尚未实现或尚未验证</strong></summary>
 
 - recorder、cassette replay、trace redaction、自动 upstream surface inspection/refresh；
-- 其余 deterministic fault phases、scheduler、deterministic entropy、idempotency collapse、crash/cancellation 与 eventual consistency；private clock 和两个 fault phases 已实现；
+- 其余 deterministic fault phases、scheduled tool/Agent effects、recurrence/cascade、idempotency collapse、crash/cancellation 与 eventual consistency；private clock、modeled entropy、opaque signals 和两个 fault phases 已实现；
 - live ChatGPT、Claude 产品或 Claude Code smoke tests；
 - dated OpenAI/Anthropic live reports 与 evidence-derived compatibility matrix；当前环境未配置 provider key 和公网 synthetic MCP endpoint；
 - differential validation 或 L2 fidelity promotion workflow；
@@ -305,6 +308,43 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 </details>
 
 完整证据与 partial boundaries 请看 [Implementation Status](docs/IMPLEMENTATION-STATUS.md)。**Roadmap 中的能力不会被描述成当前已实现功能。**
+
+---
+
+## 确定性熵与未来信号
+
+TwinSpec 可以显式选择模拟专用熵流：
+
+```yaml
+entropy:
+  algorithm: sha256-ctr-v1
+  seed: sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+effects:
+  - op: entropy
+    stream: request_id
+    bytes: 16
+    as: request_id
+```
+
+种子是公开 synthetic fixture，不是 secret。流计数器随 branch state
+事务提交，并被 snapshot / fork / reset 捕获；失败 transition 不消耗计数。
+
+测试 harness 还可以在独立 control plane 创建未来信号：
+
+```bash
+curl -H "Authorization: Bearer $STATETWIN_CONTROL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"id":"issue-updated","branch":"main","dueAt":"2026-09-01T00:00:00Z","priority":10,"kind":"signal","payload":{"type":"issue.updated"}}' \
+  http://127.0.0.1:8091/v1/scheduler/events
+```
+
+推进虚拟时钟时，所有有界 due signals 与 clock/head/state digest 原子提交。
+这些信号不会自动执行 TwinSpec tool、调用 provider 或唤醒 Agent；control
+routes 也不会出现在 MCP `tools/list`。完整语义见
+[SPEC-0026](docs/SPEC-0026-DETERMINISTIC-ENTROPY-STREAMS.md)、
+[SPEC-0027](docs/SPEC-0027-BRANCH-LOCAL-SIGNAL-SCHEDULER.md) 和
+[SPEC-0028](docs/SPEC-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md)。
 
 ---
 
@@ -669,7 +709,7 @@ SQLite file 带 State Twin application ID 与显式 schema version。Snapshot �
 |---|---|---|
 | 面向谁 | 被测 Agent | test harness / human operator |
 | 默认地址 | `127.0.0.1:8090` | `127.0.0.1:8091` |
-| 协议/用途 | MCP business tools | branch state / snapshot / fork / reset / diff |
+| 协议/用途 | MCP business tools | branch state / snapshot / fork / reset / diff / clock / scheduler / faults |
 | Branch 选择 | MCP URL | control operation 参数 |
 | 鉴权 | **当前没有** | independent bearer token |
 | 是否向 Agent 暴露测试控制 | 否 | 不适用 |
@@ -816,7 +856,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 
 - [RFC-0001](docs/RFC-0001.md) — revision 3 product boundary、hard invariants、architecture 与版本维度
 - [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) — local hermetic v0.1 release profile、limits、traceability、gates
-- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 evaluation platform；仅 ADR-0018/ADR-0019/ADR-0020 所列子集已接受
+- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 evaluation platform；仅 ADR-0018–ADR-0020 与 ADR-0026–ADR-0028 所列子集已接受
 
 ### ADR
 
@@ -843,6 +883,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [ADR-0021](docs/ADR-0021-UNIFIED-LIFECYCLE-AND-RELEASE-BOUNDARIES.md) — 统一 authority、claim states 与 v0.1–v1.0 release boundary
 - [ADR-0022](docs/ADR-0022-LOCAL-EXECUTION-GOVERNANCE.md) — 默认安静的本地 Go 执行策略及硬配额非声明
 - [ADR-0023](docs/ADR-0023-GO-HEAP-SOFT-LIMIT.md) / [ADR-0024](docs/ADR-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md) / [ADR-0025](docs/ADR-0025-AUTHENTICATED-HEALTH-READINESS.md)
+- [ADR-0026](docs/ADR-0026-DETERMINISTIC-ENTROPY-STREAMS.md) / [ADR-0027](docs/ADR-0027-BRANCH-LOCAL-SIGNAL-SCHEDULER.md) / [ADR-0028](docs/ADR-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md)
 
 ### Unified lifecycle and evidence
 
@@ -850,7 +891,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [Requirement Traceability](docs/REQUIREMENT-TRACEABILITY.md) — invariant 到测试/证据的映射
 - [Claim Registry](docs/CLAIM-REGISTRY.md) — public claim 的精确状态和边界
 - [Compatibility Matrix](docs/COMPATIBILITY-MATRIX.md) — API/product profiles 分离的兼容矩阵
-- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md) / [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md) / [SPEC-0023](docs/SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md) / [SPEC-0024](docs/SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md) / [SPEC-0025](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md)
+- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md) / [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md) / [SPEC-0023](docs/SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md) / [SPEC-0024](docs/SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md) / [SPEC-0025](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md) / [SPEC-0026](docs/SPEC-0026-DETERMINISTIC-ENTROPY-STREAMS.md) / [SPEC-0027](docs/SPEC-0027-BRANCH-LOCAL-SIGNAL-SCHEDULER.md) / [SPEC-0028](docs/SPEC-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md)
 
 ### Evidence / Research
 

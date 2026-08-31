@@ -42,6 +42,7 @@ type TwinSpec struct {
 	Kind       string          `json:"kind" yaml:"kind"`
 	Metadata   Metadata        `json:"metadata" yaml:"metadata"`
 	Clock      ClockSpec       `json:"clock" yaml:"clock"`
+	Entropy    *EntropySpec    `json:"entropy,omitempty" yaml:"entropy,omitempty"`
 	State      StateSpec       `json:"state" yaml:"state"`
 	Invariants []InvariantSpec `json:"invariants,omitempty" yaml:"invariants,omitempty"`
 	Tools      []ToolSpec      `json:"tools" yaml:"tools"`
@@ -67,6 +68,11 @@ type FidelityMetadata struct {
 type ClockSpec struct {
 	Mode    string `json:"mode" yaml:"mode"`
 	Initial string `json:"initial" yaml:"initial"`
+}
+
+type EntropySpec struct {
+	Algorithm string `json:"algorithm,omitempty" yaml:"algorithm,omitempty"`
+	Seed      string `json:"seed,omitempty" yaml:"seed,omitempty"`
 }
 
 type StateSpec struct {
@@ -109,6 +115,8 @@ type Effect struct {
 	Sequence string `json:"sequence,omitempty" yaml:"sequence,omitempty"`
 	As       string `json:"as,omitempty" yaml:"as,omitempty"`
 	Merge    bool   `json:"merge,omitempty" yaml:"merge,omitempty"`
+	Stream   string `json:"stream,omitempty" yaml:"stream,omitempty"`
+	Bytes    int    `json:"bytes,omitempty" yaml:"bytes,omitempty"`
 }
 
 type Query struct {
@@ -242,6 +250,14 @@ func (s *TwinSpec) Validate() error {
 	if strings.TrimSpace(s.Clock.Initial) == "" {
 		problems = append(problems, "clock.initial is required")
 	}
+	if s.Entropy != nil {
+		if s.Entropy.Algorithm != "sha256-ctr-v1" {
+			problems = append(problems, "entropy.algorithm must be sha256-ctr-v1")
+		}
+		if !digestPattern.MatchString(s.Entropy.Seed) {
+			problems = append(problems, "entropy.seed must be a lowercase sha256 digest")
+		}
+	}
 	if len(s.State.Entities) == 0 {
 		problems = append(problems, "state.entities must not be empty")
 	}
@@ -299,6 +315,19 @@ func (s *TwinSpec) Validate() error {
 			case "allocate":
 				if effect.Sequence == "" || effect.As == "" {
 					problems = append(problems, ep+" allocate requires sequence and as")
+				}
+			case "entropy":
+				if s.Entropy == nil || s.Entropy.Algorithm == "" {
+					problems = append(problems, ep+" requires a configured entropy profile")
+				}
+				if !namePattern.MatchString(effect.Stream) || !namePattern.MatchString(effect.As) {
+					problems = append(problems, ep+" entropy requires a valid stream and as")
+				}
+				if effect.Bytes < 1 || effect.Bytes > limits.MaxEntropyBytes {
+					problems = append(problems, fmt.Sprintf("%s entropy bytes must be 1..%d", ep, limits.MaxEntropyBytes))
+				}
+				if effect.Entity != "" || effect.Key != "" || effect.Value != "" || effect.Sequence != "" || effect.Merge {
+					problems = append(problems, ep+" entropy contains fields from another effect operation")
 				}
 			case "insert", "update", "delete":
 				if _, ok := s.State.Entities[effect.Entity]; !ok {

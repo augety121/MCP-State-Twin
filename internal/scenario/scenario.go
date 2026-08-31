@@ -73,6 +73,7 @@ type EnvironmentIdentity struct {
 	ScenarioDigest         string `json:"scenarioDigest"`
 	Seed                   int64  `json:"seed"`
 	ClockInitial           string `json:"clockInitial"`
+	EntropyProfileDigest   string `json:"entropyProfileDigest"`
 	SchedulerPolicy        string `json:"schedulerPolicy"`
 	FaultProfile           string `json:"faultProfile"`
 	LimitProfileDigest     string `json:"limitProfileDigest"`
@@ -315,6 +316,13 @@ func Run(ctx context.Context, twin *spec.TwinSpec, initial *world.State, scenari
 	if err != nil {
 		return nil, err
 	}
+	entropyDigest := "none"
+	if twin.Entropy != nil {
+		entropyDigest, err = canonical.Digest(twin.Entropy)
+		if err != nil {
+			return nil, err
+		}
+	}
 	environment := EnvironmentIdentity{
 		Format:                 "statetwin.dev/environment/v1alpha1",
 		RuntimeSemanticVersion: runtimeVersion,
@@ -324,7 +332,8 @@ func Run(ctx context.Context, twin *spec.TwinSpec, initial *world.State, scenari
 		ScenarioDigest:         scenarioDigest,
 		Seed:                   0,
 		ClockInitial:           twin.Clock.Initial,
-		SchedulerPolicy:        "serial-v0.1",
+		EntropyProfileDigest:   entropyDigest,
+		SchedulerPolicy:        store.SchedulerPolicy,
 		FaultProfile:           "none",
 		LimitProfileDigest:     limitDigest,
 	}

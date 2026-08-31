@@ -485,6 +485,9 @@ func scanBranch(id string, row rowScanner) (*Branch, error) {
 		return nil, fmt.Errorf("decode branch state: %w", err)
 	}
 	state.Normalize()
+	if err := state.ValidateBudget(); err != nil {
+		return nil, fmt.Errorf("validate branch state: %w", err)
+	}
 	return &Branch{ID: id, SpecDigest: specDigest, State: &state, StateDigest: stateDigest, Clock: clock, CallCount: callCount, HeadVersion: headVersion}, nil
 }
 
@@ -921,6 +924,9 @@ func scanSnapshot(name string, row rowScanner) (*Snapshot, error) {
 		return nil, fmt.Errorf("decode snapshot state: %w", err)
 	}
 	state.Normalize()
+	if err := state.ValidateBudget(); err != nil {
+		return nil, fmt.Errorf("validate snapshot state: %w", err)
+	}
 	result.State = &state
 	return &result, nil
 }
@@ -1012,46 +1018,85 @@ WHERE id = ? AND head_version = ?`, snapshot.SpecDigest, stateJSON, snapshot.Sta
 // privileged mutation. Host wall time is never used as the new world time.
 // expectedHeadVersion, when non-nil, provides an optimistic concurrency check
 // for a control-plane caller that read the branch first.
-func (s *Store) AdvanceClock(ctx context.Context, branchID string, target time.Time, expectedHeadVersion *int64) error {
+func (s *Store) AdvanceClock(ctx context.Context, branchID string, target time.Time, expectedHeadVersion *int64) (*ClockAdvanceResult, error) {
 	target = target.UTC()
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("begin clock transaction: %w", err)
+		return nil, fmt.Errorf("begin clock transaction: %w", err)
 	}
 	defer tx.Rollback()
 	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count, head_version FROM branches WHERE id = ?`, branchID))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if expectedHeadVersion != nil && *expectedHeadVersion != branch.HeadVersion {
-		return fmt.Errorf("%w: branch %s expected head %d, current %d", ErrBranchConflict, branchID, *expectedHeadVersion, branch.HeadVersion)
+		return nil, fmt.Errorf("%w: branch %s expected head %d, current %d", ErrBranchConflict, branchID, *expectedHeadVersion, branch.HeadVersion)
 	}
 	if !target.After(branch.Clock) {
-		return fmt.Errorf("%w: current=%s target=%s", ErrClockRegression, branch.Clock.UTC().Format(time.RFC3339Nano), target.Format(time.RFC3339Nano))
+		return nil, fmt.Errorf("%w: current=%s target=%s", ErrClockRegression, branch.Clock.UTC().Format(time.RFC3339Nano), target.Format(time.RFC3339Nano))
 	}
 	if target.Sub(branch.Clock) > MaxClockAdvance {
-		return fmt.Errorf("%w: maximum advance is %s", ErrClockLimit, MaxClockAdvance)
+		return nil, fmt.Errorf("%w: maximum advance is %s", ErrClockLimit, MaxClockAdvance)
+	}
+	delivered := make([]world.ScheduledEvent, 0)
+	for _, event := range scheduledEvents(branch.State) {
+		if event.Status != SchedulerPending {
+			continue
+		}
+		dueAt, parseErr := event.DueTime()
+		if parseErr != nil {
+			return nil, fmt.Errorf("%w: event %s has invalid dueAt", ErrSchedulerInvalid, event.ID)
+		}
+		if dueAt.After(target) {
+			continue
+		}
+		delivered = append(delivered, event)
+	}
+	if len(delivered) > limits.MaxScheduledDelivery {
+		return nil, fmt.Errorf("%w: due event count %d exceeds per-advance limit %d", ErrResourceLimit, len(delivered), limits.MaxScheduledDelivery)
+	}
+	for i := range delivered {
+		event := delivered[i]
+		event.Status = SchedulerDelivered
+		event.DeliveredAt = event.DueAt
+		branch.State.Scheduler.Events[event.ID] = event
+		delivered[i] = event
+	}
+	if err := branch.State.ValidateBudget(); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrResourceLimit, err)
+	}
+	stateJSON, err := canonical.JSON(branch.State)
+	if err != nil {
+		return nil, fmt.Errorf("encode scheduler state: %w", err)
+	}
+	afterDigest, err := canonical.Digest(branch.State)
+	if err != nil {
+		return nil, fmt.Errorf("digest scheduler state: %w", err)
 	}
 	result, err := tx.ExecContext(ctx, `
-UPDATE branches SET clock = ?, head_version = head_version + 1
-WHERE id = ? AND head_version = ?`, target.Format(time.RFC3339Nano), branchID, branch.HeadVersion)
+UPDATE branches SET clock = ?, state_json = ?, state_digest = ?, head_version = head_version + 1
+WHERE id = ? AND head_version = ?`, target.Format(time.RFC3339Nano), stateJSON, afterDigest, branchID, branch.HeadVersion)
 	if err != nil {
-		return fmt.Errorf("advance virtual clock: %w", err)
+		return nil, fmt.Errorf("advance virtual clock: %w", err)
 	}
 	updated, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("read clock update count: %w", err)
+		return nil, fmt.Errorf("read clock update count: %w", err)
 	}
 	if updated != 1 {
-		return fmt.Errorf("%w: branch %s expected head %d", ErrBranchConflict, branchID, branch.HeadVersion)
+		return nil, fmt.Errorf("%w: branch %s expected head %d", ErrBranchConflict, branchID, branch.HeadVersion)
 	}
-	if err := appendControlAudit(ctx, tx, "clock.advance", branchID, "", branch.StateDigest, branch.StateDigest); err != nil {
-		return err
+	if err := appendControlAudit(ctx, tx, "clock.advance", branchID, "", branch.StateDigest, afterDigest); err != nil {
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit clock transaction: %w", err)
+		return nil, fmt.Errorf("commit clock transaction: %w", err)
 	}
-	return nil
+	digest, err := schedulerDigest(branch.State)
+	if err != nil {
+		return nil, err
+	}
+	return &ClockAdvanceResult{BranchID: branchID, Clock: target.Format(time.RFC3339Nano), HeadVersion: branch.HeadVersion + 1, Delivered: delivered, SchedulerDigest: digest}, nil
 }
 
 type sqlExecer interface {

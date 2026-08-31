@@ -75,8 +75,10 @@ initial snapshot digest
 Scenario digest
 seed = 0
 initial virtual clock
-scheduler = serial-v0.1
+entropy profile digest or none
+scheduler = signal-queue-v1
 fault profile = none
+semantic limit profile digest
 ```
 
 Model/provider identity is deliberately outside this digest. A future provider

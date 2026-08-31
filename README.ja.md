@@ -56,11 +56,12 @@
 - durable Episode Journal schema v2（v1 fixture migration、kill-point recovery、immutable request、Evidence consistency）
 - fenced remote Episode coordinator / hermetic worker（lease、heartbeat、fencing、bounded retry、cooperative cancellation、`COMMIT_UNKNOWN`）
 - OpenAI Responses / Anthropic Messages provider-smoke harness と mock contract tests（dated live report は未取得）
+- bounded `sha256-ctr-v1` modeled entropy と private `signal-queue-v1`（snapshot/fork identity、deterministic ordering、atomic due delivery。Agent wakeup ではない）
 
 ### 未実装または未検証
 
 - recorder、cassette replay、trace redaction、自動 upstream surface inspection/refresh
-- 残りの deterministic fault phases、scheduler、deterministic entropy、idempotency、crash/cancellation、eventual consistency は未実装（private clock と 2 つの fault phases は実装済み）
+- 残りの deterministic fault phases、scheduled tool/Agent effects、recurrence/cascade、idempotency、crash/cancellation、eventual consistency は未実装
 - 実際の ChatGPT / OpenAI API / Claude / Claude Code smoke test
 - dated OpenAI/Anthropic live report、admitted compatibility report、evidence-derived compatibility matrix
 - differential validation、L2 fidelity promotion workflow

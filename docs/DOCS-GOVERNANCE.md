@@ -12,7 +12,8 @@ When documents disagree, use this order:
 2. accepted ADRs for binding architectural decisions, including ADR-0021 for
    lifecycle and release boundaries;
 3. accepted RFCs: RFC-0001 revision 3 for the product contract, RFC-0002 for
-   v0.1, and RFC-0003 only for subsets accepted by ADR-0018 through ADR-0020;
+   v0.1, and RFC-0003 only for subsets accepted by ADR-0018 through ADR-0020
+   and ADR-0026 through ADR-0028;
 4. `SPEC-0001` through accepted SPEC documents for normative semantics;
 5. `IMPLEMENTATION-STATUS.md` for what executable evidence exists today;
 6. `ROADMAP.md` and the vNext pack for planned work only.

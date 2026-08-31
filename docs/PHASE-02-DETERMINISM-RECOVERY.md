@@ -16,6 +16,14 @@
 - versioned ResourceProfiles covering every bounded subsystem;
 - EnvironmentIdentity coverage for clock, entropy, scheduler and faults.
 
+## Current accepted progress
+
+ADR-0026 through ADR-0028 implement a bounded deterministic entropy profile,
+branch-local signal scheduler, total equal-time ordering, cancellation and
+atomic due-signal delivery. These signals do not execute scheduled tools or
+Agents. Full cascading effects, retry/dead-letter semantics and remaining
+fault classes stay open.
+
 ADR-0022's operational ExecutionProfile is separate from EnvironmentIdentity.
 It may change wall-clock latency but MUST NOT change modeled outcomes. Any
 future performance comparison must record it as host evidence.

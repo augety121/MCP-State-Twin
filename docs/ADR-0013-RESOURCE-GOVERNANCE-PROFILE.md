@@ -29,8 +29,8 @@ The accepted local limits include:
   bounds.
 
 A zero value in the profile means the corresponding future feature is
-disabled, not unlimited. Bundle, cassette, scheduler-event, and future-task
-limits are therefore zero while those features are not implemented.
+disabled, not unlimited. Cassette and future-task limits remain zero while
+those features are not implemented.
 
 ## Enforcement boundary
 
@@ -81,3 +81,12 @@ heap soft target and bounded per-listener admission. It is intentionally not
 folded into this semantic ResourceProfile: operational settings may affect
 latency while modeled outputs and environment identity must remain unchanged.
 OS/RSS hard quotas and distributed fairness remain non-claims.
+
+## Amendment: ADR-0026 through ADR-0028 (2026-08-31)
+
+The deterministic-world profile advances to `local-preview-v5`. It enables 64
+entropy streams per branch, 32 bytes per draw, 1,024 retained scheduler events
+per branch and 256 due-signal deliveries per clock advance. These are semantic
+bounds and change Scenario environment identity. They do not enable scheduled
+tool effects, Agent wakeup, recurring timers, retention/GC or a distributed
+queue.

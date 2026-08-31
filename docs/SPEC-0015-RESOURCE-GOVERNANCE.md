@@ -1,8 +1,8 @@
 # SPEC-0015 — Resource Governance (Accepted Local Profile)
 
-- **Status:** Accepted subset via ADR-0013; TwinBundle/Episode amendments via ADR-0018 through ADR-0020
-- **Verification status:** executable unit, runtime, storage, diff, report, bundle, Journal, attempt and lease bound tests
-- **Profile:** `statetwin.dev/resource-profile/v1alpha1`, `local-preview-v4`
+- **Status:** Accepted subset via ADR-0013; amendments via ADR-0018 through ADR-0020 and ADR-0026 through ADR-0028
+- **Verification status:** executable unit, runtime, storage, diff, report, bundle, Journal, attempt, lease, entropy and scheduler bound tests
+- **Profile:** `statetwin.dev/resource-profile/v1alpha1`, `local-preview-v5`
 
 ## 1. Typed profile
 
@@ -35,13 +35,18 @@ Limits cover:
 | local Episode Journal records | 10,000 |
 | Episode attempts per task | 16 |
 | remote Episode lease | 3,600 seconds |
+| entropy streams / bytes per draw | 64 / 32 |
+| retained scheduler events per branch | 1,024 |
+| due deliveries per clock advance | 256 |
 
-Cassette, scheduled-event, and future-task limits are zero because those
-features are not implemented in this release profile. Bundle limits are enabled
+Cassette and future-task limits are zero because those features are not
+implemented in this release profile. Bundle limits are enabled
 only for the deterministic local preview accepted by ADR-0018. The Episode
 record bound applies only to the independent Journal accepted by ADR-0019.
 Attempt and lease bounds apply only to ADR-0020's single-coordinator preview;
-they are not tenant quotas or a distributed fairness policy.
+they are not tenant quotas or a distributed fairness policy. Entropy and
+scheduler bounds apply only to ADR-0026 through ADR-0028's modeled entropy and
+opaque private signal queue; they do not enable scheduled tool/Agent effects.
 
 ## 2. Fail-closed semantics
 
@@ -67,7 +72,7 @@ inspection point.
 The profile does not yet implement:
 
 - OS memory/CPU quotas or distributed tenant fairness;
-- scheduler due-event/cascade budgets;
+- scheduled-effect cascade/retry/dead-letter budgets beyond opaque delivery;
 - cassette budgets;
 - remote request rate limiting;
 - storage quota/GC/WAL checkpoint governance;
@@ -84,6 +89,6 @@ listener before command dispatch. The profile is inspectable through
 `statetwin execution-profile`. These controls do not form an OS/RSS hard quota
 and do not cover child or future native processes.
 
-This `local-v2` operational profile does not change `local-preview-v4` or its
+This `local-v2` operational profile does not change `local-preview-v5` or its
 semantic environment digest. Exact CPU percentages, memory isolation, durable
 queues, remote fairness and empirical performance budgets remain deferred.

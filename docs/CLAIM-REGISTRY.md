@@ -26,6 +26,8 @@ merged and its required CI evidence passes on that revision.
 | CLM-RESOURCE-002 | The default profile applies a 512 MiB Go heap soft target | verified locally | governor mode/bound/application tests and profile smoke | not RSS, native/child memory, OOM recovery, reservation, or hard quota |
 | CLM-RESOURCE-003 | Each CLI HTTP listener rejects excess in-flight requests without an application queue | verified locally | admission saturation/recovery/error-contract tests | process-local only; no distributed rate limit, fairness, priority, or DDoS claim |
 | CLM-OPS-001 | Authenticated control-plane live/ready checks are redacted and absent from MCP | verified locally | health auth/readiness/redaction tests plus existing MCP discovery negative tests | ready means local SQLite ping only; not provider/upstream or production orchestration health |
+| CLM-DETERMINISM-001 | Opt-in TwinSpecs can draw bounded reproducible modeled bytes from branch-local `sha256-ctr-v1` streams | verified locally | spec admission, equal-branch draw, persistent counter and failed-transition rollback tests | not cryptographic RNG, model seed control, credentials or security entropy |
+| CLM-DETERMINISM-002 | Private branch-local signals have deterministic order/lifecycle and bounded atomic delivery on clock advance | verified locally | store/control ordering, cancel, fork isolation, delivery and budget rollback tests | not scheduled tools, Agent wakeup, recurring timers, distributed queue or external effects |
 
 ## Maintenance
 

@@ -129,6 +129,40 @@ func TestValidateMinimal(t *testing.T) {
 	}
 }
 
+func TestEntropyProfileAndEffectValidation(t *testing.T) {
+	valid := minimalSpec()
+	valid.Entropy = &EntropySpec{
+		Algorithm: "sha256-ctr-v1",
+		Seed:      "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+	}
+	valid.Tools[0].Effects = []Effect{{Op: "entropy", Stream: "request_id", Bytes: 16, As: "id"}}
+	if err := valid.Validate(); err != nil {
+		t.Fatalf("valid entropy profile rejected: %v", err)
+	}
+	emptyProfile := minimalSpec()
+	emptyProfile.Entropy = &EntropySpec{}
+	if err := emptyProfile.Validate(); err == nil {
+		t.Fatal("empty entropy profile was accepted")
+	}
+
+	for _, mutate := range []func(*TwinSpec){
+		func(s *TwinSpec) { s.Entropy.Algorithm = "host-random" },
+		func(s *TwinSpec) { s.Entropy.Seed = "secret" },
+		func(s *TwinSpec) { s.Tools[0].Effects[0].Bytes = 33 },
+		func(s *TwinSpec) { s.Tools[0].Effects[0].Stream = "Invalid Stream" },
+		func(s *TwinSpec) { s.Tools[0].Effects[0].As = "Invalid Variable" },
+		func(s *TwinSpec) { s.Tools[0].Effects[0].Sequence = "other" },
+	} {
+		candidate := minimalSpec()
+		candidate.Entropy = &EntropySpec{Algorithm: valid.Entropy.Algorithm, Seed: valid.Entropy.Seed}
+		candidate.Tools[0].Effects = []Effect{{Op: "entropy", Stream: "request_id", Bytes: 16, As: "id"}}
+		mutate(candidate)
+		if err := candidate.Validate(); err == nil {
+			t.Fatal("invalid entropy configuration was accepted")
+		}
+	}
+}
+
 func TestRejectsVerifiedL1(t *testing.T) {
 	s := minimalSpec()
 	s.Metadata.Fidelity.Status = "verified"

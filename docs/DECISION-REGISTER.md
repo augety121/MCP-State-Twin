@@ -14,7 +14,7 @@
 | DEC-008 | Provider mock tests do not satisfy live compatibility | resolved | SPEC-0019 / SPEC-0021 |
 | DEC-009 | Complete remote-staging security controls | open | SPEC-0020 / Phase 4 |
 | DEC-010 | Operator reconciliation contract for `COMMIT_UNKNOWN` | open | Phase 3 follow-up |
-| DEC-011 | Deterministic scheduler/interleaving profile | open | SPEC-0007 / Phase 2 |
+| DEC-011 | Full scheduled-effect/interleaving profile beyond opaque signals | open | SPEC-0007 / Phase 2 |
 | DEC-012 | Recorder consent/redaction and incomplete-trace semantics | open | proposed SPEC-0009 / Phase 5 |
 | DEC-013 | L2 admission coverage thresholds | open | proposed SPEC-0011 / Phase 5 |
 | DEC-014 | TwinBundle signing and publisher identity | open | Phase 7 |
@@ -23,6 +23,9 @@
 | DEC-017 | Go heap pressure uses a documented soft runtime target, never an RSS/hard-quota claim | resolved | ADR-0023 / SPEC-0023 |
 | DEC-018 | HTTP overload is rejected immediately per listener rather than queued without bound | resolved | ADR-0024 / SPEC-0024 |
 | DEC-019 | Health/readiness remain authenticated private control routes and never Agent tools | resolved | ADR-0025 / SPEC-0025 |
+| DEC-020 | Modeled entropy uses explicit public seed plus `sha256-ctr-v1`; never host RNG or security entropy | resolved | ADR-0026 / SPEC-0026 |
+| DEC-021 | Virtual scheduler is a bounded branch-local private signal queue, not an Agent/workflow scheduler | resolved | ADR-0027 / SPEC-0027 |
+| DEC-022 | Clock advance and all bounded due-signal lifecycle changes commit atomically; over-budget batches fail whole | resolved | ADR-0028 / SPEC-0028 |
 
 Open decisions are roadmap work. They MUST NOT be silently resolved by an
 implementation-only change.

@@ -24,6 +24,13 @@ and fault injection remain separate proposals and are not implied by this ADR.
 - local SQLite remains a serialized single-host profile, not a distributed
   concurrency system.
 
+## Later amendments
+
+ADR-0026 through ADR-0028 separately accept deterministic modeled entropy, a
+branch-local opaque signal queue and atomic bounded due delivery. They do not
+change this ADR's private-control or monotonic-head rules and do not add
+scheduled tool/Agent execution.
+
 ## Evidence
 
 - migration tests for the schema-v3 head/clock columns (preserved after later schema upgrades);

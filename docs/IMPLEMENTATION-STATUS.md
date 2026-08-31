@@ -9,9 +9,11 @@ is accepted by ADR-0018, the durable Journal subset by ADR-0019, and the fenced
 remote coordinator subset by ADR-0020. ADR-0011 through ADR-0020 accept only
 the bounded subsets they name; the rest of the vNext pack remains proposal
 material. ADR-0021 additionally governs the release train and claim vocabulary.
-SPEC-0019 through SPEC-0021 are accepted contracts, but acceptance is not an
-implementation claim: complete remote-staging security and dated live
-HostProfiles remain absent.
+ADR-0022 through ADR-0025 accept the bounded local operational-safety batch;
+ADR-0026 through ADR-0028 accept the modeled entropy and opaque-signal
+determinism batch. SPEC-0019 through SPEC-0028 are accepted only to the exact
+states recorded below; acceptance is not an implementation claim. Complete
+remote-staging security and dated live HostProfiles remain absent.
 
 ## Implemented and tested
 
@@ -58,6 +60,9 @@ HostProfiles remain absent.
 | MCP 2026 wire evidence | raw `server/discover`, direct modern `tools/list`, result discriminator, header/body mismatch, and 2025-11-25 initialize compatibility tests; pinned SDK evidence CLI |
 | Monotonic branch head | SQLite schema v4 `head_version`, CAS updates for calls/reset/clock/fault configuration, snapshot source-head binding, migration tests |
 | Private virtual-clock advance | bounded forward-only `/v1/clock/advance`, expected-head conflict, and transactional `clock.advance` audit tests |
+| Deterministic modeled entropy | opt-in `sha256-ctr-v1`, public synthetic seed, branch-local persistent counters, 1..32-byte draw, fork equality and failed-transition rollback |
+| Branch-local signal scheduler | private create/list/cancel routes, total due/priority/sequence/ID ordering, snapshot/fork/reset identity and typed lifecycle conflicts |
+| Atomic due-signal delivery | clock and all due event lifecycle changes in one transaction; 256-delivery bound with whole-operation rollback |
 | Deterministic fault preview | branch-local bounded plans; `before-validation` and `after-commit-before-response`; atomic counters/events; stable plan digest; private HTTP integration tests |
 | Versioned resource profile | `statetwin limits`; profile digest in Scenario environment identity; state/input/output/query/effect/diff/report/storage bounds; typed `RESOURCE_LIMIT` failures |
 | Conservative local execution profile | `local-v2`: `quiet` applies `GOMAXPROCS=1`, 512 MiB Go heap soft target and four in-flight requests per listener; validated mode/exact overrides, environment/CLI precedence and `statetwin execution-profile`; soft process-local boundary only |
@@ -71,14 +76,14 @@ HostProfiles remain absent.
 
 | Capability | Current boundary |
 |---|---|
-| Virtual time | private forward-only clock advancement is implemented; scheduler, entropy, due events, and scheduled effects are not implemented |
+| Virtual time | private clock, modeled entropy, opaque signal queue and bounded due delivery are implemented; scheduled tool/Agent effects, recurrence, cascades and dead-letter/retry are not |
 | Deterministic faults | two transaction phases and three canonical outcomes are implemented; latency, partial effects, idempotency collapse, crash/cancellation, scheduled visibility, and eventual consistency are not |
 | Upstream surface discovery | local canonicalization and binding enforcement work; upstream inspection and automatic refresh are not implemented |
 | Hermeticity | there is no upstream connector or passthrough code; only-loopback Linux CI job passed in run #6 |
 | Secret/fixture policy | pinned Gitleaks history scan and synthetic-fixture heuristic passed in run #6 |
 | Snapshot storage | immutable logical snapshots work; copy-on-write/delta optimization and GC are not implemented |
 | MCP protocol coverage | direct 2026-07-28 wire smoke tests pass; the pinned conformance framework still covers legacy-era scenarios and does not establish every modern optional feature |
-| Resource governance | `local-preview-v4` bounds semantic resources; separate `local-v2` ExecutionProfile adds conservative CPU, Go heap soft target and per-listener admission. OS hard quotas, RSS/native/child controls, distributed/tenant fairness, durable queues, scheduler/cassette quotas, retention, and empirical performance budgets are not implemented |
+| Resource governance | `local-preview-v5` bounds semantic resources including entropy/signal delivery; separate `local-v2` ExecutionProfile adds conservative CPU, Go heap soft target and per-listener admission. OS hard quotas, RSS/native/child controls, distributed/tenant fairness, durable queues, cassette quotas, retention, and empirical performance budgets are not implemented |
 | Portable evaluation artifacts | deterministic unsigned TwinBundle, scripted EpisodeEvidence, and bounded remote transport are implemented; signatures, provenance attestations, registry transport, and publisher identity are not |
 | Episode delivery semantics | hermetic tasks support bounded at-least-once claim delivery with fenced exactly-once terminal Evidence acceptance; arbitrary provider calls, HTTP delivery, tool effects, and external side effects are not exactly-once |
 | Provider live evidence | executable OpenAI/Anthropic adapters and opt-in CI workflow exist; only mock contract tests have run in this repository state, because provider credentials and a public synthetic MCP endpoint are absent |
@@ -87,7 +92,7 @@ HostProfiles remain absent.
 
 - recorder and trace redaction;
 - L0 cassette replay;
-- remaining deterministic fault phases, idempotency semantics, crash/cancellation injection, and eventual consistency;
+- remaining deterministic fault phases, idempotency semantics, crash/cancellation injection, scheduled tool effects/cascades, and eventual consistency;
 - dated OpenAI-family and Anthropic-family live provider reports and live-agent trajectory capture;
 - full MCP 2026-07-28 conformance coverage beyond the pinned official subset;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;
