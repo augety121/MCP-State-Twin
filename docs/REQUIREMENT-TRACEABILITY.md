@@ -25,6 +25,9 @@
 | ST-VTIME-002 deterministic modeled entropy | ADR-0026 / SPEC-0026 | spec/engine equal-draw, persistence and rollback tests | verified bounded subset |
 | ST-VTIME-003 total signal ordering and lifecycle | ADR-0027 / SPEC-0027 | scheduler ordering/cancel/fork/control HTTP tests | verified bounded subset |
 | ST-VTIME-004 atomic bounded due delivery | ADR-0028 / SPEC-0028 | delivery ordering and 257-event rollback tests | verified bounded subset |
+| ST-VTIME-005 parsed-time order and per-instant admission | ADR-0029 / SPEC-0029 | sub-second order, capacity and cancellation-release tests | verified bounded subset |
+| ST-VTIME-006 bounded next-due recovery | ADR-0030 / SPEC-0030 | preview, two-step legacy drain, empty/CAS and HTTP tests | verified bounded subset |
+| ST-VTIME-007 consistent bounded inspection | ADR-0031 / SPEC-0031 | filter/page/stale/malformed cursor tests | verified bounded subset |
 
 ## Release use
 

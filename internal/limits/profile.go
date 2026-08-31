@@ -10,89 +10,97 @@ import (
 
 const (
 	Format  = "statetwin.dev/resource-profile/v1alpha1"
-	Version = "local-preview-v5"
+	Version = "local-preview-v6"
 
-	MaxSpecBytes         = 1 << 20
-	MaxToolCount         = 256
-	MaxEntityTypeCount   = 256
-	MaxEntitiesPerBranch = 100_000
-	MaxStateBytes        = 16 << 20
-	MaxInputBytes        = 1 << 20
-	MaxOutputBytes       = 1 << 20
-	MaxJSONDepth         = 64
-	MaxJSONMembers       = 1_000_000
-	MaxSchemaBytes       = 256 << 10
-	MaxSchemaDepth       = 32
-	MaxExpressionBytes   = 4096
-	MaxExpressionCost    = 10_000
-	MaxEffectsPerCall    = 128
-	MaxQueryResultItems  = 10_000
-	MaxDiffEntries       = 10_000
-	MaxDiffBytes         = 8 << 20
-	MaxAuditEventBytes   = 2 << 20
-	MaxReportBytes       = 32 << 20
-	MaxScenarioSteps     = 256
-	MaxFaultRules        = 128
-	MaxForks             = 1024
-	MaxSnapshots         = 1024
-	MaxConcurrentCalls   = 1
-	MaxBundleFiles       = 128
-	MaxBundleCompressed  = 32 << 20
-	MaxBundleExtracted   = 64 << 20
-	MaxBundleMember      = 16 << 20
-	MaxEpisodeRecords    = 10_000
-	MaxEpisodeAttempts   = 16
-	MaxLeaseSeconds      = 3_600
-	MaxCassetteBytes     = 0
-	MaxScheduledEvents   = 1024
-	MaxScheduledDelivery = 256
-	MaxEntropyStreams    = 64
-	MaxEntropyBytes      = 32
-	FutureMaxTaskCount   = 0
+	MaxSpecBytes          = 1 << 20
+	MaxToolCount          = 256
+	MaxEntityTypeCount    = 256
+	MaxEntitiesPerBranch  = 100_000
+	MaxStateBytes         = 16 << 20
+	MaxInputBytes         = 1 << 20
+	MaxOutputBytes        = 1 << 20
+	MaxJSONDepth          = 64
+	MaxJSONMembers        = 1_000_000
+	MaxSchemaBytes        = 256 << 10
+	MaxSchemaDepth        = 32
+	MaxExpressionBytes    = 4096
+	MaxExpressionCost     = 10_000
+	MaxEffectsPerCall     = 128
+	MaxQueryResultItems   = 10_000
+	MaxDiffEntries        = 10_000
+	MaxDiffBytes          = 8 << 20
+	MaxAuditEventBytes    = 2 << 20
+	MaxReportBytes        = 32 << 20
+	MaxScenarioSteps      = 256
+	MaxFaultRules         = 128
+	MaxForks              = 1024
+	MaxSnapshots          = 1024
+	MaxConcurrentCalls    = 1
+	MaxBundleFiles        = 128
+	MaxBundleCompressed   = 32 << 20
+	MaxBundleExtracted    = 64 << 20
+	MaxBundleMember       = 16 << 20
+	MaxEpisodeRecords     = 10_000
+	MaxEpisodeAttempts    = 16
+	MaxLeaseSeconds       = 3_600
+	MaxCassetteBytes      = 0
+	MaxScheduledEvents    = 1024
+	MaxScheduledDelivery  = 256
+	MaxScheduledAtInstant = 256
+	MaxSchedulerPageSize  = 256
+	DefaultSchedulerPage  = 100
+	MaxSchedulerCursor    = 2048
+	MaxEntropyStreams     = 64
+	MaxEntropyBytes       = 32
+	FutureMaxTaskCount    = 0
 )
 
 // Profile is part of deterministic environment identity. A zero value means
 // the corresponding feature is disabled, not unlimited.
 type Profile struct {
-	Format               string `json:"format"`
-	Version              string `json:"version"`
-	MaxSpecBytes         int    `json:"maxSpecBytes"`
-	MaxToolCount         int    `json:"maxToolCount"`
-	MaxEntityTypeCount   int    `json:"maxEntityTypeCount"`
-	MaxEntitiesPerBranch int    `json:"maxEntitiesPerBranch"`
-	MaxStateBytes        int    `json:"maxStateBytes"`
-	MaxInputBytes        int    `json:"maxInputBytes"`
-	MaxOutputBytes       int    `json:"maxOutputBytes"`
-	MaxJSONDepth         int    `json:"maxJSONDepth"`
-	MaxJSONMembers       int    `json:"maxJSONMembers"`
-	MaxSchemaBytes       int    `json:"maxSchemaBytes"`
-	MaxSchemaDepth       int    `json:"maxSchemaDepth"`
-	MaxExpressionBytes   int    `json:"maxExpressionBytes"`
-	MaxExpressionCost    uint64 `json:"maxExpressionCost"`
-	MaxEffectsPerCall    int    `json:"maxEffectsPerCall"`
-	MaxQueryResultItems  int    `json:"maxQueryResultItems"`
-	MaxDiffEntries       int    `json:"maxDiffEntries"`
-	MaxDiffBytes         int    `json:"maxDiffBytes"`
-	MaxAuditEventBytes   int    `json:"maxAuditEventBytes"`
-	MaxReportBytes       int    `json:"maxReportBytes"`
-	MaxScenarioSteps     int    `json:"maxScenarioSteps"`
-	MaxScheduledEvents   int    `json:"maxScheduledEvents"`
-	MaxScheduledDelivery int    `json:"maxScheduledDeliveriesPerAdvance"`
-	MaxEntropyStreams    int    `json:"maxEntropyStreams"`
-	MaxEntropyBytes      int    `json:"maxEntropyBytesPerDraw"`
-	MaxFaultRules        int    `json:"maxFaultRules"`
-	MaxForks             int    `json:"maxForks"`
-	MaxSnapshots         int    `json:"maxSnapshots"`
-	MaxConcurrentCalls   int    `json:"maxConcurrentCalls"`
-	MaxCassetteBytes     int    `json:"maxCassetteBytes"`
-	MaxBundleFiles       int    `json:"maxBundleFiles"`
-	MaxBundleCompressed  int    `json:"maxBundleCompressedBytes"`
-	MaxBundleExtracted   int    `json:"maxBundleExtractedBytes"`
-	MaxBundleMember      int    `json:"maxBundleMemberBytes"`
-	MaxEpisodeRecords    int    `json:"maxEpisodeRecords"`
-	MaxEpisodeAttempts   int    `json:"maxEpisodeAttempts"`
-	MaxLeaseSeconds      int    `json:"maxLeaseSeconds"`
-	FutureMaxTaskCount   int    `json:"futureMaxTaskCount"`
+	Format                string `json:"format"`
+	Version               string `json:"version"`
+	MaxSpecBytes          int    `json:"maxSpecBytes"`
+	MaxToolCount          int    `json:"maxToolCount"`
+	MaxEntityTypeCount    int    `json:"maxEntityTypeCount"`
+	MaxEntitiesPerBranch  int    `json:"maxEntitiesPerBranch"`
+	MaxStateBytes         int    `json:"maxStateBytes"`
+	MaxInputBytes         int    `json:"maxInputBytes"`
+	MaxOutputBytes        int    `json:"maxOutputBytes"`
+	MaxJSONDepth          int    `json:"maxJSONDepth"`
+	MaxJSONMembers        int    `json:"maxJSONMembers"`
+	MaxSchemaBytes        int    `json:"maxSchemaBytes"`
+	MaxSchemaDepth        int    `json:"maxSchemaDepth"`
+	MaxExpressionBytes    int    `json:"maxExpressionBytes"`
+	MaxExpressionCost     uint64 `json:"maxExpressionCost"`
+	MaxEffectsPerCall     int    `json:"maxEffectsPerCall"`
+	MaxQueryResultItems   int    `json:"maxQueryResultItems"`
+	MaxDiffEntries        int    `json:"maxDiffEntries"`
+	MaxDiffBytes          int    `json:"maxDiffBytes"`
+	MaxAuditEventBytes    int    `json:"maxAuditEventBytes"`
+	MaxReportBytes        int    `json:"maxReportBytes"`
+	MaxScenarioSteps      int    `json:"maxScenarioSteps"`
+	MaxScheduledEvents    int    `json:"maxScheduledEvents"`
+	MaxScheduledDelivery  int    `json:"maxScheduledDeliveriesPerAdvance"`
+	MaxScheduledAtInstant int    `json:"maxScheduledEventsPerInstant"`
+	MaxSchedulerPageSize  int    `json:"maxSchedulerPageSize"`
+	DefaultSchedulerPage  int    `json:"defaultSchedulerPageSize"`
+	MaxSchedulerCursor    int    `json:"maxSchedulerCursorBytes"`
+	MaxEntropyStreams     int    `json:"maxEntropyStreams"`
+	MaxEntropyBytes       int    `json:"maxEntropyBytesPerDraw"`
+	MaxFaultRules         int    `json:"maxFaultRules"`
+	MaxForks              int    `json:"maxForks"`
+	MaxSnapshots          int    `json:"maxSnapshots"`
+	MaxConcurrentCalls    int    `json:"maxConcurrentCalls"`
+	MaxCassetteBytes      int    `json:"maxCassetteBytes"`
+	MaxBundleFiles        int    `json:"maxBundleFiles"`
+	MaxBundleCompressed   int    `json:"maxBundleCompressedBytes"`
+	MaxBundleExtracted    int    `json:"maxBundleExtractedBytes"`
+	MaxBundleMember       int    `json:"maxBundleMemberBytes"`
+	MaxEpisodeRecords     int    `json:"maxEpisodeRecords"`
+	MaxEpisodeAttempts    int    `json:"maxEpisodeAttempts"`
+	MaxLeaseSeconds       int    `json:"maxLeaseSeconds"`
+	FutureMaxTaskCount    int    `json:"futureMaxTaskCount"`
 }
 
 func Default() Profile {
@@ -109,9 +117,13 @@ func Default() Profile {
 		MaxQueryResultItems: MaxQueryResultItems, MaxDiffEntries: MaxDiffEntries,
 		MaxDiffBytes: MaxDiffBytes, MaxAuditEventBytes: MaxAuditEventBytes,
 		MaxReportBytes: MaxReportBytes, MaxScenarioSteps: MaxScenarioSteps,
-		MaxScheduledEvents:   MaxScheduledEvents,
-		MaxScheduledDelivery: MaxScheduledDelivery,
-		MaxEntropyStreams:    MaxEntropyStreams, MaxEntropyBytes: MaxEntropyBytes,
+		MaxScheduledEvents:    MaxScheduledEvents,
+		MaxScheduledDelivery:  MaxScheduledDelivery,
+		MaxScheduledAtInstant: MaxScheduledAtInstant,
+		MaxSchedulerPageSize:  MaxSchedulerPageSize,
+		DefaultSchedulerPage:  DefaultSchedulerPage,
+		MaxSchedulerCursor:    MaxSchedulerCursor,
+		MaxEntropyStreams:     MaxEntropyStreams, MaxEntropyBytes: MaxEntropyBytes,
 		MaxFaultRules: MaxFaultRules,
 		MaxForks:      MaxForks, MaxSnapshots: MaxSnapshots,
 		MaxConcurrentCalls: MaxConcurrentCalls, MaxCassetteBytes: MaxCassetteBytes,

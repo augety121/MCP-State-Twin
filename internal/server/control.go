@@ -6,9 +6,11 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/store"
 )
 
@@ -29,8 +31,10 @@ func NewControlPlane(stateStore *store.Store, token string, allowedTools ...stri
 	c.mux.HandleFunc("POST /v1/forks", c.fork)
 	c.mux.HandleFunc("POST /v1/resets", c.reset)
 	c.mux.HandleFunc("POST /v1/clock/advance", c.advanceClock)
+	c.mux.HandleFunc("POST /v1/clock/advance-next", c.advanceClockToNext)
 	c.mux.HandleFunc("POST /v1/scheduler/events", c.scheduleEvent)
 	c.mux.HandleFunc("GET /v1/scheduler/events", c.listScheduledEvents)
+	c.mux.HandleFunc("GET /v1/scheduler/next", c.nextScheduledBatch)
 	c.mux.HandleFunc("POST /v1/scheduler/events/cancel", c.cancelScheduledEvent)
 	c.mux.HandleFunc("POST /v1/faults", c.installFault)
 	c.mux.HandleFunc("GET /v1/faults", c.listFaults)
@@ -268,16 +272,50 @@ func (c *ControlPlane) scheduleEvent(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, event)
 }
 
-func (c *ControlPlane) listScheduledEvents(w http.ResponseWriter, r *http.Request) {
-	events, digest, err := c.store.ScheduledEvents(r.Context(), r.URL.Query().Get("branch"))
+func (c *ControlPlane) advanceClockToNext(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		Branch              string `json:"branch"`
+		ExpectedHeadVersion *int64 `json:"expectedHeadVersion"`
+	}
+	if !decodeJSON(w, r, &request) {
+		return
+	}
+	result, err := c.store.AdvanceClockToNext(r.Context(), request.Branch, request.ExpectedHeadVersion)
 	if err != nil {
 		writeStoreError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{
-		"format": store.SchedulerFormat, "policy": store.SchedulerPolicy,
-		"digest": digest, "events": events,
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (c *ControlPlane) listScheduledEvents(w http.ResponseWriter, r *http.Request) {
+	limit := limits.DefaultSchedulerPage
+	if value := r.URL.Query().Get("limit"); value != "" {
+		parsed, err := strconv.Atoi(value)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "SCHEDULE_INVALID", "limit must be a base-10 integer")
+			return
+		}
+		limit = parsed
+	}
+	page, err := c.store.ScheduledEventPage(r.Context(), store.ScheduledEventQuery{
+		BranchID: r.URL.Query().Get("branch"), Status: r.URL.Query().Get("status"),
+		Limit: limit, Cursor: r.URL.Query().Get("cursor"),
 	})
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, page)
+}
+
+func (c *ControlPlane) nextScheduledBatch(w http.ResponseWriter, r *http.Request) {
+	batch, err := c.store.NextDueBatch(r.Context(), r.URL.Query().Get("branch"))
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, batch)
 }
 
 func (c *ControlPlane) cancelScheduledEvent(w http.ResponseWriter, r *http.Request) {
@@ -335,6 +373,10 @@ func writeStoreError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusBadRequest, "FAULT_INVALID", err.Error())
 	case errors.Is(err, store.ErrSchedulerNotFound):
 		writeError(w, http.StatusNotFound, "SCHEDULE_NOT_FOUND", err.Error())
+	case errors.Is(err, store.ErrSchedulerEmpty):
+		writeError(w, http.StatusNotFound, "SCHEDULER_EMPTY", err.Error())
+	case errors.Is(err, store.ErrSchedulerCursor):
+		writeError(w, http.StatusBadRequest, "SCHEDULER_CURSOR_INVALID", err.Error())
 	case errors.Is(err, store.ErrSchedulerConflict):
 		writeError(w, http.StatusConflict, "SCHEDULE_CONFLICT", err.Error())
 	case errors.Is(err, store.ErrSchedulerInvalid):

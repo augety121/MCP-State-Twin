@@ -24,8 +24,11 @@ func TestDefaultProfileDigestIsStableAndBindsSemanticLimits(t *testing.T) {
 	if profile.MaxCassetteBytes != 0 {
 		t.Fatal("disabled cassette feature must use zero, not an accidental unlimited value")
 	}
-	if profile.MaxScheduledEvents != 1024 || profile.MaxScheduledDelivery != 256 {
+	if profile.MaxScheduledEvents != 1024 || profile.MaxScheduledDelivery != 256 || profile.MaxScheduledAtInstant != 256 {
 		t.Fatal("enabled scheduler limits are not bound into the resource profile")
+	}
+	if profile.MaxSchedulerPageSize != 256 || profile.DefaultSchedulerPage != 100 || profile.MaxSchedulerCursor != 2048 {
+		t.Fatal("scheduler inspection limits are not bound into the resource profile")
 	}
 	if profile.MaxEntropyStreams != 64 || profile.MaxEntropyBytes != 32 {
 		t.Fatal("enabled entropy limits are not bound into the resource profile")

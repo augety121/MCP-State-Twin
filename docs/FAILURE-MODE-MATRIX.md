@@ -184,13 +184,18 @@ implemented the corresponding feature.
 | F-162 | Entropy | failed transition consumes a stream counter and changes replay | P0 | counter lives in cloned canonical state and commits only with the transition; rollback test |
 | F-163 | Entropy | synthetic deterministic bytes are used as real credentials/security entropy | P0 | explicit public-seed/non-cryptographic contract and no secret-generation API |
 | F-164 | Scheduler | equal-time events use map/DB/goroutine order | P0 | total `(dueAt, priority DESC, creationSequence, id)` order with executable test |
-| F-165 | Scheduler | an oversized due batch delivers a prefix and leaves ambiguous state | P0 | 256-delivery preflight; whole clock/queue/head transaction rolls back at 257 |
+| F-165 | Scheduler | an oversized ordinary due batch delivers a prefix and leaves ambiguous state | P0 | ordinary advance retains 256-delivery preflight and whole-operation rollback; explicit advance-next is a separately specified operation |
 | F-166 | Scheduler | canceled or delivered signal fires again | P0 | terminal lifecycle states and cancellation/delivery exclusion tests |
 | F-167 | Scheduler isolation | Agent discovers event/clock controls through MCP | P0 | authenticated private routes only and negative `tools/list` assertions |
 | F-168 | Snapshot | fork omits entropy counter or scheduler queue state | P0 | both are canonical branch state; fork digest/status equality and isolation tests |
 | F-169 | Product trust | opaque signal delivery is advertised as tool execution or Agent wakeup | P0 | claim registry/README non-claims; scheduled effects remain blocked |
 | F-170 | Scheduler storage | terminal event retention exhausts branch capacity | P1 | 1,024 retained-event fail-closed bound; retention/GC explicitly unsupported |
 | F-171 | Deterministic state | malformed hidden scheduler lifecycle or exhausted entropy counter is silently normalized | P0 | unified state validation and explicit no-wrap/no-repair tests |
+| F-172 | Scheduler ordering | RFC3339Nano strings are compared lexically and place fractional instants before an earlier whole second | P0 | parse canonical UTC timestamps before priority/sequence/ID tie-breaks; sub-second regression test |
+| F-173 | Scheduler liveness | more than one delivery batch is admitted at one instant and no smaller ordinary clock step can progress | P0 | 256-pending per-instant transactional admission plus bounded legacy advance-next drain |
+| F-174 | Scheduler inspection | queue mutates between pages and client combines two inconsistent snapshots | P1 | cursor binds branch, filter, full order tuple and scheduler digest; mutation returns conflict |
+| F-175 | Scheduler resources | list route materializes and returns the full retained queue by default | P1 | default 100 and maximum 256 page size with bounded cursor input |
+| F-176 | Scheduler retry | client retries a committed advance-next and delivers the next batch believing it retried the first | P0 | expected-head CAS; stale retry conflicts and each successful batch is an audited head transition |
 
 ## Release interpretation
 

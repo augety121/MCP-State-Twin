@@ -182,3 +182,203 @@ func TestSchedulerRejectsMalformedPersistedLifecycleOnRead(t *testing.T) {
 		t.Fatalf("malformed persisted scheduler read error = %v", err)
 	}
 }
+
+func TestSchedulerUsesTemporalRatherThanLexicalRFC3339Order(t *testing.T) {
+	state := world.New()
+	scheduler := state.EnsureScheduler()
+	scheduler.NextCreationSequence = 2
+	scheduler.Events["fractional"] = world.ScheduledEvent{
+		ID: "fractional", DueAt: "2026-08-01T01:00:00.1Z", Priority: 0,
+		CreationSequence: 1, Kind: SchedulerKindSignal, Payload: map[string]any{}, Status: SchedulerPending,
+	}
+	scheduler.Events["whole"] = world.ScheduledEvent{
+		ID: "whole", DueAt: "2026-08-01T01:00:00Z", Priority: 0,
+		CreationSequence: 2, Kind: SchedulerKindSignal, Payload: map[string]any{}, Status: SchedulerPending,
+	}
+	events := scheduledEvents(state)
+	if events[0].ID != "whole" || events[1].ID != "fractional" {
+		t.Fatalf("temporal order = %q, %q", events[0].ID, events[1].ID)
+	}
+}
+
+func TestSchedulerPerInstantAdmissionPreventsNewUndrainableQueues(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	dueAt := clock.Add(time.Hour).Format(time.RFC3339Nano)
+	initial := scheduledSignalState(limits.MaxScheduledAtInstant-1, dueAt)
+	if err := s.InitializeBranch(ctx, "main", "sha256:spec", initial, clock); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ScheduleEvent(ctx, ScheduleRequest{
+		ID: "at-limit", BranchID: "main", DueAt: dueAt, Kind: SchedulerKindSignal, Payload: map[string]any{},
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ScheduleEvent(ctx, ScheduleRequest{
+		ID: "over-limit", BranchID: "main", DueAt: dueAt, Kind: SchedulerKindSignal, Payload: map[string]any{},
+	}, nil); !errors.Is(err, ErrResourceLimit) {
+		t.Fatalf("overfull instant admission error = %v", err)
+	}
+	if _, err := s.CancelScheduledEvent(ctx, "main", "event-000", nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ScheduleEvent(ctx, ScheduleRequest{
+		ID: "replacement", BranchID: "main", DueAt: dueAt, Kind: SchedulerKindSignal, Payload: map[string]any{},
+	}, nil); err != nil {
+		t.Fatalf("cancellation did not free pending-instant capacity: %v", err)
+	}
+}
+
+func TestSchedulerPerInstantAdmissionSerializesConcurrentFinalSlot(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	dueAt := clock.Add(time.Hour).Format(time.RFC3339Nano)
+	if err := s.InitializeBranch(ctx, "main", "sha256:spec", scheduledSignalState(limits.MaxScheduledAtInstant-1, dueAt), clock); err != nil {
+		t.Fatal(err)
+	}
+	start := make(chan struct{})
+	results := make(chan error, 2)
+	for _, id := range []string{"concurrent-a", "concurrent-b"} {
+		go func(eventID string) {
+			<-start
+			_, err := s.ScheduleEvent(ctx, ScheduleRequest{
+				ID: eventID, BranchID: "main", DueAt: dueAt, Kind: SchedulerKindSignal, Payload: map[string]any{},
+			}, nil)
+			results <- err
+		}(id)
+	}
+	close(start)
+	successes := 0
+	resourceFailures := 0
+	for range 2 {
+		err := <-results
+		switch {
+		case err == nil:
+			successes++
+		case errors.Is(err, ErrResourceLimit):
+			resourceFailures++
+		default:
+			t.Fatalf("unexpected concurrent admission error = %v", err)
+		}
+	}
+	if successes != 1 || resourceFailures != 1 {
+		t.Fatalf("concurrent results success=%d resource=%d", successes, resourceFailures)
+	}
+}
+
+func TestAdvanceClockToNextDrainsLegacyOverfullInstantDeterministically(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	dueAt := clock.Add(time.Hour).Format(time.RFC3339Nano)
+	if err := s.InitializeBranch(ctx, "main", "sha256:spec", scheduledSignalState(limits.MaxScheduledDelivery+1, dueAt), clock); err != nil {
+		t.Fatal(err)
+	}
+	preview, err := s.NextDueBatch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if preview.PendingAtDueAt != limits.MaxScheduledDelivery+1 || preview.BatchSize != limits.MaxScheduledDelivery || !preview.RequiresDrain {
+		t.Fatalf("next due preview = %#v", preview)
+	}
+	first, err := s.AdvanceClockToNext(ctx, "main", int64Pointer(0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first.Delivered) != limits.MaxScheduledDelivery || !first.ClockAdvanced || !first.MoreAtInstant || first.NextDueAt != dueAt {
+		t.Fatalf("first scheduler step = %#v", first)
+	}
+	for index, event := range first.Delivered {
+		want := fmt.Sprintf("event-%03d", index)
+		if event.ID != want {
+			t.Fatalf("delivered[%d] = %s, want %s", index, event.ID, want)
+		}
+	}
+	second, err := s.AdvanceClockToNext(ctx, "main", int64Pointer(1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(second.Delivered) != 1 || second.Delivered[0].ID != "event-256" || second.ClockAdvanced || second.MoreAtInstant || second.NextDueAt != "" {
+		t.Fatalf("second scheduler step = %#v", second)
+	}
+	if _, err := s.AdvanceClockToNext(ctx, "main", int64Pointer(2)); !errors.Is(err, ErrSchedulerEmpty) {
+		t.Fatalf("empty scheduler step error = %v", err)
+	}
+	branch, err := s.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.HeadVersion != 2 || branch.Clock.Format(time.RFC3339Nano) != dueAt {
+		t.Fatalf("branch after drain = %#v", branch)
+	}
+}
+
+func TestSchedulerPaginationIsDigestBoundAndFiltered(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	if err := s.InitializeBranch(ctx, "main", "sha256:spec", world.New(), clock); err != nil {
+		t.Fatal(err)
+	}
+	for index := 0; index < 4; index++ {
+		if _, err := s.ScheduleEvent(ctx, ScheduleRequest{
+			ID: fmt.Sprintf("page-%d", index), BranchID: "main",
+			DueAt: clock.Add(time.Duration(index+1) * time.Hour).Format(time.RFC3339Nano),
+			Kind:  SchedulerKindSignal, Payload: map[string]any{},
+		}, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := s.CancelScheduledEvent(ctx, "main", "page-1", nil); err != nil {
+		t.Fatal(err)
+	}
+	first, err := s.ScheduledEventPage(ctx, ScheduledEventQuery{BranchID: "main", Status: SchedulerPending, Limit: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first.Events) != 2 || first.Events[0].ID != "page-0" || first.Events[1].ID != "page-2" || first.NextCursor == "" || first.Digest != first.SchedulerDigest {
+		t.Fatalf("first scheduler page = %#v", first)
+	}
+	second, err := s.ScheduledEventPage(ctx, ScheduledEventQuery{BranchID: "main", Status: SchedulerPending, Limit: 2, Cursor: first.NextCursor})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(second.Events) != 1 || second.Events[0].ID != "page-3" || second.NextCursor != "" {
+		t.Fatalf("second scheduler page = %#v", second)
+	}
+	if _, err := s.ScheduleEvent(ctx, ScheduleRequest{
+		ID: "page-4", BranchID: "main", DueAt: clock.Add(5 * time.Hour).Format(time.RFC3339Nano),
+		Kind: SchedulerKindSignal, Payload: map[string]any{},
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ScheduledEventPage(ctx, ScheduledEventQuery{BranchID: "main", Status: SchedulerPending, Limit: 2, Cursor: first.NextCursor}); !errors.Is(err, ErrSchedulerConflict) {
+		t.Fatalf("stale cursor error = %v", err)
+	}
+	if _, err := s.ScheduledEventPage(ctx, ScheduledEventQuery{BranchID: "main", Limit: 2, Cursor: "not-base64*"}); !errors.Is(err, ErrSchedulerCursor) {
+		t.Fatalf("malformed cursor error = %v", err)
+	}
+	empty, err := s.ScheduledEventPage(ctx, ScheduledEventQuery{BranchID: "main", Status: SchedulerDelivered, Limit: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if empty.Events == nil || len(empty.Events) != 0 {
+		t.Fatalf("empty page must encode an array: %#v", empty.Events)
+	}
+}
+
+func scheduledSignalState(count int, dueAt string) *world.State {
+	state := world.New()
+	scheduler := state.EnsureScheduler()
+	for index := 0; index < count; index++ {
+		id := fmt.Sprintf("event-%03d", index)
+		scheduler.NextCreationSequence++
+		scheduler.Events[id] = world.ScheduledEvent{
+			ID: id, DueAt: dueAt, Priority: 0, CreationSequence: scheduler.NextCreationSequence,
+			Kind: SchedulerKindSignal, Payload: map[string]any{}, Status: SchedulerPending,
+		}
+	}
+	return state
+}

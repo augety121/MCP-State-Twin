@@ -1099,6 +1099,102 @@ WHERE id = ? AND head_version = ?`, target.Format(time.RFC3339Nano), stateJSON, 
 	return &ClockAdvanceResult{BranchID: branchID, Clock: target.Format(time.RFC3339Nano), HeadVersion: branch.HeadVersion + 1, Delivered: delivered, SchedulerDigest: digest}, nil
 }
 
+// AdvanceClockToNext delivers a deterministic, bounded prefix at the earliest
+// pending world instant. Unlike AdvanceClock, it may keep the clock unchanged
+// while draining an overfull legacy instant. The operation is private control
+// plane state and never appears in the Agent MCP tool surface.
+func (s *Store) AdvanceClockToNext(ctx context.Context, branchID string, expectedHeadVersion *int64) (*SchedulerStepResult, error) {
+	if err := validateID("branch id", branchID); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrSchedulerInvalid, err)
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin scheduler step transaction: %w", err)
+	}
+	defer tx.Rollback()
+	branch, err := scanBranch(branchID, tx.QueryRowContext(ctx, `SELECT spec_digest, state_json, state_digest, clock, call_count, head_version FROM branches WHERE id = ?`, branchID))
+	if err != nil {
+		return nil, err
+	}
+	if expectedHeadVersion != nil && *expectedHeadVersion != branch.HeadVersion {
+		return nil, fmt.Errorf("%w: branch %s expected head %d, current %d", ErrBranchConflict, branchID, *expectedHeadVersion, branch.HeadVersion)
+	}
+	pending := pendingScheduledEvents(branch.State)
+	if len(pending) == 0 {
+		return nil, ErrSchedulerEmpty
+	}
+	dueAt, err := pending[0].DueTime()
+	if err != nil {
+		return nil, fmt.Errorf("%w: event %s has invalid dueAt", ErrSchedulerInvalid, pending[0].ID)
+	}
+	target := branch.Clock
+	clockAdvanced := dueAt.After(branch.Clock)
+	if clockAdvanced {
+		target = dueAt
+		if target.Sub(branch.Clock) > MaxClockAdvance {
+			return nil, fmt.Errorf("%w: maximum advance is %s", ErrClockLimit, MaxClockAdvance)
+		}
+	}
+	batchEnd := 0
+	for batchEnd < len(pending) && pending[batchEnd].DueAt == pending[0].DueAt && batchEnd < limits.MaxScheduledDelivery {
+		batchEnd++
+	}
+	delivered := append([]world.ScheduledEvent(nil), pending[:batchEnd]...)
+	for index := range delivered {
+		event := delivered[index]
+		event.Status = SchedulerDelivered
+		event.DeliveredAt = event.DueAt
+		branch.State.Scheduler.Events[event.ID] = event
+		delivered[index] = event
+	}
+	if err := branch.State.ValidateBudget(); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrResourceLimit, err)
+	}
+	stateJSON, err := canonical.JSON(branch.State)
+	if err != nil {
+		return nil, fmt.Errorf("encode scheduler step state: %w", err)
+	}
+	afterDigest, err := canonical.Digest(branch.State)
+	if err != nil {
+		return nil, fmt.Errorf("digest scheduler step state: %w", err)
+	}
+	result, err := tx.ExecContext(ctx, `
+UPDATE branches SET clock = ?, state_json = ?, state_digest = ?, head_version = head_version + 1
+WHERE id = ? AND head_version = ?`, target.UTC().Format(time.RFC3339Nano), stateJSON, afterDigest, branchID, branch.HeadVersion)
+	if err != nil {
+		return nil, fmt.Errorf("persist scheduler step: %w", err)
+	}
+	updated, err := result.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("read scheduler step update count: %w", err)
+	}
+	if updated != 1 {
+		return nil, fmt.Errorf("%w: branch %s expected head %d", ErrBranchConflict, branchID, branch.HeadVersion)
+	}
+	if err := appendControlAudit(ctx, tx, "scheduler.advance.next", branchID, "", branch.StateDigest, afterDigest); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit scheduler step transaction: %w", err)
+	}
+	remaining := pendingScheduledEvents(branch.State)
+	nextDueAt := ""
+	moreAtInstant := false
+	if len(remaining) > 0 {
+		nextDueAt = remaining[0].DueAt
+		moreAtInstant = nextDueAt == pending[0].DueAt
+	}
+	digest, err := schedulerDigest(branch.State)
+	if err != nil {
+		return nil, err
+	}
+	return &SchedulerStepResult{
+		BranchID: branchID, Clock: target.UTC().Format(time.RFC3339Nano), ClockAdvanced: clockAdvanced,
+		HeadVersion: branch.HeadVersion + 1, Delivered: delivered, MoreAtInstant: moreAtInstant,
+		NextDueAt: nextDueAt, SchedulerDigest: digest,
+	}, nil
+}
+
 type sqlExecer interface {
 	ExecContext(context.Context, string, ...any) (sql.Result, error)
 }

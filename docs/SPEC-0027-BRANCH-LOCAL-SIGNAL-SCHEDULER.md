@@ -96,7 +96,8 @@ production traces and personal data MUST NOT be submitted.
 
 ## 7. Limits
 
-`local-preview-v5` binds at most 1,024 retained events per branch. Pending,
+The current `local-preview-v6` retains the 1,024-event branch bound introduced
+by `local-preview-v5`. Pending,
 delivered and canceled events all count because automatic retention/GC is not
 implemented. Payload is bounded by the normal 1 MiB input limit and the final
 branch state remains bounded by the 16 MiB state limit.

@@ -30,11 +30,13 @@ change state digest.
 
 ## 3. Bounded processing
 
-At most 256 events may be delivered by one advance under
-`local-preview-v5`. If the due set is larger, the request returns
-`RESOURCE_LIMIT`; the client must use smaller deterministic time steps or
-reduce the retained queue. The runtime MUST NOT deliver a prefix, silently drop
-events or defer an arbitrary suffix.
+At most 256 events may be delivered by one advance under the current
+`local-preview-v6` (the bound was introduced by `local-preview-v5`). If the due set is larger, the request returns
+`RESOURCE_LIMIT`. The runtime MUST NOT deliver a prefix, silently drop events
+or defer an arbitrary suffix. Smaller time steps do not solve an overfull
+equal-time set; SPEC-0029 prevents new instances and SPEC-0030 provides an
+explicit bounded recovery operation without changing this endpoint's
+all-or-nothing contract.
 
 This is a delivery batch bound, not a throughput promise. The operational
 ExecutionProfile independently limits local CPU/heap/HTTP concurrency.

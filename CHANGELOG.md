@@ -43,6 +43,11 @@ alpha prerelease but no stable release yet.
   cancellation and atomic bounded due delivery;
 - `local-preview-v5` semantic limits for entropy streams, draw bytes, retained
   scheduler events and deliveries per clock advance;
+- ADR/SPEC-0029 through 0031: parsed UTC scheduler ordering, 256-pending
+  per-instant admission, bounded next-due preview/drain, and digest-bound
+  filtered pagination;
+- `local-preview-v6` semantic limits for pending events per instant, scheduler
+  inspection pages and cursor bytes;
 
 ### Changed
 

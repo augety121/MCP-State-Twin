@@ -56,7 +56,7 @@
 - durable Episode Journal schema v2(v1 fixture migration, kill-point recovery, immutable request, Evidence consistency)
 - fenced remote Episode coordinator / hermetic worker(lease, heartbeat, fencing, bounded retry, cooperative cancellation, `COMMIT_UNKNOWN`)
 - OpenAI Responses / Anthropic Messages provider-smoke harness와 mock contract tests(dated live report는 아직 없음)
-- bounded `sha256-ctr-v1` modeled entropy와 private `signal-queue-v1`(snapshot/fork identity, deterministic ordering, atomic due delivery; Agent wakeup은 아님)
+- bounded `sha256-ctr-v1` modeled entropy와 private `signal-queue-v1`(snapshot/fork identity, parsed UTC ordering, per-instant admission, atomic/next-due delivery, digest-bound pagination; Agent wakeup은 아님)
 
 ### 아직 구현되지 않았거나 검증되지 않은 항목
 

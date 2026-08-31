@@ -18,11 +18,12 @@
 
 ## Current accepted progress
 
-ADR-0026 through ADR-0028 implement a bounded deterministic entropy profile,
-branch-local signal scheduler, total equal-time ordering, cancellation and
-atomic due-signal delivery. These signals do not execute scheduled tools or
-Agents. Full cascading effects, retry/dead-letter semantics and remaining
-fault classes stay open.
+ADR-0026 through ADR-0031 implement a bounded deterministic entropy profile,
+branch-local signal scheduler, parsed-time total ordering, equal-instant
+admission, cancellation, atomic due-signal delivery, explicit next-due legacy
+drain and digest-bound inspection pages. These signals do not execute scheduled
+tools or Agents. Full cascading effects, retry/dead-letter semantics and
+remaining fault classes stay open.
 
 ADR-0022's operational ExecutionProfile is separate from EnvironmentIdentity.
 It may change wall-clock latency but MUST NOT change modeled outcomes. Any

@@ -1,8 +1,8 @@
 # SPEC-0015 — Resource Governance (Accepted Local Profile)
 
-- **Status:** Accepted subset via ADR-0013; amendments via ADR-0018 through ADR-0020 and ADR-0026 through ADR-0028
+- **Status:** Accepted subset via ADR-0013; amendments via ADR-0018 through ADR-0020 and ADR-0026 through ADR-0031
 - **Verification status:** executable unit, runtime, storage, diff, report, bundle, Journal, attempt, lease, entropy and scheduler bound tests
-- **Profile:** `statetwin.dev/resource-profile/v1alpha1`, `local-preview-v5`
+- **Profile:** `statetwin.dev/resource-profile/v1alpha1`, `local-preview-v6`
 
 ## 1. Typed profile
 
@@ -38,6 +38,9 @@ Limits cover:
 | entropy streams / bytes per draw | 64 / 32 |
 | retained scheduler events per branch | 1,024 |
 | due deliveries per clock advance | 256 |
+| pending scheduler events per instant | 256 |
+| scheduler page default / maximum | 100 / 256 |
+| scheduler cursor bytes | 2,048 |
 
 Cassette and future-task limits are zero because those features are not
 implemented in this release profile. Bundle limits are enabled
@@ -45,7 +48,7 @@ only for the deterministic local preview accepted by ADR-0018. The Episode
 record bound applies only to the independent Journal accepted by ADR-0019.
 Attempt and lease bounds apply only to ADR-0020's single-coordinator preview;
 they are not tenant quotas or a distributed fairness policy. Entropy and
-scheduler bounds apply only to ADR-0026 through ADR-0028's modeled entropy and
+scheduler bounds apply only to ADR-0026 through ADR-0031's modeled entropy and
 opaque private signal queue; they do not enable scheduled tool/Agent effects.
 
 ## 2. Fail-closed semantics
@@ -89,6 +92,6 @@ listener before command dispatch. The profile is inspectable through
 `statetwin execution-profile`. These controls do not form an OS/RSS hard quota
 and do not cover child or future native processes.
 
-This `local-v2` operational profile does not change `local-preview-v5` or its
+This `local-v2` operational profile does not change `local-preview-v6` or its
 semantic environment digest. Exact CPU percentages, memory isolation, durable
 queues, remote fairness and empirical performance budgets remain deferred.

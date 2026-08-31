@@ -26,6 +26,9 @@
 | DEC-020 | Modeled entropy uses explicit public seed plus `sha256-ctr-v1`; never host RNG or security entropy | resolved | ADR-0026 / SPEC-0026 |
 | DEC-021 | Virtual scheduler is a bounded branch-local private signal queue, not an Agent/workflow scheduler | resolved | ADR-0027 / SPEC-0027 |
 | DEC-022 | Clock advance and all bounded due-signal lifecycle changes commit atomically; over-budget batches fail whole | resolved | ADR-0028 / SPEC-0028 |
+| DEC-023 | Scheduler order uses parsed UTC time; new equal-time pending sets are capped at one delivery batch | resolved | ADR-0029 / SPEC-0029 |
+| DEC-024 | Ordinary clock jumps remain atomic; an explicit advance-next operation provides bounded legacy drain | resolved | ADR-0030 / SPEC-0030 |
+| DEC-025 | Scheduler inspection uses bounded digest-bound cursor pages | resolved | ADR-0031 / SPEC-0031 |
 
 Open decisions are roadmap work. They MUST NOT be silently resolved by an
 implementation-only change.

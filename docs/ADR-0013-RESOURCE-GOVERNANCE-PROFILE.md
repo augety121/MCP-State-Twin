@@ -90,3 +90,11 @@ per branch and 256 due-signal deliveries per clock advance. These are semantic
 bounds and change Scenario environment identity. They do not enable scheduled
 tool effects, Agent wakeup, recurring timers, retention/GC or a distributed
 queue.
+
+## Amendment: ADR-0029 through ADR-0031 (2026-09-01)
+
+The deterministic-world profile advances to `local-preview-v6`. It adds a
+256-pending-event per-instant admission bound, scheduler inspection pages of
+100 by default and 256 at most, and a 2,048-byte cursor-input bound. Parsed-time
+ordering and explicit bounded next-due drain close scheduler correctness and
+liveness gaps; they do not authorize scheduled business effects.

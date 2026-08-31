@@ -76,10 +76,11 @@ backpressure, and authenticated redacted health/readiness.
 The Phase 2 deterministic-world batch is defined by
 [`SPEC-0026`](SPEC-0026-DETERMINISTIC-ENTROPY-STREAMS.md),
 [`SPEC-0027`](SPEC-0027-BRANCH-LOCAL-SIGNAL-SCHEDULER.md), and
-[`SPEC-0028`](SPEC-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md), with accepted
-ADR-0026 through ADR-0028. It implements modeled entropy and private opaque
-future signals, not cryptographic randomness, scheduled Agent execution or a
-distributed workflow queue.
+[`SPEC-0028`](SPEC-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md) through
+[`SPEC-0031`](SPEC-0031-DIGEST-BOUND-SCHEDULER-PAGINATION.md), with accepted
+ADR-0026 through ADR-0031. It implements modeled entropy, private opaque future
+signals, bounded progress and consistent inspection, not cryptographic
+randomness, scheduled Agent execution or a distributed workflow queue.
 
 # MCP State Twin Lifecycle SPEC Pack
 

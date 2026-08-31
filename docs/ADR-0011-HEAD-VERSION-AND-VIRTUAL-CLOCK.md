@@ -26,7 +26,7 @@ and fault injection remain separate proposals and are not implied by this ADR.
 
 ## Later amendments
 
-ADR-0026 through ADR-0028 separately accept deterministic modeled entropy, a
+ADR-0026 through ADR-0031 separately accept deterministic modeled entropy, a
 branch-local opaque signal queue and atomic bounded due delivery. They do not
 change this ADR's private-control or monotonic-head rules and do not add
 scheduled tool/Agent execution.

@@ -23,7 +23,7 @@ features into implementation claims; `IMPLEMENTATION-STATUS.md` and
 
 ## Phase 0 — specification and claim consolidation
 
-Current progress: ADR-0021 through ADR-0028, SPEC-0019 through SPEC-0028,
+Current progress: ADR-0021 through ADR-0031, SPEC-0019 through SPEC-0031,
 unified traceability, claim, compatibility and decision ledgers, phase
 contracts, conservative local ExecutionProfile, HTTP admission, and private
 health/readiness exist. Exit still requires final link/translation review and
