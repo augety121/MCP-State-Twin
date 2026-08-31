@@ -25,6 +25,30 @@ func TestHardenedHTTPServerDefaults(t *testing.T) {
 	}
 }
 
+func TestParseGlobalExecutionArgs(t *testing.T) {
+	options, remaining, err := parseGlobalExecutionArgs([]string{
+		"--execution-mode", "balanced", "--max-procs=2", "scenario", "--spec", "twin.yaml",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if options.mode != "balanced" || options.maxProcs != "2" {
+		t.Fatalf("unexpected options: %#v", options)
+	}
+	if strings.Join(remaining, " ") != "scenario --spec twin.yaml" {
+		t.Fatalf("unexpected remaining arguments: %q", remaining)
+	}
+	for _, args := range [][]string{
+		{"--execution-mode"},
+		{"--max-procs="},
+		{"--execution-mode", "quiet", "--execution-mode", "balanced", "version"},
+	} {
+		if _, _, err := parseGlobalExecutionArgs(args); err == nil {
+			t.Fatalf("expected invalid root options to fail: %q", args)
+		}
+	}
+}
+
 func TestRunCompatibilityRequiresValidatedReport(t *testing.T) {
 	if err := runCompatibility(nil); err == nil || !strings.Contains(err.Error(), "validate subcommand") {
 		t.Fatalf("missing compatibility subcommand error = %v", err)

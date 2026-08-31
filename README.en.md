@@ -245,7 +245,8 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 | HostCompatibilityReport admission | ✅ | Strict schema, bounded evidence, and credential/private-key/email pattern rejection; not a live-provider result |
 | OpenAI / Anthropic provider smoke harness | 🧪 contract tested | OpenAI background/retrieve/cancel and Anthropic MCP connector mock contract tests; no dated live report yet |
 | Deterministic fault injection / virtual-clock advancement | 🧪 Partial | Private clock and two fault transaction phases implemented; remaining scheduler/fault semantics are not |
-| Versioned resource governance | 🧪 Partial | `statetwin limits`, environment digest, and fail-closed local budgets; OS/remote quotas are not implemented |
+| Versioned semantic resource governance | 🧪 Partial | `statetwin limits`, environment digest, and fail-closed local budgets; OS/remote quotas are not implemented |
+| Conservative local CPU governor | ✅ soft boundary | Defaults to `quiet` / `GOMAXPROCS=1`; supports `balanced`, `throughput`, and `--max-procs`; not an OS CPU/thermal quota and does not cover child processes |
 | External-effect retry / distributed HA | ⏳ | Ambiguous external commits stop at `COMMIT_UNKNOWN`; no multi-coordinator, replication, manual reconciliation, or external exactly-once claim |
 | HostProfile / signed bundles | ⏳ | No supply-chain-authenticity or host-compatibility claim |
 | Recorder / cassette replay / trace redaction | ⏳ | Not implemented |
@@ -279,6 +280,7 @@ Record/replay is planned as the `L0` fidelity mode. It is complementary rather t
 - OpenAI/Anthropic smoke harness with current official API contract shapes and mock-server positive/negative tests; persisted reports contain digests, capabilities, and counts rather than tokens, raw responses, or prompts;
 - bounded branch-local fault plans for `before-validation` and `after-commit-before-response`, with a stable plan digest, transactional counters, and fault-event audit.
 - a versioned resource profile: input/output/state, JSON depth/member, effect/query, diff/report, and branch/snapshot limits fail closed as `RESOURCE_LIMIT` and bind to Scenario environment identity.
+- a separate versioned ExecutionProfile applied before every command, defaulting to a one-slot `quiet` Go scheduler policy without claiming an OS hard quota.
 - storage compatibility evidence for v1/v2/v3 forward migration, the public alpha schema-v4 fixture, and two migration pre-commit process-exit kill-points.
 - strict HostCompatibilityReport admission for immutable revisions/digests, profile-specific checks, remote deployment binding, bounded trials, and credential/private-key/email pattern rejection.
 
@@ -704,6 +706,8 @@ Design references:
 ## CLI
 
 ```text
+statetwin --execution-mode quiet COMMAND
+statetwin --execution-mode balanced --max-procs 2 COMMAND
 statetwin validate   validate structure, CEL, and print the spec digest
 statetwin init       initialize a branch and optional immutable snapshot
 statetwin call       execute one tool directly against a branch
@@ -714,6 +718,7 @@ statetwin diff       compare two branch states
 statetwin scenario   execute a bounded scripted scenario and assertions
 statetwin protocols   print pinned MCP wire-evidence profiles
 statetwin limits      print the versioned resource profile and digest
+statetwin execution-profile  print the applied operational execution policy
 statetwin compatibility validate --report report.yaml
 statetwin bundle build --manifest bundle.yaml --out twin.stb
 statetwin bundle verify --bundle twin.stb
@@ -726,6 +731,13 @@ statetwin version    print the development version
 
 CLI output is structured JSON except for server logs and fatal diagnostics.
 
+The default execution mode is `quiet`, limiting simultaneous Go execution to
+one logical slot so an ordinary local run does not occupy every core. The
+precedence is root CLI options, then `STATETWIN_EXECUTION_MODE` /
+`STATETWIN_MAX_PROCS`, then `quiet`. This is a portable soft governor, not an
+exact CPU percentage, thermal, or power guarantee; child processes and future
+native threads are outside its boundary. See [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md).
+
 ---
 
 ## Test and build
@@ -733,10 +745,14 @@ CLI output is structured JSON except for server logs and fatal diagnostics.
 ```bash
 gofmt -w .
 go vet ./...
-go test ./...
-go test -race ./...
+GOMAXPROCS=1 go test -p 1 ./...
+GOMAXPROCS=1 go test -p 1 -race ./...
 go build ./cmd/statetwin
 ```
+
+In PowerShell, a quiet validation pass can use
+`$env:GOMAXPROCS='1'; go test -p 1 ./...`. The external Go test driver is not
+governed by the `statetwin` process and therefore needs its own explicit limit.
 
 Environment and CI status can change as development continues. Prefer CI, [Implementation Status](docs/IMPLEMENTATION-STATUS.md), and the corresponding executable tests over stale prose when evaluating current evidence.
 
@@ -772,6 +788,7 @@ For a first read, the suggested path is:
 - [SPEC-0007 — Virtual Time Boundary](docs/SPEC-0007-VIRTUAL-TIME-ENTROPY-SCHEDULER.md)
 - [SPEC-0008 — Deterministic Fault Preview](docs/SPEC-0008-DETERMINISTIC-FAULTS.md)
 - [SPEC-0015 — Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md)
+- [SPEC-0022 — Local CPU and Execution Governance](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md)
 - [SPEC-0012 — Storage/Concurrency/Recovery](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md)
 - [SPEC-0017 — Durable Local Episode Journal](docs/SPEC-0017-EPISODE-JOURNAL.md)
 
@@ -807,6 +824,7 @@ For a first read, the suggested path is:
 - [ADR-0019](docs/ADR-0019-DURABLE-LOCAL-EPISODE-JOURNAL.md) — durable local Episode Journal, idempotent terminal reads, and incomplete boundary
 - [ADR-0020](docs/ADR-0020-REMOTE-EPISODE-EXECUTION.md) — fenced remote Episodes, `COMMIT_UNKNOWN`, and bounded terminal Evidence semantics
 - [ADR-0021](docs/ADR-0021-UNIFIED-LIFECYCLE-AND-RELEASE-BOUNDARIES.md) — unified authority, claim states, and v0.1–v1.0 release boundaries
+- [ADR-0022](docs/ADR-0022-LOCAL-EXECUTION-GOVERNANCE.md) — conservative local Go execution policy and hard-quota non-claims
 
 ### Unified lifecycle and evidence
 
@@ -814,7 +832,7 @@ For a first read, the suggested path is:
 - [Requirement Traceability](docs/REQUIREMENT-TRACEABILITY.md) — invariant-to-test/evidence mapping
 - [Claim Registry](docs/CLAIM-REGISTRY.md) — exact public-claim states and boundaries
 - [Compatibility Matrix](docs/COMPATIBILITY-MATRIX.md) — separate API and product profiles
-- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md)
+- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md) / [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md)
 
 ### Evidence / research
 

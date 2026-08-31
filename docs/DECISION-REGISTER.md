@@ -19,6 +19,7 @@
 | DEC-013 | L2 admission coverage thresholds | open | proposed SPEC-0011 / Phase 5 |
 | DEC-014 | TwinBundle signing and publisher identity | open | Phase 7 |
 | DEC-015 | Supported v1.0 platform and deprecation windows | open | Phase 7 |
+| DEC-016 | Local processes default to a one-slot soft Go runtime governor; OS hard quotas remain a separate capability | resolved | ADR-0022 / SPEC-0022 |
 
 Open decisions are roadmap work. They MUST NOT be silently resolved by an
 implementation-only change.

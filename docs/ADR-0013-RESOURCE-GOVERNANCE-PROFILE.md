@@ -73,3 +73,10 @@ Episode task at 16 attempts, and caps a coordinator lease at 3,600 seconds.
 These bounds cover the accepted single-coordinator preview only. They do not
 establish distributed quotas, tenant fairness, retention, HA, or external
 effect retry safety.
+
+## Related operational decision: ADR-0022 (2026-08-31)
+
+ADR-0022 adds a separate `ExecutionProfile` with a default one-slot Go runtime
+policy. It is intentionally not folded into this semantic ResourceProfile:
+execution parallelism may affect latency, while modeled outputs and
+environment identity must remain unchanged. OS hard quotas remain a non-claim.

@@ -21,6 +21,7 @@ import (
 	"github.com/augety121/mcp-state-twin/internal/bundle"
 	"github.com/augety121/mcp-state-twin/internal/engine"
 	"github.com/augety121/mcp-state-twin/internal/episode"
+	"github.com/augety121/mcp-state-twin/internal/governor"
 	"github.com/augety121/mcp-state-twin/internal/hostcompat"
 	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/logging"
@@ -35,45 +36,63 @@ import (
 const maxFixtureBytes = 16 << 20
 
 func main() {
-	if len(os.Args) < 2 {
+	global, args, err := parseGlobalExecutionArgs(os.Args[1:])
+	if err != nil {
+		log.Printf("error: %s", logging.SafeError(err))
+		os.Exit(2)
+	}
+	profile, err := governor.Resolve(governor.Options{
+		CLIMode: global.mode, CLIMaxProcs: global.maxProcs,
+		EnvMode: os.Getenv("STATETWIN_EXECUTION_MODE"), EnvMaxProcs: os.Getenv("STATETWIN_MAX_PROCS"),
+	})
+	if err != nil {
+		log.Printf("error: %s", logging.SafeError(err))
+		os.Exit(2)
+	}
+	if _, err := governor.Apply(profile); err != nil {
+		log.Printf("error: %s", logging.SafeError(err))
+		os.Exit(2)
+	}
+	if len(args) < 1 {
 		usage()
 		os.Exit(2)
 	}
 	ctx := context.Background()
-	var err error
-	switch os.Args[1] {
+	switch args[0] {
 	case "validate":
-		err = runValidate(ctx, os.Args[2:])
+		err = runValidate(ctx, args[1:])
 	case "init":
-		err = runInit(ctx, os.Args[2:])
+		err = runInit(ctx, args[1:])
 	case "call":
-		err = runCall(ctx, os.Args[2:])
+		err = runCall(ctx, args[1:])
 	case "state":
-		err = runState(ctx, os.Args[2:])
+		err = runState(ctx, args[1:])
 	case "snapshot":
-		err = runSnapshot(ctx, os.Args[2:])
+		err = runSnapshot(ctx, args[1:])
 	case "fork":
-		err = runFork(ctx, os.Args[2:])
+		err = runFork(ctx, args[1:])
 	case "diff":
-		err = runDiff(ctx, os.Args[2:])
+		err = runDiff(ctx, args[1:])
 	case "scenario":
-		err = runScenario(ctx, os.Args[2:])
+		err = runScenario(ctx, args[1:])
 	case "serve":
-		err = runServe(os.Args[2:])
+		err = runServe(args[1:])
 	case "version":
 		fmt.Println(server.Version)
 	case "protocols":
 		err = printJSON(server.CurrentProtocolEvidence())
 	case "limits":
 		err = runLimits()
+	case "execution-profile":
+		err = printJSON(profile)
 	case "compatibility":
-		err = runCompatibility(os.Args[2:])
+		err = runCompatibility(args[1:])
 	case "bundle":
-		err = runBundle(os.Args[2:])
+		err = runBundle(args[1:])
 	case "episode":
-		err = runEpisode(ctx, os.Args[2:])
+		err = runEpisode(ctx, args[1:])
 	case "provider":
-		err = runProviderSmoke(ctx, os.Args[2:])
+		err = runProviderSmoke(ctx, args[1:])
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -91,6 +110,14 @@ func usage() {
 	fmt.Fprintln(os.Stderr, `statetwin - deterministic stateful MCP test worlds
 
 Usage:
+	statetwin [--execution-mode quiet|balanced|throughput] [--max-procs N] COMMAND
+
+Execution policy:
+  The default mode is quiet and limits the Go runtime to one logical CPU slot.
+  STATETWIN_EXECUTION_MODE and STATETWIN_MAX_PROCS provide environment defaults;
+  root command-line flags take precedence. This is not an OS hard CPU quota.
+
+Commands:
   statetwin validate --spec twin.yaml
   statetwin init --spec twin.yaml --fixture state.json --db twin.db --snapshot base
   statetwin call --spec twin.yaml --db twin.db --branch main --tool get_issue --input '{...}'
@@ -102,6 +129,7 @@ Usage:
   statetwin serve --spec twin.yaml --fixture state.json --db twin.db
   statetwin protocols
   statetwin limits
+  statetwin execution-profile
   statetwin compatibility validate --report report.yaml
   statetwin bundle build --manifest bundle.yaml --out twin.stb
   statetwin bundle verify --bundle twin.stb
@@ -116,6 +144,45 @@ Usage:
 
 Control-plane authentication is read from STATETWIN_CONTROL_TOKEN.
 Episode coordinator authentication is read from STATETWIN_COORDINATOR_TOKEN.`)
+}
+
+type globalExecutionOptions struct {
+	mode     string
+	maxProcs string
+}
+
+func parseGlobalExecutionArgs(args []string) (globalExecutionOptions, []string, error) {
+	var options globalExecutionOptions
+	for len(args) > 0 {
+		name, value, hasValue := strings.Cut(args[0], "=")
+		switch name {
+		case "--execution-mode", "--max-procs":
+			if !hasValue {
+				if len(args) < 2 {
+					return options, nil, fmt.Errorf("%s requires a value", name)
+				}
+				value, args = args[1], args[1:]
+			}
+			if strings.TrimSpace(value) == "" {
+				return options, nil, fmt.Errorf("%s requires a non-empty value", name)
+			}
+			if name == "--execution-mode" {
+				if options.mode != "" {
+					return options, nil, errors.New("--execution-mode may be specified only once")
+				}
+				options.mode = value
+			} else {
+				if options.maxProcs != "" {
+					return options, nil, errors.New("--max-procs may be specified only once")
+				}
+				options.maxProcs = value
+			}
+			args = args[1:]
+		default:
+			return options, args, nil
+		}
+	}
+	return options, args, nil
 }
 
 func runProviderSmoke(parent context.Context, args []string) error {

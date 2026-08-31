@@ -30,6 +30,9 @@ alpha prerelease but no stable release yet.
 - OpenAI Responses and Anthropic Messages provider-smoke adapters with current
   remote-MCP contract tests, bounded redacted reports, and an opt-in live-smoke
   workflow; no dated live provider report is claimed yet;
+- ADR-0022 and SPEC-0022 with a conservative `quiet` local execution default,
+  validated `balanced`/`throughput` modes, exact `--max-procs` override,
+  environment precedence and machine-readable `execution-profile` output;
 
 ### Changed
 

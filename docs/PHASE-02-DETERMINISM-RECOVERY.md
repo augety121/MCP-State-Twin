@@ -16,6 +16,10 @@
 - versioned ResourceProfiles covering every bounded subsystem;
 - EnvironmentIdentity coverage for clock, entropy, scheduler and faults.
 
+ADR-0022's operational ExecutionProfile is separate from EnvironmentIdentity.
+It may change wall-clock latency but MUST NOT change modeled outcomes. Any
+future performance comparison must record it as host evidence.
+
 ## Safety rules
 
 Wall clock, Go map order, goroutine completion order, process-global randomness

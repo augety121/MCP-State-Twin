@@ -22,6 +22,7 @@ merged and its required CI evidence passes on that revision.
 | CLM-FIDELITY-001 | Reference twins are L1, unverified and unbound | verified as limitation | TwinSpec metadata and README | no L2/L3 or upstream equivalence |
 | CLM-SECURITY-001 | Hermetic test paths contain no upstream production passthrough | verified locally | namespace/loopback and source-absence checks | not a remote-production security audit |
 | CLM-SECURITY-002 | Remote-staging security profile is available | unverified | SPEC-0020 only | not implemented as a complete deployment profile |
+| CLM-RESOURCE-001 | A local `statetwin` process defaults to one Go execution slot | verified locally | governor unit tests, CLI parser tests and `execution-profile` smoke | soft Go-runtime boundary only; no CPU percentage, thermal, child-process or OS hard-quota claim |
 
 ## Maintenance
 

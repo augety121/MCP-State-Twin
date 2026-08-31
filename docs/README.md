@@ -60,6 +60,12 @@ New cross-cutting contracts are
 [`SPEC-0021`](SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md). They do not claim that
 the planned remote security or live-provider profiles are already implemented.
 
+ADR-0022 and
+[`SPEC-0022`](SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md) separately
+define the accepted conservative local execution policy. `quiet` is the
+default and uses one Go scheduler slot; this is explicitly not an OS hard CPU
+quota.
+
 # MCP State Twin Lifecycle SPEC Pack
 
 > **Status:** Proposal / Unverified  

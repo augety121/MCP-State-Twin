@@ -60,6 +60,7 @@ HostProfiles remain absent.
 | Private virtual-clock advance | bounded forward-only `/v1/clock/advance`, expected-head conflict, and transactional `clock.advance` audit tests |
 | Deterministic fault preview | branch-local bounded plans; `before-validation` and `after-commit-before-response`; atomic counters/events; stable plan digest; private HTTP integration tests |
 | Versioned resource profile | `statetwin limits`; profile digest in Scenario environment identity; state/input/output/query/effect/diff/report/storage bounds; typed `RESOURCE_LIMIT` failures |
+| Conservative local execution profile | `quiet` default applies `GOMAXPROCS=1` before dispatch; `balanced`, `throughput`, validated exact override, environment/CLI precedence and `statetwin execution-profile`; soft Go-runtime boundary only |
 | Maintainer/release automation | release checklist, docs authority map, PR/Issue templates, Dependabot, and tag-driven multi-platform release workflow are present; no stable release has been published |
 | HTTP server bounds | 1 MiB bodies/headers, read/write/idle timeouts, configuration tests, and a direct slow-header connection test that proves the application handler is not reached |
 | Host compatibility report admission | strict 1 MiB single-document schema, immutable revision/digest checks, bounded profile checks, remote deployment-profile binding, credential/private-key/email pattern rejection, and `statetwin compatibility validate` |
@@ -75,7 +76,7 @@ HostProfiles remain absent.
 | Secret/fixture policy | pinned Gitleaks history scan and synthetic-fixture heuristic passed in run #6 |
 | Snapshot storage | immutable logical snapshots work; copy-on-write/delta optimization and GC are not implemented |
 | MCP protocol coverage | direct 2026-07-28 wire smoke tests pass; the pinned conformance framework still covers legacy-era scenarios and does not establish every modern optional feature |
-| Resource governance | `local-preview-v4` adds bounded Episode attempts and leases to existing local/bundle limits; OS quotas, multi-tenant fairness, scheduler/cassette quotas, retention, and empirical performance budgets are not implemented |
+| Resource governance | `local-preview-v4` bounds semantic local/bundle/Episode resources; separate `local-v1` ExecutionProfile defaults to one Go scheduler slot. OS hard quotas, child/native-process controls, multi-tenant fairness, scheduler/cassette quotas, retention, and empirical performance budgets are not implemented |
 | Portable evaluation artifacts | deterministic unsigned TwinBundle, scripted EpisodeEvidence, and bounded remote transport are implemented; signatures, provenance attestations, registry transport, and publisher identity are not |
 | Episode delivery semantics | hermetic tasks support bounded at-least-once claim delivery with fenced exactly-once terminal Evidence acceptance; arbitrary provider calls, HTTP delivery, tool effects, and external side effects are not exactly-once |
 | Provider live evidence | executable OpenAI/Anthropic adapters and opt-in CI workflow exist; only mock contract tests have run in this repository state, because provider credentials and a public synthetic MCP endpoint are absent |

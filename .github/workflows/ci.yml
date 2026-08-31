@@ -40,7 +40,10 @@ jobs:
           go run ./cmd/statetwin bundle build --manifest examples/package-registry/bundle.yaml --out "${RUNNER_TEMP}/package-registry.stb"
           go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/package-registry.stb" --id ci-package-registry --out "${RUNNER_TEMP}/package-registry-evidence.json"
       - name: Resource profile smoke
-        run: go run ./cmd/statetwin limits
+        run: |
+          go run ./cmd/statetwin limits
+          go run ./cmd/statetwin execution-profile
+          go run ./cmd/statetwin --execution-mode balanced --max-procs 2 execution-profile
       - name: MCP 2026 wire smoke
         run: |
           go test ./internal/server -run 'TestProtocolEvidencePinsSDKAndProfiles|TestMCP20260728|TestMCP20251125LegacyInitializeCompatibility' -count=1

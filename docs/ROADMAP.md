@@ -23,10 +23,10 @@ features into implementation claims; `IMPLEMENTATION-STATUS.md` and
 
 ## Phase 0 — specification and claim consolidation
 
-Current progress: ADR-0021, SPEC-0019 through SPEC-0021, unified traceability,
-claim, compatibility and decision ledgers, and phase contracts exist in the
-candidate worktree. Exit still requires final link/translation review and CI on
-the merged revision.
+Current progress: ADR-0021/0022, SPEC-0019 through SPEC-0022, unified
+traceability, claim, compatibility and decision ledgers, phase contracts, and
+the conservative local ExecutionProfile exist. Exit still requires final
+link/translation review and CI on the merged revision.
 
 ## Phase 1 — local core
 

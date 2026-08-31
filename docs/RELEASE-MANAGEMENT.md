@@ -62,6 +62,9 @@ Before tagging:
     `provider-smoke` workflow for both OpenAI and Anthropic plus the admitted
     HostCompatibilityReports required by SPEC-0019. Mock provider tests
     establish API contract shape only and cannot satisfy this gate.
+14. `statetwin execution-profile` must report the documented default on the
+    release binary. Release notes must call it a soft Go-runtime governor, not
+    an OS CPU percentage, thermal limit, child-process limit, or hard quota.
 
 The release notes must use the phrase **exactly-once terminal Evidence
 acceptance** for ADR-0020. They must not shorten it to “exactly-once execution”.

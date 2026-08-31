@@ -245,7 +245,8 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 | HostCompatibilityReport admission | ✅ | 严格 schema、bounded evidence、credential/private-key/email pattern rejection；不等于 live provider 通过 |
 | OpenAI / Anthropic provider smoke harness | 🧪 合同级已实现 | OpenAI background/retrieve/cancel 与 Anthropic MCP connector mock contract tests；真实 live 报告尚未生成 |
 | Deterministic fault injection / virtual-clock advancement | 🧪 部分实现 | 私有 clock；两个 fault transaction phases；其余 scheduler/fault semantics 未实现 |
-| Versioned resource governance | 🧪 部分实现 | `statetwin limits`、environment digest、fail-closed local budgets；OS/remote quotas 未实现 |
+| Versioned semantic resource governance | 🧪 部分实现 | `statetwin limits`、environment digest、fail-closed local budgets；OS/remote quotas 未实现 |
+| Conservative local CPU governor | ✅ soft boundary | 默认 `quiet` / `GOMAXPROCS=1`；支持 `balanced`、`throughput` 与 `--max-procs`；不是 OS 硬 CPU/温度配额，不覆盖子进程 |
 | External-effect automatic retry / distributed HA | ⏳ | 外部 commit 不明确时停在 `COMMIT_UNKNOWN`；无多 coordinator、replication、manual reconciliation 或外部 exactly-once 声明 |
 | HostProfile / signed bundle | ⏳ | 不声明供应链真实性或 host compatibility |
 | Recorder / cassette replay / trace redaction | ⏳ | 尚未实现 |
@@ -279,6 +280,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 - OpenAI/Anthropic smoke harness：使用官方当前 API contract 的请求形状和 mock-server 正/负测试，报告只保留 digest、能力与计数，不保存 token、raw response 或 prompt；
 - bounded branch-local fault plans：`before-validation` 与 `after-commit-before-response`，带稳定 plan digest、事务内计数和 fault-event audit。
 - versioned resource profile：input/output/state、JSON depth/members、effect/query、diff/report、branch/snapshot limits 以 `RESOURCE_LIMIT` fail closed，并绑定 Scenario environment digest。
+- 独立的 versioned ExecutionProfile：所有命令执行前默认应用 `quiet` 单槽 Go scheduler；可通过 CLI/环境显式提高，且不会冒充 OS 硬配额。
 - storage compatibility evidence：v1/v2/v3 forward migration、公开 alpha schema-v4 fixture reopen，以及两个 migration pre-commit 进程退出 kill-points。
 - strict HostCompatibilityReport admission：immutable revision/digests、profile-specific checks、remote deployment binding、bounded trial 和 credential/private-key/email pattern fail-closed validation。
 
@@ -703,6 +705,8 @@ MCP State Twin 的核心集成对象是 **MCP**，不是某一家 model provider
 ## CLI
 
 ```text
+statetwin --execution-mode quiet COMMAND
+statetwin --execution-mode balanced --max-procs 2 COMMAND
 statetwin validate   validate structure, CEL, and print the spec digest
 statetwin init       initialize a branch and optional immutable snapshot
 statetwin call       execute one tool directly against a branch
@@ -713,6 +717,7 @@ statetwin diff       compare two branch states
 statetwin scenario   execute a bounded scripted scenario and assertions
 statetwin protocols   print pinned MCP wire-evidence profiles
 statetwin limits      print the versioned resource profile and digest
+statetwin execution-profile  print the applied operational execution policy
 statetwin compatibility validate --report report.yaml
 statetwin bundle build --manifest bundle.yaml --out twin.stb
 statetwin bundle verify --bundle twin.stb
@@ -725,6 +730,15 @@ statetwin version    print the development version
 
 除 server log 与 fatal diagnostic 外，CLI output 为 structured JSON。
 
+默认执行模式是 `quiet`，Go runtime 同时只使用一个逻辑执行槽，避免普通本地运行占满所有核心。优先级为：root CLI 参数 > `STATETWIN_EXECUTION_MODE` / `STATETWIN_MAX_PROCS` > `quiet`。例如：
+
+```powershell
+statetwin --execution-mode balanced --max-procs 2 scenario --spec twin.yaml --fixture state.json --scenario scenario.yaml
+statetwin execution-profile
+```
+
+这是可移植的软治理，不是精确 CPU 百分比、温度或功耗保证；子进程和未来 native threads 不在覆盖范围。完整边界见 [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md)。
+
 ---
 
 ## 测试与构建
@@ -732,10 +746,12 @@ statetwin version    print the development version
 ```bash
 gofmt -w .
 go vet ./...
-go test ./...
-go test -race ./...
+GOMAXPROCS=1 go test -p 1 ./...
+GOMAXPROCS=1 go test -p 1 -race ./...
 go build ./cmd/statetwin
 ```
+
+PowerShell 安静验证可使用 `$env:GOMAXPROCS='1'; go test -p 1 ./...`。`go test` 是外部 Go 工具链，不受 `statetwin` 进程内 governor 控制，所以本地验证需要显式设置。
 
 README 中的环境/CI 状态可能随开发变化。可复现证据应优先查看 CI、[Implementation Status](docs/IMPLEMENTATION-STATUS.md) 与对应 executable tests，而不是依赖一段可能过期的宣传性文字。
 
@@ -771,6 +787,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [SPEC-0007 — Virtual Time Boundary](docs/SPEC-0007-VIRTUAL-TIME-ENTROPY-SCHEDULER.md)
 - [SPEC-0008 — Deterministic Fault Preview](docs/SPEC-0008-DETERMINISTIC-FAULTS.md)
 - [SPEC-0015 — Resource Governance](docs/SPEC-0015-RESOURCE-GOVERNANCE.md)
+- [SPEC-0022 — Local CPU and Execution Governance](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md)
 - [SPEC-0012 — Storage/Concurrency/Recovery](docs/SPEC-0012-STORAGE-CONCURRENCY-RECOVERY.md)
 - [SPEC-0017 — Durable Local Episode Journal](docs/SPEC-0017-EPISODE-JOURNAL.md)
 
@@ -806,6 +823,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [ADR-0019](docs/ADR-0019-DURABLE-LOCAL-EPISODE-JOURNAL.md) — durable local Episode Journal、幂等终态读取与 incomplete boundary
 - [ADR-0020](docs/ADR-0020-REMOTE-EPISODE-EXECUTION.md) — fenced remote Episode、`COMMIT_UNKNOWN` 与有界 terminal Evidence 语义
 - [ADR-0021](docs/ADR-0021-UNIFIED-LIFECYCLE-AND-RELEASE-BOUNDARIES.md) — 统一 authority、claim states 与 v0.1–v1.0 release boundary
+- [ADR-0022](docs/ADR-0022-LOCAL-EXECUTION-GOVERNANCE.md) — 默认安静的本地 Go 执行策略及硬配额非声明
 
 ### Unified lifecycle and evidence
 
@@ -813,7 +831,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [Requirement Traceability](docs/REQUIREMENT-TRACEABILITY.md) — invariant 到测试/证据的映射
 - [Claim Registry](docs/CLAIM-REGISTRY.md) — public claim 的精确状态和边界
 - [Compatibility Matrix](docs/COMPATIBILITY-MATRIX.md) — API/product profiles 分离的兼容矩阵
-- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md)
+- [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md) / [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md)
 
 ### Evidence / Research
 
