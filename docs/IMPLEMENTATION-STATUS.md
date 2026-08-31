@@ -1,7 +1,10 @@
 # Implementation Status
 
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
-**Last verified locally:** 2026-09-01; merged/public CI evidence for the latest change is still required
+**Last verified:** 2026-09-01; local single-core suite plus public CI
+[run 33452020972](https://github.com/augety121/MCP-State-Twin/actions/runs/33452020972)
+for implementation commit `202532c` completed successfully, including Linux
+race, Windows/macOS, fuzz, secret policy, hermetic egress and MCP conformance
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 is the accepted v0.1 release profile. RFC-0003 is a
 v0.2 proposal whose deterministic TwinBundle and local scripted Episode subset
