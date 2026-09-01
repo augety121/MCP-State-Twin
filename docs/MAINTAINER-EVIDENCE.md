@@ -49,7 +49,9 @@ Record links to real activity:
 - issue triage: <issue URL(s)>
 - release management: <release/tag URL(s)>
 - security response: <security advisory or policy evidence>
-- regression/evaluation work: <CI run, benchmark, or report URL(s)>
+- regression/evaluation work: [scheduled-action implementation CI run
+  33456196081](https://github.com/augety121/MCP-State-Twin/actions/runs/33456196081)
+  for commit `e3f0355`; add benchmark/report links only when they exist
 - contributor support: <discussion/issue URL(s)>
 
 The repository's contribution contract is CONTRIBUTING.md and its safety
