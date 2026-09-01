@@ -27,6 +27,9 @@ func TestDefaultProfileDigestIsStableAndBindsSemanticLimits(t *testing.T) {
 	if profile.MaxScheduledEvents != 1024 || profile.MaxScheduledDelivery != 256 || profile.MaxScheduledAtInstant != 256 {
 		t.Fatal("enabled scheduler limits are not bound into the resource profile")
 	}
+	if profile.MaxScheduledActions != 32 || profile.MaxScheduledAttempts != 1 || profile.MaxScheduledCascade != 0 {
+		t.Fatal("scheduled action safety limits are not bound into the resource profile")
+	}
 	if profile.MaxSchedulerPageSize != 256 || profile.DefaultSchedulerPage != 100 || profile.MaxSchedulerCursor != 2048 {
 		t.Fatal("scheduler inspection limits are not bound into the resource profile")
 	}

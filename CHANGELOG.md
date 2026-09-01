@@ -48,6 +48,11 @@ alpha prerelease but no stable release yet.
   filtered pagination;
 - `local-preview-v6` semantic limits for pending events per instant, scheduler
   inspection pages and cursor bytes;
+- ADR/SPEC-0032 through 0034: private runtime-bound scheduled TwinSpec actions,
+  spec/schema admission, ordinary-clock fail-closed behavior, one-attempt
+  terminal evidence, atomic effect/fault/audit coupling and zero cascade;
+- `local-preview-v7` semantic limits of 32 scheduled actions per step, one
+  attempt and cascade depth zero, while retaining the 256-total-event bound;
 
 ### Changed
 

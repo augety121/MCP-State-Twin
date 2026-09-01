@@ -14,7 +14,7 @@
 | DEC-008 | Provider mock tests do not satisfy live compatibility | resolved | SPEC-0019 / SPEC-0021 |
 | DEC-009 | Complete remote-staging security controls | open | SPEC-0020 / Phase 4 |
 | DEC-010 | Operator reconciliation contract for `COMMIT_UNKNOWN` | open | Phase 3 follow-up |
-| DEC-011 | Full scheduled-effect/interleaving profile beyond opaque signals | open | SPEC-0007 / Phase 2 |
+| DEC-011 | Scheduled Agent/external effects, automatic retry/recurrence and general interleaving beyond the bounded local TwinSpec-action subset | open | SPEC-0007 / Phase 2 |
 | DEC-012 | Recorder consent/redaction and incomplete-trace semantics | open | proposed SPEC-0009 / Phase 5 |
 | DEC-013 | L2 admission coverage thresholds | open | proposed SPEC-0011 / Phase 5 |
 | DEC-014 | TwinBundle signing and publisher identity | open | Phase 7 |
@@ -29,6 +29,9 @@
 | DEC-023 | Scheduler order uses parsed UTC time; new equal-time pending sets are capped at one delivery batch | resolved | ADR-0029 / SPEC-0029 |
 | DEC-024 | Ordinary clock jumps remain atomic; an explicit advance-next operation provides bounded legacy drain | resolved | ADR-0030 / SPEC-0030 |
 | DEC-025 | Scheduler inspection uses bounded digest-bound cursor pages | resolved | ADR-0031 / SPEC-0031 |
+| DEC-026 | Scheduled actions are private, runtime-bound executions of an existing modeled TwinSpec tool; they are not Agent/provider/external tasks | resolved | ADR-0032 / SPEC-0032 |
+| DEC-027 | Scheduled action effects, terminal evidence, faults, audit and aggregate branch-head update share one SQLite transaction | resolved | ADR-0033 / SPEC-0033 |
+| DEC-028 | `local-preview-v7` caps a step at 32 actions/256 events, permits one attempt and rejects every callback scheduler mutation | resolved | ADR-0034 / SPEC-0034 |
 
 Open decisions are roadmap work. They MUST NOT be silently resolved by an
 implementation-only change.

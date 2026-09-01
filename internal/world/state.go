@@ -12,14 +12,19 @@ import (
 
 const (
 	SchedulerKindSignal = "signal"
+	SchedulerKindAction = "tool-call"
 	SchedulerPending    = "pending"
 	SchedulerDelivered  = "delivered"
 	SchedulerCanceled   = "canceled"
+	SchedulerCompleted  = "completed"
+	SchedulerFailed     = "failed"
 )
 
 var (
 	entropyStreamPattern = regexp.MustCompile(`^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$`)
 	controlIDPattern     = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`)
+	toolNamePattern      = regexp.MustCompile(`^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$`)
+	digestPattern        = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
 )
 
 type State struct {
@@ -38,15 +43,34 @@ type SchedulerState struct {
 }
 
 type ScheduledEvent struct {
-	ID               string `json:"id" yaml:"id"`
-	DueAt            string `json:"dueAt" yaml:"dueAt"`
-	Priority         int    `json:"priority" yaml:"priority"`
-	CreationSequence int64  `json:"creationSequence" yaml:"creationSequence"`
-	Kind             string `json:"kind" yaml:"kind"`
-	Payload          any    `json:"payload" yaml:"payload"`
-	Status           string `json:"status" yaml:"status"`
-	DeliveredAt      string `json:"deliveredAt,omitempty" yaml:"deliveredAt,omitempty"`
-	CanceledAt       string `json:"canceledAt,omitempty" yaml:"canceledAt,omitempty"`
+	ID               string                  `json:"id" yaml:"id"`
+	DueAt            string                  `json:"dueAt" yaml:"dueAt"`
+	Priority         int                     `json:"priority" yaml:"priority"`
+	CreationSequence int64                   `json:"creationSequence" yaml:"creationSequence"`
+	Kind             string                  `json:"kind" yaml:"kind"`
+	Payload          any                     `json:"payload" yaml:"payload"`
+	Action           *ScheduledAction        `json:"action,omitempty" yaml:"action,omitempty"`
+	Outcome          *ScheduledActionOutcome `json:"outcome,omitempty" yaml:"outcome,omitempty"`
+	AttemptCount     int                     `json:"attemptCount,omitempty" yaml:"attemptCount,omitempty"`
+	Status           string                  `json:"status" yaml:"status"`
+	DeliveredAt      string                  `json:"deliveredAt,omitempty" yaml:"deliveredAt,omitempty"`
+	FinishedAt       string                  `json:"finishedAt,omitempty" yaml:"finishedAt,omitempty"`
+	CanceledAt       string                  `json:"canceledAt,omitempty" yaml:"canceledAt,omitempty"`
+}
+
+type ScheduledAction struct {
+	Tool       string         `json:"tool" yaml:"tool"`
+	Input      map[string]any `json:"input" yaml:"input"`
+	SpecDigest string         `json:"specDigest" yaml:"specDigest"`
+}
+
+type ScheduledActionOutcome struct {
+	CallIndex       int64  `json:"callIndex" yaml:"callIndex"`
+	Result          any    `json:"result" yaml:"result"`
+	ErrorClass      string `json:"errorClass,omitempty" yaml:"errorClass,omitempty"`
+	EffectCommitted bool   `json:"effectCommitted" yaml:"effectCommitted"`
+	FaultID         string `json:"faultId,omitempty" yaml:"faultId,omitempty"`
+	FaultPhase      string `json:"faultPhase,omitempty" yaml:"faultPhase,omitempty"`
 }
 
 // ValidateBudget applies the default resource profile to a complete world
@@ -117,30 +141,96 @@ func (s *State) validateInternalState() error {
 		if event.Priority < -1000 || event.Priority > 1000 {
 			return fmt.Errorf("scheduled event %s has invalid priority", event.ID)
 		}
-		if event.Kind != SchedulerKindSignal {
-			return fmt.Errorf("scheduled event %s has invalid kind", event.ID)
-		}
 		dueAt, err := time.Parse(time.RFC3339Nano, event.DueAt)
 		if err != nil || dueAt.Location() != time.UTC || dueAt.Format(time.RFC3339Nano) != event.DueAt {
 			return fmt.Errorf("scheduled event %s has non-canonical dueAt", event.ID)
 		}
-		switch event.Status {
-		case SchedulerPending:
-			if event.DeliveredAt != "" || event.CanceledAt != "" {
-				return fmt.Errorf("pending scheduled event %s has terminal timestamps", event.ID)
+		switch event.Kind {
+		case SchedulerKindSignal:
+			if err := validateSignalLifecycle(event); err != nil {
+				return err
 			}
-		case SchedulerDelivered:
-			if event.DeliveredAt != event.DueAt || event.CanceledAt != "" {
-				return fmt.Errorf("delivered scheduled event %s has invalid lifecycle timestamps", event.ID)
-			}
-		case SchedulerCanceled:
-			canceledAt, err := time.Parse(time.RFC3339Nano, event.CanceledAt)
-			if err != nil || canceledAt.Location() != time.UTC || canceledAt.Format(time.RFC3339Nano) != event.CanceledAt || event.DeliveredAt != "" {
-				return fmt.Errorf("canceled scheduled event %s has invalid lifecycle timestamps", event.ID)
+		case SchedulerKindAction:
+			if err := validateActionLifecycle(event); err != nil {
+				return err
 			}
 		default:
-			return fmt.Errorf("scheduled event %s has invalid status", event.ID)
+			return fmt.Errorf("scheduled event %s has invalid kind", event.ID)
 		}
+	}
+	return nil
+}
+
+func validateSignalLifecycle(event ScheduledEvent) error {
+	if event.Action != nil || event.Outcome != nil || event.AttemptCount != 0 || event.FinishedAt != "" {
+		return fmt.Errorf("signal event %s contains action lifecycle fields", event.ID)
+	}
+	switch event.Status {
+	case SchedulerPending:
+		if event.DeliveredAt != "" || event.CanceledAt != "" {
+			return fmt.Errorf("pending scheduled event %s has terminal timestamps", event.ID)
+		}
+	case SchedulerDelivered:
+		if event.DeliveredAt != event.DueAt || event.CanceledAt != "" {
+			return fmt.Errorf("delivered scheduled event %s has invalid lifecycle timestamps", event.ID)
+		}
+	case SchedulerCanceled:
+		if err := validateCanceledAt(event); err != nil || event.DeliveredAt != "" {
+			return fmt.Errorf("canceled scheduled event %s has invalid lifecycle timestamps", event.ID)
+		}
+	default:
+		return fmt.Errorf("signal event %s has invalid status", event.ID)
+	}
+	return nil
+}
+
+func validateActionLifecycle(event ScheduledEvent) error {
+	if event.Payload != nil || event.Action == nil || !toolNamePattern.MatchString(event.Action.Tool) ||
+		event.Action.Input == nil || !digestPattern.MatchString(event.Action.SpecDigest) || event.DeliveredAt != "" {
+		return fmt.Errorf("scheduled action %s has invalid action envelope", event.ID)
+	}
+	switch event.Status {
+	case SchedulerPending:
+		if event.Outcome != nil || event.AttemptCount != 0 || event.FinishedAt != "" || event.CanceledAt != "" {
+			return fmt.Errorf("pending scheduled action %s has terminal fields", event.ID)
+		}
+	case SchedulerCanceled:
+		if event.Outcome != nil || event.AttemptCount != 0 || event.FinishedAt != "" || validateCanceledAt(event) != nil {
+			return fmt.Errorf("canceled scheduled action %s has invalid lifecycle", event.ID)
+		}
+	case SchedulerCompleted:
+		if event.Outcome == nil || event.AttemptCount != limits.MaxScheduledAttempts || event.FinishedAt != event.DueAt || event.CanceledAt != "" ||
+			event.Outcome.CallIndex < 1 || event.Outcome.ErrorClass != "" || !event.Outcome.EffectCommitted || event.Outcome.FaultID != "" || event.Outcome.FaultPhase != "" {
+			return fmt.Errorf("completed scheduled action %s has invalid outcome", event.ID)
+		}
+	case SchedulerFailed:
+		if event.Outcome == nil || event.AttemptCount != limits.MaxScheduledAttempts || event.FinishedAt != event.DueAt || event.CanceledAt != "" ||
+			event.Outcome.CallIndex < 1 || !controlIDPattern.MatchString(event.Outcome.ErrorClass) ||
+			(event.Outcome.EffectCommitted && event.Outcome.FaultPhase != "after-commit-before-response") {
+			return fmt.Errorf("failed scheduled action %s has invalid outcome", event.ID)
+		}
+	default:
+		return fmt.Errorf("scheduled action %s has invalid status", event.ID)
+	}
+	if event.Outcome != nil {
+		if (event.Outcome.FaultID == "") != (event.Outcome.FaultPhase == "") {
+			return fmt.Errorf("scheduled action %s has incomplete fault identity", event.ID)
+		}
+		if event.Outcome.FaultID != "" && (!controlIDPattern.MatchString(event.Outcome.FaultID) ||
+			(event.Outcome.FaultPhase != "before-validation" && event.Outcome.FaultPhase != "after-commit-before-response")) {
+			return fmt.Errorf("scheduled action %s has invalid fault identity", event.ID)
+		}
+		if event.Outcome.FaultPhase == "after-commit-before-response" && !event.Outcome.EffectCommitted {
+			return fmt.Errorf("scheduled action %s has inconsistent after-effect evidence", event.ID)
+		}
+	}
+	return nil
+}
+
+func validateCanceledAt(event ScheduledEvent) error {
+	canceledAt, err := time.Parse(time.RFC3339Nano, event.CanceledAt)
+	if err != nil || canceledAt.Location() != time.UTC || canceledAt.Format(time.RFC3339Nano) != event.CanceledAt {
+		return fmt.Errorf("invalid canceledAt")
 	}
 	return nil
 }

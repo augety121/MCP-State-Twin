@@ -21,3 +21,10 @@ jumps over several due instants in one request.
 - replay and fork comparison bind the same delivery order;
 - bounded failure is explicit instead of processing an unbounded cascade;
 - this decision does not authorize scheduled business effects or Agent wakeup.
+
+## Amendment (2026-09-01)
+
+ADR-0032 through ADR-0034 authorize only one-attempt runtime-bound local
+TwinSpec actions through bounded `advance-next`. Ordinary clock advancement
+retains this ADR's all-or-nothing signal behavior and now fails closed if a due
+action is present. Agent/provider/external effects remain unauthorized.

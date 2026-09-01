@@ -18,12 +18,17 @@
 
 ## Current accepted progress
 
-ADR-0026 through ADR-0031 implement a bounded deterministic entropy profile,
+ADR-0026 through ADR-0034 implement a bounded deterministic entropy profile,
 branch-local signal scheduler, parsed-time total ordering, equal-instant
 admission, cancellation, atomic due-signal delivery, explicit next-due legacy
-drain and digest-bound inspection pages. These signals do not execute scheduled
-tools or Agents. Full cascading effects, retry/dead-letter semantics and
-remaining fault classes stay open.
+drain, digest-bound inspection pages, and a one-attempt runtime-bound scheduled
+TwinSpec action subset. The action subset executes only already-modeled local
+hermetic tools, binds every action to the branch TwinSpec digest, commits
+terminal evidence atomically, caps each step at 32 actions/256 total events and
+enforces zero scheduler cascade. It does not execute Agents, providers,
+processes or external effects. Automatic retry/recurrence/dead letters,
+scheduled Agent/external work, general interleaving and remaining fault classes
+stay open.
 
 ADR-0022's operational ExecutionProfile is separate from EnvironmentIdentity.
 It may change wall-clock latency but MUST NOT change modeled outcomes. Any

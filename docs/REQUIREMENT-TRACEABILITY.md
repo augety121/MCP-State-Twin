@@ -1,7 +1,7 @@
 # Unified Requirement Traceability
 
 **Status:** executable mapping for accepted requirements
-**Last reviewed:** 2026-08-31
+**Last reviewed:** 2026-09-01
 
 | Requirement | Contract | Implementation/evidence | Current state |
 |---|---|---|---|
@@ -28,6 +28,9 @@
 | ST-VTIME-005 parsed-time order and per-instant admission | ADR-0029 / SPEC-0029 | sub-second order, capacity and cancellation-release tests | verified bounded subset |
 | ST-VTIME-006 bounded next-due recovery | ADR-0030 / SPEC-0030 | preview, two-step legacy drain, empty/CAS and HTTP tests | verified bounded subset |
 | ST-VTIME-007 consistent bounded inspection | ADR-0031 / SPEC-0031 | filter/page/stale/malformed cursor tests | verified bounded subset |
+| ST-VTIME-008 runtime-bound scheduled TwinSpec actions | ADR-0032 / SPEC-0032 | runtime admission/schema/spec-drift, ordinary-advance refusal, private HTTP and due-time execution tests | verified bounded local-hermetic subset |
+| ST-VTIME-009 scheduled terminal evidence and atomicity | ADR-0033 / SPEC-0033 | success/domain-failure/after-effect-fault, call/audit linkage and infrastructure rollback tests | verified one-attempt subset |
+| ST-VTIME-010 scheduled action budgets and zero cascade | ADR-0034 / SPEC-0034 | 33-action split, mixed prefix, callback-mutation and oversized-result rollback tests | verified `local-preview-v7` subset |
 
 ## Release use
 

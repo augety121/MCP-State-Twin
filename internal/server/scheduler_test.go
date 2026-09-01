@@ -151,3 +151,89 @@ func TestPrivateSchedulerPaginationPreviewAndAdvanceNext(t *testing.T) {
 		t.Fatalf("stale page status = %d, want 409", stalePage.StatusCode)
 	}
 }
+
+func TestRuntimeBackedControlPlaneExecutesScheduledTwinSpecAction(t *testing.T) {
+	runtime, stateStore := referenceRuntime(t)
+	server := httptest.NewServer(NewControlPlaneWithRuntime(stateStore, "test-secret", runtime, "close_issue"))
+	t.Cleanup(server.Close)
+
+	do := func(method, path, body string) *http.Response {
+		t.Helper()
+		request, err := http.NewRequest(method, server.URL+path, bytes.NewBufferString(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Authorization", "Bearer test-secret")
+		request.Header.Set("Content-Type", "application/json")
+		response, err := http.DefaultClient.Do(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return response
+	}
+
+	invalid := do(http.MethodPost, "/v1/scheduler/events", `{"id":"bad","branch":"main","dueAt":"2026-08-01T01:00:00Z","kind":"tool-call","action":{"tool":"close_issue","input":{"owner":"octo"}}}`)
+	invalid.Body.Close()
+	if invalid.StatusCode != http.StatusBadRequest {
+		t.Fatalf("invalid action admission status = %d", invalid.StatusCode)
+	}
+	unknown := do(http.MethodPost, "/v1/scheduler/events", `{"id":"unknown","branch":"main","dueAt":"2026-08-01T01:00:00Z","kind":"tool-call","action":{"tool":"missing_tool","input":{}}}`)
+	unknown.Body.Close()
+	if unknown.StatusCode != http.StatusBadRequest {
+		t.Fatalf("unknown action admission status = %d", unknown.StatusCode)
+	}
+
+	created := do(http.MethodPost, "/v1/scheduler/events", `{"id":"close-later","branch":"main","dueAt":"2026-08-01T01:00:00Z","kind":"tool-call","action":{"tool":"close_issue","input":{"owner":"octo","repository":"demo","number":1}},"expectedHeadVersion":0}`)
+	created.Body.Close()
+	if created.StatusCode != http.StatusCreated {
+		t.Fatalf("action create status = %d", created.StatusCode)
+	}
+
+	ordinary := do(http.MethodPost, "/v1/clock/advance", `{"branch":"main","to":"2026-08-01T02:00:00Z","expectedHeadVersion":1}`)
+	ordinary.Body.Close()
+	if ordinary.StatusCode != http.StatusConflict {
+		t.Fatalf("ordinary action advance status = %d", ordinary.StatusCode)
+	}
+
+	advanced := do(http.MethodPost, "/v1/clock/advance-next", `{"branch":"main","expectedHeadVersion":1}`)
+	var result store.SchedulerStepResult
+	if err := json.NewDecoder(advanced.Body).Decode(&result); err != nil {
+		advanced.Body.Close()
+		t.Fatal(err)
+	}
+	advanced.Body.Close()
+	if advanced.StatusCode != http.StatusOK || result.ExecutedActions != 1 || len(result.Processed) != 1 || result.Processed[0].Status != store.SchedulerCompleted {
+		t.Fatalf("action advance status=%d result=%#v", advanced.StatusCode, result)
+	}
+	branch, err := stateStore.Branch(t.Context(), "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.State.Entities["issue"]["octo/demo#1"]["state"] != "closed" || branch.CallCount != 1 {
+		t.Fatalf("scheduled close branch = %#v", branch)
+	}
+	listed := do(http.MethodGet, "/v1/scheduler/events?branch=main&status=completed&limit=10", "")
+	var page store.ScheduledEventPage
+	if err := json.NewDecoder(listed.Body).Decode(&page); err != nil {
+		listed.Body.Close()
+		t.Fatal(err)
+	}
+	listed.Body.Close()
+	if listed.StatusCode != http.StatusOK || len(page.Events) != 1 || page.Events[0].ID != "close-later" {
+		t.Fatalf("completed action page status=%d page=%#v", listed.StatusCode, page)
+	}
+
+	plainServer := httptest.NewServer(NewControlPlane(stateStore, "plain-secret", "close_issue"))
+	t.Cleanup(plainServer.Close)
+	request, _ := http.NewRequest(http.MethodPost, plainServer.URL+"/v1/scheduler/events", bytes.NewBufferString(`{"id":"no-runtime","branch":"main","dueAt":"2026-08-01T02:00:00Z","kind":"tool-call","action":{"tool":"close_issue","input":{"owner":"octo","repository":"demo","number":1}}}`))
+	request.Header.Set("Authorization", "Bearer plain-secret")
+	request.Header.Set("Content-Type", "application/json")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("non-runtime action admission status = %d", response.StatusCode)
+	}
+}

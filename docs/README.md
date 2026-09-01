@@ -77,10 +77,12 @@ The Phase 2 deterministic-world batch is defined by
 [`SPEC-0026`](SPEC-0026-DETERMINISTIC-ENTROPY-STREAMS.md),
 [`SPEC-0027`](SPEC-0027-BRANCH-LOCAL-SIGNAL-SCHEDULER.md), and
 [`SPEC-0028`](SPEC-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md) through
-[`SPEC-0031`](SPEC-0031-DIGEST-BOUND-SCHEDULER-PAGINATION.md), with accepted
-ADR-0026 through ADR-0031. It implements modeled entropy, private opaque future
-signals, bounded progress and consistent inspection, not cryptographic
-randomness, scheduled Agent execution or a distributed workflow queue.
+[`SPEC-0034`](SPEC-0034-SCHEDULED-ACTION-BUDGET-AND-ZERO-CASCADE.md), with
+accepted ADR-0026 through ADR-0034. It implements modeled entropy, private
+future signals, bounded progress/inspection and a one-attempt runtime-bound
+local TwinSpec-action subset. It does not implement cryptographic randomness,
+scheduled Agent/provider/external execution, recurrence/automatic retry or a
+distributed workflow queue.
 
 # MCP State Twin Lifecycle SPEC Pack
 

@@ -14,6 +14,7 @@
 *.out
 coverage.*
 .codex-go-cache-*/
+/.tmp/
 
 # Editors and operating systems
 .idea/

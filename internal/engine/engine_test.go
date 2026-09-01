@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -11,6 +12,109 @@ import (
 	"github.com/augety121/mcp-state-twin/internal/store"
 	"github.com/augety121/mcp-state-twin/internal/world"
 )
+
+func TestScheduledActionExecutesAtomicallyThroughBoundRuntime(t *testing.T) {
+	ctx := context.Background()
+	twin := testSpec()
+	stateStore, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { stateStore.Close() })
+	runtime, err := New(twin, stateStore)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.Initialize(ctx, "main", world.New()); err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.ValidateScheduledAction("create_item", map[string]any{"name": "scheduled"}); err != nil {
+		t.Fatal(err)
+	}
+	dueAt := "2026-08-01T01:00:00Z"
+	if _, err := stateStore.ScheduleEvent(ctx, store.ScheduleRequest{
+		ID: "create-later", BranchID: "main", DueAt: dueAt, Kind: store.SchedulerKindAction,
+		Action: &world.ScheduledAction{Tool: "create_item", Input: map[string]any{"name": "scheduled"}, SpecDigest: runtime.Digest()},
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := stateStore.AdvanceClock(ctx, "main", time.Date(2026, 8, 1, 2, 0, 0, 0, time.UTC), nil); !errors.Is(err, store.ErrSchedulerAction) {
+		t.Fatalf("ordinary advance action error = %v", err)
+	}
+	result, err := runtime.AdvanceClockToNext(ctx, "main", int64Pointer(1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ExecutedActions != 1 || result.DeliveredSignals != 0 || len(result.Processed) != 1 || result.Processed[0].Status != store.SchedulerCompleted {
+		t.Fatalf("scheduler result = %#v", result)
+	}
+	branch, err := stateStore.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.CallCount != 1 || branch.HeadVersion != 2 || branch.Clock.Format(time.RFC3339Nano) != dueAt {
+		t.Fatalf("branch = %#v", branch)
+	}
+	if got := branch.State.Entities["item"]["1"]["name"]; got != "scheduled" {
+		t.Fatalf("scheduled entity name = %v", got)
+	}
+	event := branch.State.Scheduler.Events["create-later"]
+	if event.Outcome == nil || event.Outcome.CallIndex != 1 || !event.Outcome.EffectCommitted || event.AttemptCount != 1 {
+		t.Fatalf("scheduled action evidence = %#v", event)
+	}
+}
+
+func TestScheduledActionFailureAndAfterCommitFaultAreExplicit(t *testing.T) {
+	ctx := context.Background()
+	twin := testSpec()
+	stateStore, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { stateStore.Close() })
+	runtime, err := New(twin, stateStore)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.Initialize(ctx, "main", world.New()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := stateStore.InstallFault(ctx, store.FaultPlan{
+		ID: "lost-response", BranchID: "main", ToolName: "create_item",
+		Phase: store.FaultPhaseAfterCommitBeforeResponse, ErrorClass: "TIMEOUT_AFTER_EFFECT",
+		Message: "synthetic response loss", RemainingCount: 1,
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := stateStore.ScheduleEvent(ctx, store.ScheduleRequest{
+		ID: "faulted-create", BranchID: "main", DueAt: "2026-08-01T01:00:00Z", Kind: store.SchedulerKindAction,
+		Action: &world.ScheduledAction{Tool: "create_item", Input: map[string]any{"name": "committed"}, SpecDigest: runtime.Digest()},
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	result, err := runtime.AdvanceClockToNext(ctx, "main", int64Pointer(2))
+	if err != nil {
+		t.Fatal(err)
+	}
+	event := result.Processed[0]
+	if event.Status != store.SchedulerFailed || event.Outcome == nil || event.Outcome.ErrorClass != "TIMEOUT_AFTER_EFFECT" ||
+		!event.Outcome.EffectCommitted || event.Outcome.FaultID != "lost-response" {
+		t.Fatalf("faulted action evidence = %#v", event)
+	}
+	branch, err := stateStore.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.State.Entities["item"]["1"]["name"] != "committed" {
+		t.Fatal("after-commit fault discarded modeled effect")
+	}
+	events, err := stateStore.FaultEvents(ctx, "main")
+	if err != nil || len(events) != 1 || events[0].CallIndex != 1 {
+		t.Fatalf("fault events = %#v err=%v", events, err)
+	}
+}
+
+func int64Pointer(value int64) *int64 { return &value }
 
 func boolPtr(v bool) *bool { return &v }
 

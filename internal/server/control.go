@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
@@ -12,17 +13,33 @@ import (
 
 	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/store"
+	"github.com/augety121/mcp-state-twin/internal/world"
 )
+
+type scheduledRuntime interface {
+	Digest() string
+	ValidateScheduledAction(toolName string, input map[string]any) error
+	AdvanceClockToNext(ctx context.Context, branchID string, expectedHeadVersion *int64) (*store.SchedulerStepResult, error)
+}
 
 type ControlPlane struct {
 	store        *store.Store
+	runtime      scheduledRuntime
 	token        string
 	allowedTools map[string]struct{}
 	mux          *http.ServeMux
 }
 
 func NewControlPlane(stateStore *store.Store, token string, allowedTools ...string) *ControlPlane {
-	c := &ControlPlane{store: stateStore, token: token, allowedTools: make(map[string]struct{}, len(allowedTools)), mux: http.NewServeMux()}
+	return newControlPlane(stateStore, token, nil, allowedTools...)
+}
+
+func NewControlPlaneWithRuntime(stateStore *store.Store, token string, runtime scheduledRuntime, allowedTools ...string) *ControlPlane {
+	return newControlPlane(stateStore, token, runtime, allowedTools...)
+}
+
+func newControlPlane(stateStore *store.Store, token string, runtime scheduledRuntime, allowedTools ...string) *ControlPlane {
+	c := &ControlPlane{store: stateStore, runtime: runtime, token: token, allowedTools: make(map[string]struct{}, len(allowedTools)), mux: http.NewServeMux()}
 	for _, tool := range allowedTools {
 		c.allowedTools[tool] = struct{}{}
 	}
@@ -249,21 +266,41 @@ func (c *ControlPlane) advanceClock(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ControlPlane) scheduleEvent(w http.ResponseWriter, r *http.Request) {
+	type actionRequest struct {
+		Tool  string         `json:"tool"`
+		Input map[string]any `json:"input"`
+	}
 	var request struct {
-		ID                  string `json:"id"`
-		Branch              string `json:"branch"`
-		DueAt               string `json:"dueAt"`
-		Priority            int    `json:"priority"`
-		Kind                string `json:"kind"`
-		Payload             any    `json:"payload"`
-		ExpectedHeadVersion *int64 `json:"expectedHeadVersion"`
+		ID                  string         `json:"id"`
+		Branch              string         `json:"branch"`
+		DueAt               string         `json:"dueAt"`
+		Priority            int            `json:"priority"`
+		Kind                string         `json:"kind"`
+		Payload             any            `json:"payload"`
+		Action              *actionRequest `json:"action"`
+		ExpectedHeadVersion *int64         `json:"expectedHeadVersion"`
 	}
 	if !decodeJSON(w, r, &request) {
 		return
 	}
+	var action *world.ScheduledAction
+	if request.Kind == store.SchedulerKindAction {
+		if c.runtime == nil || request.Action == nil {
+			writeError(w, http.StatusBadRequest, "SCHEDULE_ACTION_UNAVAILABLE", "tool-call scheduling requires a runtime-backed control plane and action")
+			return
+		}
+		if err := c.runtime.ValidateScheduledAction(request.Action.Tool, request.Action.Input); err != nil {
+			writeError(w, http.StatusBadRequest, "SCHEDULE_INVALID", err.Error())
+			return
+		}
+		action = &world.ScheduledAction{Tool: request.Action.Tool, Input: request.Action.Input, SpecDigest: c.runtime.Digest()}
+	} else if request.Action != nil {
+		writeError(w, http.StatusBadRequest, "SCHEDULE_INVALID", "signal must not contain action")
+		return
+	}
 	event, err := c.store.ScheduleEvent(r.Context(), store.ScheduleRequest{
 		ID: request.ID, BranchID: request.Branch, DueAt: request.DueAt,
-		Priority: request.Priority, Kind: request.Kind, Payload: request.Payload,
+		Priority: request.Priority, Kind: request.Kind, Payload: request.Payload, Action: action,
 	}, request.ExpectedHeadVersion)
 	if err != nil {
 		writeStoreError(w, err)
@@ -280,7 +317,13 @@ func (c *ControlPlane) advanceClockToNext(w http.ResponseWriter, r *http.Request
 	if !decodeJSON(w, r, &request) {
 		return
 	}
-	result, err := c.store.AdvanceClockToNext(r.Context(), request.Branch, request.ExpectedHeadVersion)
+	var result *store.SchedulerStepResult
+	var err error
+	if c.runtime != nil {
+		result, err = c.runtime.AdvanceClockToNext(r.Context(), request.Branch, request.ExpectedHeadVersion)
+	} else {
+		result, err = c.store.AdvanceClockToNext(r.Context(), request.Branch, request.ExpectedHeadVersion)
+	}
 	if err != nil {
 		writeStoreError(w, err)
 		return
@@ -381,6 +424,8 @@ func writeStoreError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusConflict, "SCHEDULE_CONFLICT", err.Error())
 	case errors.Is(err, store.ErrSchedulerInvalid):
 		writeError(w, http.StatusBadRequest, "SCHEDULE_INVALID", err.Error())
+	case errors.Is(err, store.ErrSchedulerAction):
+		writeError(w, http.StatusConflict, "SCHEDULE_ACTION_REQUIRED", err.Error())
 	case errors.Is(err, store.ErrResourceLimit):
 		writeError(w, http.StatusRequestEntityTooLarge, "RESOURCE_LIMIT", err.Error())
 	default:

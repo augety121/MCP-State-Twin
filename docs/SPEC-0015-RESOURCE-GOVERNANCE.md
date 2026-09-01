@@ -1,8 +1,8 @@
 # SPEC-0015 — Resource Governance (Accepted Local Profile)
 
-- **Status:** Accepted subset via ADR-0013; amendments via ADR-0018 through ADR-0020 and ADR-0026 through ADR-0031
+- **Status:** Accepted subset via ADR-0013; amendments via ADR-0018 through ADR-0020 and ADR-0026 through ADR-0034
 - **Verification status:** executable unit, runtime, storage, diff, report, bundle, Journal, attempt, lease, entropy and scheduler bound tests
-- **Profile:** `statetwin.dev/resource-profile/v1alpha1`, `local-preview-v6`
+- **Profile:** `statetwin.dev/resource-profile/v1alpha1`, `local-preview-v7`
 
 ## 1. Typed profile
 
@@ -39,6 +39,8 @@ Limits cover:
 | retained scheduler events per branch | 1,024 |
 | due deliveries per clock advance | 256 |
 | pending scheduler events per instant | 256 |
+| scheduled actions per step | 32 |
+| scheduled attempts / cascade depth | 1 / 0 |
 | scheduler page default / maximum | 100 / 256 |
 | scheduler cursor bytes | 2,048 |
 
@@ -48,8 +50,9 @@ only for the deterministic local preview accepted by ADR-0018. The Episode
 record bound applies only to the independent Journal accepted by ADR-0019.
 Attempt and lease bounds apply only to ADR-0020's single-coordinator preview;
 they are not tenant quotas or a distributed fairness policy. Entropy and
-scheduler bounds apply only to ADR-0026 through ADR-0031's modeled entropy and
-opaque private signal queue; they do not enable scheduled tool/Agent effects.
+scheduler bounds apply only to ADR-0026 through ADR-0034's modeled entropy,
+private deterministic queue and runtime-bound local TwinSpec-action subset.
+They do not enable scheduled Agents, provider calls or external effects.
 
 ## 2. Fail-closed semantics
 
@@ -75,7 +78,7 @@ inspection point.
 The profile does not yet implement:
 
 - OS memory/CPU quotas or distributed tenant fairness;
-- scheduled-effect cascade/retry/dead-letter budgets beyond opaque delivery;
+- automatic scheduled retry, recurrence, non-zero cascade and dead-letter budgets;
 - cassette budgets;
 - remote request rate limiting;
 - storage quota/GC/WAL checkpoint governance;
@@ -92,6 +95,6 @@ listener before command dispatch. The profile is inspectable through
 `statetwin execution-profile`. These controls do not form an OS/RSS hard quota
 and do not cover child or future native processes.
 
-This `local-v2` operational profile does not change `local-preview-v6` or its
+This `local-v2` operational profile does not change `local-preview-v7` or its
 semantic environment digest. Exact CPU percentages, memory isolation, durable
 queues, remote fairness and empirical performance budgets remain deferred.

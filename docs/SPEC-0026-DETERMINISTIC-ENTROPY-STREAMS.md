@@ -80,7 +80,7 @@ internal counters into an accidental Agent-facing data surface.
 
 ## 5. Limits and identity
 
-The current `local-preview-v6` retains the entropy bounds introduced by
+The current `local-preview-v7` retains the entropy bounds introduced by
 `local-preview-v5`:
 
 | Limit | Value |

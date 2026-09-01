@@ -933,7 +933,7 @@ func runServe(args []string) error {
 	for _, tool := range runtime.Spec().Tools {
 		toolNames = append(toolNames, tool.Name)
 	}
-	controlServer, err := hardenedHTTPServer(*controlAddr, server.NewControlPlane(stateStore, token, toolNames...))
+	controlServer, err := hardenedHTTPServer(*controlAddr, server.NewControlPlaneWithRuntime(stateStore, token, runtime, toolNames...))
 	if err != nil {
 		return err
 	}

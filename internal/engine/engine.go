@@ -178,6 +178,41 @@ func (r *Runtime) Call(ctx context.Context, branchID, toolName string, input map
 	})
 }
 
+// ValidateScheduledAction performs admission checks that require the loaded
+// TwinSpec. Branch binding and lifecycle checks remain storage responsibilities.
+func (r *Runtime) ValidateScheduledAction(toolName string, input map[string]any) error {
+	tool, exists := r.tools[toolName]
+	if !exists {
+		return fmt.Errorf("unknown tool %q", toolName)
+	}
+	if tool.Modeled != nil && !*tool.Modeled {
+		return fmt.Errorf("tool %q is not modeled", toolName)
+	}
+	if input == nil {
+		return fmt.Errorf("scheduled action input must be a JSON object")
+	}
+	if err := limits.ValidateJSON(input, limits.MaxInputBytes); err != nil {
+		return fmt.Errorf("RESOURCE_LIMIT: scheduled action input: %w", err)
+	}
+	if err := validateJSON(input, r.schemas[toolName].input); err != nil {
+		return fmt.Errorf("scheduled action input: %w", err)
+	}
+	return nil
+}
+
+// AdvanceClockToNext executes the bounded private scheduler step against this
+// exact runtime/spec identity. It does not expose scheduling as an MCP tool.
+func (r *Runtime) AdvanceClockToNext(ctx context.Context, branchID string, expectedHeadVersion *int64) (*store.SchedulerStepResult, error) {
+	return r.store.AdvanceClockToNextWithActions(ctx, branchID, expectedHeadVersion, r.digest,
+		func(state *world.State, clock time.Time, callIndex int64, toolName string, input map[string]any) (store.CallOutcome, error) {
+			tool, exists := r.tools[toolName]
+			if !exists {
+				return store.CallOutcome{}, fmt.Errorf("scheduled action references unknown tool %q", toolName)
+			}
+			return r.apply(tool, state, clock, callIndex, input), nil
+		})
+}
+
 func (r *Runtime) apply(tool spec.ToolSpec, state *world.State, clock time.Time, callIndex int64, input map[string]any) store.CallOutcome {
 	if tool.Modeled != nil && !*tool.Modeled {
 		return failure("UNMODELED_BEHAVIOR", "tool behavior is not modeled")

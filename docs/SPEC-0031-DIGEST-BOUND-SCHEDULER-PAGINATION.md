@@ -16,13 +16,14 @@ bounded page and an opaque continuation bound to the inspected scheduler state.
 ```text
 GET /v1/scheduler/events
   ?branch=<branch-id>
-  &status=<pending|delivered|canceled>
+  &status=<pending|delivered|canceled|completed|failed>
   &limit=<1..256>
   &cursor=<opaque-base64url>
 ```
 
 - `branch` is required;
-- `status` is optional and must be one of the three lifecycle states;
+- `status` is optional and must be one of the five lifecycle states; delivered
+  applies to signals, while completed/failed apply to actions;
 - default `limit` is 100 and maximum is 256;
 - cursor length is limited to 2,048 bytes;
 - unknown status, malformed integer, malformed cursor or unsupported cursor

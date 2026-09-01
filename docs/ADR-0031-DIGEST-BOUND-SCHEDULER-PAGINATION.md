@@ -20,3 +20,9 @@ ABA through reset.
 - `digest` is temporarily retained beside `schedulerDigest` for v1alpha1
   response compatibility;
 - pagination and preview remain outside Agent MCP discovery.
+
+## Amendment (2026-09-01)
+
+ADR-0033 adds action terminal states `completed` and `failed`; both are valid
+status filters under the same digest-bound cursor contract. Cursor format and
+authorization boundary do not change.

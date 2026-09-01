@@ -13,8 +13,9 @@ remote coordinator subset by ADR-0020. ADR-0011 through ADR-0020 accept only
 the bounded subsets they name; the rest of the vNext pack remains proposal
 material. ADR-0021 additionally governs the release train and claim vocabulary.
 ADR-0022 through ADR-0025 accept the bounded local operational-safety batch;
-ADR-0026 through ADR-0031 accept the modeled entropy, opaque-signal,
-scheduler-liveness and bounded-inspection batch. SPEC-0019 through SPEC-0031 are accepted only to the exact
+ADR-0026 through ADR-0034 accept the modeled entropy, deterministic scheduler,
+bounded-inspection and runtime-bound local TwinSpec-action batch. SPEC-0019
+through SPEC-0034 are accepted only to the exact
 states recorded below; acceptance is not an implementation claim. Complete
 remote-staging security and dated live HostProfiles remain absent.
 
@@ -68,6 +69,9 @@ remote-staging security and dated live HostProfiles remain absent.
 | Atomic due-signal delivery | clock and all due event lifecycle changes in one transaction; 256-delivery bound with whole-operation rollback |
 | Scheduler temporal/liveness hardening | parsed UTC ordering, 256-pending per-instant admission for new events, cancellation capacity release, and deterministic bounded recovery for legacy overfull instants |
 | Scheduler bounded inspection | authenticated next-due preview plus 100-default/256-maximum status-filtered pages with digest-bound versioned cursors and stale-page refusal |
+| Runtime-bound scheduled TwinSpec actions | authenticated private admission validates the loaded modeled tool/input schema, injects the canonical spec digest, refuses ordinary clock jumps over due actions, and executes only through runtime-backed bounded `advance-next` |
+| Scheduled action terminal evidence | one-attempt `completed`/`failed` outcomes record call index, result, typed error, effect-commit ambiguity and optional fault identity; effects, fault consumption, tool/fault audit, lifecycle, clock, call count and aggregate head commit in one SQLite transaction |
+| Scheduled action budget and zero cascade | `local-preview-v7` caps one step at 32 actions/256 total events, preserves the total-order prefix, rejects callback scheduler mutation even on reported domain failure, and rolls back oversized results or infrastructure errors |
 | Deterministic fault preview | branch-local bounded plans; `before-validation` and `after-commit-before-response`; atomic counters/events; stable plan digest; private HTTP integration tests |
 | Versioned resource profile | `statetwin limits`; profile digest in Scenario environment identity; state/input/output/query/effect/diff/report/storage bounds; typed `RESOURCE_LIMIT` failures |
 | Conservative local execution profile | `local-v2`: `quiet` applies `GOMAXPROCS=1`, 512 MiB Go heap soft target and four in-flight requests per listener; validated mode/exact overrides, environment/CLI precedence and `statetwin execution-profile`; soft process-local boundary only |
@@ -81,14 +85,14 @@ remote-staging security and dated live HostProfiles remain absent.
 
 | Capability | Current boundary |
 |---|---|
-| Virtual time | private clock, modeled entropy, opaque signal queue, parsed-time ordering, bounded due delivery, next-due legacy drain and consistent inspection are implemented; scheduled tool/Agent effects, recurrence, cascades and dead-letter/retry are not |
-| Deterministic faults | two transaction phases and three canonical outcomes are implemented; latency, partial effects, idempotency collapse, crash/cancellation, scheduled visibility, and eventual consistency are not |
+| Virtual time | private clock, modeled entropy, signals, and one-attempt runtime-bound local TwinSpec actions have parsed-time ordering, bounded atomic next-due progress, terminal evidence and consistent inspection; scheduled Agents/providers/external effects, recurrence, automatic retry/dead letters and non-zero cascades are not implemented |
+| Deterministic faults | `before-validation` and `after-commit-before-response` are implemented for ordinary and scheduled local TwinSpec actions with explicit effect-commit evidence; latency, partial effects, idempotency collapse, crash/cancellation and eventual consistency are not |
 | Upstream surface discovery | local canonicalization and binding enforcement work; upstream inspection and automatic refresh are not implemented |
 | Hermeticity | there is no upstream connector or passthrough code; only-loopback Linux CI job passed in run #6 |
 | Secret/fixture policy | pinned Gitleaks history scan and synthetic-fixture heuristic passed in run #6 |
 | Snapshot storage | immutable logical snapshots work; copy-on-write/delta optimization and GC are not implemented |
 | MCP protocol coverage | direct 2026-07-28 wire smoke tests pass; the pinned conformance framework still covers legacy-era scenarios and does not establish every modern optional feature |
-| Resource governance | `local-preview-v6` bounds semantic resources including entropy, signal delivery, per-instant admission and scheduler inspection; separate `local-v2` ExecutionProfile adds conservative CPU, Go heap soft target and per-listener admission. OS hard quotas, RSS/native/child controls, distributed/tenant fairness, durable queues, cassette quotas, retention, and empirical performance budgets are not implemented |
+| Resource governance | `local-preview-v7` bounds semantic resources including entropy, signal/action delivery, actions per step, attempts, zero cascade, per-instant admission and scheduler inspection; separate `local-v2` ExecutionProfile adds conservative CPU, Go heap soft target and per-listener admission. OS hard quotas, RSS/native/child controls, distributed/tenant fairness, durable queues, cassette quotas, retention, and empirical performance budgets are not implemented |
 | Portable evaluation artifacts | deterministic unsigned TwinBundle, scripted EpisodeEvidence, and bounded remote transport are implemented; signatures, provenance attestations, registry transport, and publisher identity are not |
 | Episode delivery semantics | hermetic tasks support bounded at-least-once claim delivery with fenced exactly-once terminal Evidence acceptance; arbitrary provider calls, HTTP delivery, tool effects, and external side effects are not exactly-once |
 | Provider live evidence | executable OpenAI/Anthropic adapters and opt-in CI workflow exist; only mock contract tests have run in this repository state, because provider credentials and a public synthetic MCP endpoint are absent |
@@ -97,7 +101,8 @@ remote-staging security and dated live HostProfiles remain absent.
 
 - recorder and trace redaction;
 - L0 cassette replay;
-- remaining deterministic fault phases, idempotency semantics, crash/cancellation injection, scheduled tool effects/cascades, and eventual consistency;
+- remaining deterministic fault phases, idempotency semantics, crash/cancellation injection and eventual consistency;
+- scheduled Agent/provider/process/external effects, recurrence, automatic retry/dead letters and non-zero cascades;
 - dated OpenAI-family and Anthropic-family live provider reports and live-agent trajectory capture;
 - full MCP 2026-07-28 conformance coverage beyond the pinned official subset;
 - live ChatGPT, OpenAI API, Claude, or Claude Code smoke tests;

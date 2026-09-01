@@ -10,7 +10,7 @@ import (
 
 const (
 	Format  = "statetwin.dev/resource-profile/v1alpha1"
-	Version = "local-preview-v6"
+	Version = "local-preview-v7"
 
 	MaxSpecBytes          = 1 << 20
 	MaxToolCount          = 256
@@ -47,6 +47,9 @@ const (
 	MaxScheduledEvents    = 1024
 	MaxScheduledDelivery  = 256
 	MaxScheduledAtInstant = 256
+	MaxScheduledActions   = 32
+	MaxScheduledAttempts  = 1
+	MaxScheduledCascade   = 0
 	MaxSchedulerPageSize  = 256
 	DefaultSchedulerPage  = 100
 	MaxSchedulerCursor    = 2048
@@ -83,6 +86,9 @@ type Profile struct {
 	MaxScheduledEvents    int    `json:"maxScheduledEvents"`
 	MaxScheduledDelivery  int    `json:"maxScheduledDeliveriesPerAdvance"`
 	MaxScheduledAtInstant int    `json:"maxScheduledEventsPerInstant"`
+	MaxScheduledActions   int    `json:"maxScheduledActionsPerStep"`
+	MaxScheduledAttempts  int    `json:"maxScheduledAttempts"`
+	MaxScheduledCascade   int    `json:"maxScheduledCascadeDepth"`
 	MaxSchedulerPageSize  int    `json:"maxSchedulerPageSize"`
 	DefaultSchedulerPage  int    `json:"defaultSchedulerPageSize"`
 	MaxSchedulerCursor    int    `json:"maxSchedulerCursorBytes"`
@@ -120,6 +126,9 @@ func Default() Profile {
 		MaxScheduledEvents:    MaxScheduledEvents,
 		MaxScheduledDelivery:  MaxScheduledDelivery,
 		MaxScheduledAtInstant: MaxScheduledAtInstant,
+		MaxScheduledActions:   MaxScheduledActions,
+		MaxScheduledAttempts:  MaxScheduledAttempts,
+		MaxScheduledCascade:   MaxScheduledCascade,
 		MaxSchedulerPageSize:  MaxSchedulerPageSize,
 		DefaultSchedulerPage:  DefaultSchedulerPage,
 		MaxSchedulerCursor:    MaxSchedulerCursor,

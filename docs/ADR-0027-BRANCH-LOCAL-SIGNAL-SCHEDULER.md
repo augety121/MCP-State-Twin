@@ -29,3 +29,11 @@ Agent or create an external side effect.
 - the Agent data plane remains unchanged;
 - recurring timers, scheduled tool effects and distributed scheduling remain
   deferred.
+
+## Amendment (2026-09-01)
+
+ADR-0032 advances the combined scheduler identity to
+`deterministic-queue-v2` and admits a distinct runtime-bound local TwinSpec
+`tool-call` subtype. The opaque signal subtype defined here remains
+non-executable. Agent/provider/external wakeup and distributed scheduling stay
+deferred.

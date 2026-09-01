@@ -98,3 +98,13 @@ The deterministic-world profile advances to `local-preview-v6`. It adds a
 100 by default and 256 at most, and a 2,048-byte cursor-input bound. Parsed-time
 ordering and explicit bounded next-due drain close scheduler correctness and
 liveness gaps; they do not authorize scheduled business effects.
+
+## Amendment: ADR-0032 through ADR-0034 (2026-09-01)
+
+The deterministic-world profile advances to `local-preview-v7`. It admits
+runtime-bound scheduled actions only for existing hermetic TwinSpec tools and
+adds explicit bounds of 32 actions per scheduler step, one attempt and zero
+cascade depth. The existing 256-total-event step bound still applies. Action
+input/result/audit/state reuse the established 1 MiB/1 MiB/2 MiB/16 MiB
+bounds. This amendment does not enable scheduled Agents, provider requests,
+external effects, automatic retry, recurrence or dead letters.

@@ -76,7 +76,7 @@ Scenario digest
 seed = 0
 initial virtual clock
 entropy profile digest or none
-scheduler = signal-queue-v1
+scheduler = deterministic-queue-v2
 fault profile = none
 semantic limit profile digest
 ```

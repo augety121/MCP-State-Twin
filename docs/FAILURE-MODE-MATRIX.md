@@ -188,7 +188,7 @@ implemented the corresponding feature.
 | F-166 | Scheduler | canceled or delivered signal fires again | P0 | terminal lifecycle states and cancellation/delivery exclusion tests |
 | F-167 | Scheduler isolation | Agent discovers event/clock controls through MCP | P0 | authenticated private routes only and negative `tools/list` assertions |
 | F-168 | Snapshot | fork omits entropy counter or scheduler queue state | P0 | both are canonical branch state; fork digest/status equality and isolation tests |
-| F-169 | Product trust | opaque signal delivery is advertised as tool execution or Agent wakeup | P0 | claim registry/README non-claims; scheduled effects remain blocked |
+| F-169 | Product trust | opaque signal delivery is advertised as tool execution or Agent wakeup | P0 | signal/action subtypes are distinct; only runtime-bound local TwinSpec actions execute and Agent wakeup remains unsupported |
 | F-170 | Scheduler storage | terminal event retention exhausts branch capacity | P1 | 1,024 retained-event fail-closed bound; retention/GC explicitly unsupported |
 | F-171 | Deterministic state | malformed hidden scheduler lifecycle or exhausted entropy counter is silently normalized | P0 | unified state validation and explicit no-wrap/no-repair tests |
 | F-172 | Scheduler ordering | RFC3339Nano strings are compared lexically and place fractional instants before an earlier whole second | P0 | parse canonical UTC timestamps before priority/sequence/ID tie-breaks; sub-second regression test |
@@ -196,6 +196,16 @@ implemented the corresponding feature.
 | F-174 | Scheduler inspection | queue mutates between pages and client combines two inconsistent snapshots | P1 | cursor binds branch, filter, full order tuple and scheduler digest; mutation returns conflict |
 | F-175 | Scheduler resources | list route materializes and returns the full retained queue by default | P1 | default 100 and maximum 256 page size with bounded cursor input |
 | F-176 | Scheduler retry | client retries a committed advance-next and delivers the next batch believing it retried the first | P0 | expected-head CAS; stale retry conflicts and each successful batch is an audited head transition |
+| F-177 | Scheduled action binding | persisted action executes under a different TwinSpec revision | P0 | admission injects runtime digest; insertion and execution recheck branch/runtime/action digest equality |
+| F-178 | Clock/action atomicity | ordinary clock advance marks a due action delivered without executing its transition | P0 | ordinary advance refuses any due action before mutation; only runtime-backed bounded advance-next executes actions |
+| F-179 | Scheduled action crash | one action or audit row commits while the selected scheduler prefix remains pending | P0 | effects, fault consumption, audit, terminal lifecycle, clock, call count and head share one SQLite transaction; callback/infrastructure rollback tests |
+| F-180 | Effect ambiguity | response loss after a committed action is recorded as no effect or success | P0 | terminal `failed` outcome records `effectCommitted=true`, `TIMEOUT_AFTER_EFFECT` and fault identity |
+| F-181 | Scheduler cascade | a modeled tool recursively creates/cancels/reorders scheduler work | P0 | scheduler hidden from TwinSpec/CEL plus pre/post callback scheduler-digest equality; any attempted mutation rolls back |
+| F-182 | Scheduler resources | one due instant causes unbounded CEL/schema/effect work in one transaction | P0 | `local-preview-v7` caps 32 actions and 256 total events per step; deterministic repeated drain |
+| F-183 | Control isolation | action scheduling or advance controls appear in Agent MCP discovery | P0 | runtime scheduling remains authenticated control HTTP only; existing negative `tools/list` tests cover all control names |
+| F-184 | Retry ambiguity | automatic retry duplicates a future provider or external effect | P0 | current attempt bound is one; no external actions or automatic retry; future policy requires ambiguity/idempotency ADR and tests |
+| F-185 | Result amplification | scheduled result exceeds output/audit/state budgets and partially commits | P0 | 1 MiB result, 2 MiB audit and 16 MiB state checks run before commit; oversized-result rollback test |
+| F-186 | Hidden callback mutation | callback mutates scheduler then returns a domain failure so the mutation is discarded before detection | P0 | compare scheduler digest immediately on callback return, before candidate rollback; regression test covers failed callback |
 
 ## Release interpretation
 

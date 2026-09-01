@@ -36,14 +36,14 @@ solve model intelligence, planning quality, or general agent alignment.
 | State engine | Canonical state, preconditions, effects, postconditions | SQLite local profile |
 | Snapshot/fork | Immutable starting point and isolated episode branches | Logical snapshots; no distributed storage claim |
 | MCP data plane | Model-visible business tools | Tools-first, loopback-oriented development profile |
-| Control plane | Snapshot, fork, reset, diff, clock and fault controls | Private and separately authenticated; never agent-facing |
+| Control plane | Snapshot, fork, reset, diff, clock, scheduler and fault controls | Private and separately authenticated; never agent-facing |
 | Scenario runner | Ordered calls, assertions, expected errors, report digest | Scripted deterministic scenarios; no live-model score claim |
 | Evidence layer | Canonical digests, audit records, protocol evidence, deterministic unsigned TwinBundle, scripted EpisodeEvidence and schema-v2 Journal | Partial preview; recorder, signatures/provenance and OTel remain open |
 | Episode coordinator | Immutable tasks, leases, fencing, cancellation, safe recovery and terminal Evidence admission | Single coordinator and hermetic scripted remote workers; external ambiguity is not retried |
 | Provider smoke | Exercise the same public synthetic MCP endpoint through provider APIs | OpenAI/Anthropic contract harness and manual workflow exist; no dated live report yet |
 | Execution governor | Keep local execution conservative and expose the applied policy | Defaults to one Go scheduler slot, 512 MiB Go heap soft target and four in-flight requests per listener; no OS/RSS hard quota, child/native control or tenant-fairness claim |
 | Operational health | Distinguish live handler from reachable local storage | Authenticated control-plane only; redacted local ping, not Agent-facing or upstream/provider health |
-| World time/entropy | Reproducible modeled entropy and future-signal ordering | `sha256-ctr-v1` plus private `signal-queue-v1`, parsed UTC ordering, bounded next-due progress and consistent inspection; no cryptographic RNG, Agent wakeup or scheduled tool effects |
+| World time/entropy/actions | Reproducible modeled entropy, future signals and bounded future world transitions | `sha256-ctr-v1` plus private `deterministic-queue-v2`; runtime-bound local TwinSpec actions are one-attempt, capped at 32 per step and zero-cascade; no cryptographic RNG, Agent/provider/process wakeup, external effects or distributed queue |
 | Release governance | SemVer gates, CI, changelog and evidence inventory | Development preview; no stable `v0.1.0` yet |
 
 The independent product lines are local core (`v0.1`), deterministic recovery

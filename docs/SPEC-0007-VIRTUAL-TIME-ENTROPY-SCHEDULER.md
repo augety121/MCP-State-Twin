@@ -39,14 +39,20 @@ advances return `CLOCK_INVALID`.
 
 ## 3. Implemented bounded additions
 
-ADR-0026 through ADR-0031 add:
+ADR-0026 through ADR-0034 add:
 
 - `sha256-ctr-v1` modeled-world entropy streams;
-- branch-local `signal-queue-v1` events with deterministic lifecycle/order;
+- branch-local `deterministic-queue-v2` signal and runtime-bound TwinSpec
+  action events with deterministic lifecycle/order;
 - atomic bounded due-signal delivery during private clock advancement;
 - parsed UTC order and per-instant admission;
 - bounded next-due preview/drain and digest-bound scheduler pages;
-- scheduler/entropy limits in `local-preview-v6` and environment identity.
+- scheduler/entropy/action limits in `local-preview-v7` and environment
+  identity.
+
+The accepted action subset is one-attempt, local, hermetic and zero-cascade.
+Scheduled Agents, provider calls, processes, external effects, recurrence,
+automatic retry and dead letters remain unaccepted.
 
 Signals are opaque private-harness records. Delivery does not execute a tool,
 wake an Agent or create an external effect.

@@ -382,3 +382,361 @@ func scheduledSignalState(count int, dueAt string) *world.State {
 	}
 	return state
 }
+
+const scheduledTestSpecDigest = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+func TestScheduledActionInfrastructureFailureRollsBackWholeStep(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	if err := s.InitializeBranch(ctx, "main", scheduledTestSpecDigest, world.New(), clock); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"first", "second"} {
+		if _, err := s.ScheduleEvent(ctx, ScheduleRequest{
+			ID: id, BranchID: "main", DueAt: clock.Add(time.Hour).Format(time.RFC3339Nano), Kind: SchedulerKindAction,
+			Action: &world.ScheduledAction{Tool: "create_item", Input: map[string]any{"id": id}, SpecDigest: scheduledTestSpecDigest},
+		}, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_, err := s.AdvanceClockToNextWithActions(ctx, "main", int64Pointer(2), scheduledTestSpecDigest,
+		func(state *world.State, _ time.Time, _ int64, _ string, input map[string]any) (CallOutcome, error) {
+			if input["id"] == "second" {
+				return CallOutcome{}, errors.New("synthetic executor crash")
+			}
+			state.Entities["item"] = map[string]map[string]any{"first": {"id": "first"}}
+			return CallOutcome{Result: map[string]any{"ok": true}, CommitState: true}, nil
+		})
+	if err == nil || !strings.Contains(err.Error(), "synthetic executor crash") {
+		t.Fatalf("step error = %v", err)
+	}
+	branch, err := s.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.HeadVersion != 2 || branch.CallCount != 0 || !branch.Clock.Equal(clock) || len(branch.State.Entities) != 0 {
+		t.Fatalf("failed batch mutated branch = %#v", branch)
+	}
+	for _, event := range branch.State.Scheduler.Events {
+		if event.Status != SchedulerPending || event.Outcome != nil || event.AttemptCount != 0 {
+			t.Fatalf("failed batch terminalized event = %#v", event)
+		}
+	}
+	var auditCount int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM audit`).Scan(&auditCount); err != nil || auditCount != 0 {
+		t.Fatalf("audit count=%d err=%v", auditCount, err)
+	}
+}
+
+func TestScheduledActionRejectsSpecDriftAtAdmissionAndExecution(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	otherDigest := "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	if err := s.InitializeBranch(ctx, "main", scheduledTestSpecDigest, world.New(), clock); err != nil {
+		t.Fatal(err)
+	}
+	request := ScheduleRequest{
+		ID: "bound-action", BranchID: "main", DueAt: clock.Add(time.Hour).Format(time.RFC3339Nano), Kind: SchedulerKindAction,
+		Action: &world.ScheduledAction{Tool: "create_item", Input: map[string]any{}, SpecDigest: otherDigest},
+	}
+	if _, err := s.ScheduleEvent(ctx, request, nil); !errors.Is(err, ErrSchedulerConflict) {
+		t.Fatalf("mismatched admission error = %v", err)
+	}
+	request.Action.SpecDigest = scheduledTestSpecDigest
+	if _, err := s.ScheduleEvent(ctx, request, int64Pointer(0)); err != nil {
+		t.Fatal(err)
+	}
+	_, err := s.AdvanceClockToNextWithActions(ctx, "main", int64Pointer(1), otherDigest,
+		func(*world.State, time.Time, int64, string, map[string]any) (CallOutcome, error) {
+			return CallOutcome{Result: map[string]any{"ok": true}, CommitState: true}, nil
+		})
+	if err == nil || !strings.Contains(err.Error(), "SPEC_DRIFT") {
+		t.Fatalf("runtime drift error = %v", err)
+	}
+	branch, err := s.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.HeadVersion != 1 || branch.CallCount != 0 || branch.State.Scheduler.Events["bound-action"].Status != SchedulerPending {
+		t.Fatalf("spec drift mutated branch = %#v", branch)
+	}
+}
+
+func TestScheduledActionDomainFailureCommitsTerminalEvidenceWithoutEffect(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	if err := s.InitializeBranch(ctx, "main", scheduledTestSpecDigest, world.New(), clock); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ScheduleEvent(ctx, ScheduleRequest{
+		ID: "missing", BranchID: "main", DueAt: clock.Add(time.Hour).Format(time.RFC3339Nano), Kind: SchedulerKindAction,
+		Action: &world.ScheduledAction{Tool: "close_item", Input: map[string]any{"id": "missing"}, SpecDigest: scheduledTestSpecDigest},
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	result, err := s.AdvanceClockToNextWithActions(ctx, "main", int64Pointer(1), scheduledTestSpecDigest,
+		func(*world.State, time.Time, int64, string, map[string]any) (CallOutcome, error) {
+			return CallOutcome{Result: map[string]any{"error": map[string]any{"code": "NOT_FOUND"}}, ErrorClass: "NOT_FOUND", CommitState: false}, nil
+		})
+	if err != nil {
+		t.Fatal(err)
+	}
+	event := result.Processed[0]
+	if event.Status != SchedulerFailed || event.Outcome == nil || event.Outcome.EffectCommitted || event.Outcome.ErrorClass != "NOT_FOUND" {
+		t.Fatalf("failed event = %#v", event)
+	}
+	branch, err := s.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.CallCount != 1 || branch.HeadVersion != 2 || len(branch.State.Entities) != 0 {
+		t.Fatalf("domain failure branch = %#v", branch)
+	}
+}
+
+func TestScheduledActionRejectsCommittedFailureWithoutAmbiguityEvidence(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	if err := s.InitializeBranch(ctx, "main", scheduledTestSpecDigest, world.New(), clock); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ScheduleEvent(ctx, ScheduleRequest{
+		ID: "ambiguous", BranchID: "main", DueAt: clock.Add(time.Hour).Format(time.RFC3339Nano), Kind: SchedulerKindAction,
+		Action: &world.ScheduledAction{Tool: "create_item", Input: map[string]any{}, SpecDigest: scheduledTestSpecDigest},
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	_, err := s.AdvanceClockToNextWithActions(ctx, "main", int64Pointer(1), scheduledTestSpecDigest,
+		func(*world.State, time.Time, int64, string, map[string]any) (CallOutcome, error) {
+			return CallOutcome{Result: map[string]any{"error": map[string]any{"code": "CONFLICT"}}, ErrorClass: "CONFLICT", CommitState: true}, nil
+		})
+	if !errors.Is(err, ErrSchedulerInvalid) {
+		t.Fatalf("committed failure error = %v", err)
+	}
+	branch, err := s.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.HeadVersion != 1 || branch.CallCount != 0 || branch.State.Scheduler.Events["ambiguous"].Status != SchedulerPending {
+		t.Fatalf("invalid committed failure mutated branch = %#v", branch)
+	}
+}
+
+func TestScheduledActionCancellationIsTerminalAndNeverExecutes(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	if err := s.InitializeBranch(ctx, "main", scheduledTestSpecDigest, world.New(), clock); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ScheduleEvent(ctx, ScheduleRequest{
+		ID: "cancel-action", BranchID: "main", DueAt: clock.Add(time.Hour).Format(time.RFC3339Nano), Kind: SchedulerKindAction,
+		Action: &world.ScheduledAction{Tool: "create_item", Input: map[string]any{}, SpecDigest: scheduledTestSpecDigest},
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	canceled, err := s.CancelScheduledEvent(ctx, "main", "cancel-action", int64Pointer(1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if canceled.Status != SchedulerCanceled || canceled.Outcome != nil || canceled.AttemptCount != 0 {
+		t.Fatalf("canceled action = %#v", canceled)
+	}
+	called := false
+	_, err = s.AdvanceClockToNextWithActions(ctx, "main", int64Pointer(2), scheduledTestSpecDigest,
+		func(*world.State, time.Time, int64, string, map[string]any) (CallOutcome, error) {
+			called = true
+			return CallOutcome{}, nil
+		})
+	if !errors.Is(err, ErrSchedulerEmpty) || called {
+		t.Fatalf("canceled action advance error=%v called=%v", err, called)
+	}
+}
+
+func TestScheduledActionRejectsSchedulerCascadeAndRollsBack(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	if err := s.InitializeBranch(ctx, "main", scheduledTestSpecDigest, world.New(), clock); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ScheduleEvent(ctx, ScheduleRequest{
+		ID: "cascade", BranchID: "main", DueAt: clock.Add(time.Hour).Format(time.RFC3339Nano), Kind: SchedulerKindAction,
+		Action: &world.ScheduledAction{Tool: "spawn_event", Input: map[string]any{}, SpecDigest: scheduledTestSpecDigest},
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	_, err := s.AdvanceClockToNextWithActions(ctx, "main", int64Pointer(1), scheduledTestSpecDigest,
+		func(state *world.State, due time.Time, _ int64, _ string, _ map[string]any) (CallOutcome, error) {
+			scheduler := state.EnsureScheduler()
+			scheduler.NextCreationSequence++
+			scheduler.Events["injected"] = world.ScheduledEvent{
+				ID: "injected", DueAt: due.Add(time.Hour).Format(time.RFC3339Nano), CreationSequence: scheduler.NextCreationSequence,
+				Kind: SchedulerKindSignal, Payload: map[string]any{}, Status: SchedulerPending,
+			}
+			return CallOutcome{Result: map[string]any{"ok": true}, CommitState: true}, nil
+		})
+	if !errors.Is(err, ErrSchedulerInvalid) {
+		t.Fatalf("cascade error = %v", err)
+	}
+	branch, err := s.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.HeadVersion != 1 || branch.CallCount != 0 || len(branch.State.Scheduler.Events) != 1 || branch.State.Scheduler.Events["cascade"].Status != SchedulerPending {
+		t.Fatalf("cascade failure mutated branch = %#v", branch)
+	}
+}
+
+func TestScheduledActionRejectsSchedulerCascadeEvenWhenCallbackReportsFailure(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	if err := s.InitializeBranch(ctx, "main", scheduledTestSpecDigest, world.New(), clock); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ScheduleEvent(ctx, ScheduleRequest{
+		ID: "hidden-cascade", BranchID: "main", DueAt: clock.Add(time.Hour).Format(time.RFC3339Nano), Kind: SchedulerKindAction,
+		Action: &world.ScheduledAction{Tool: "spawn_event", Input: map[string]any{}, SpecDigest: scheduledTestSpecDigest},
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	_, err := s.AdvanceClockToNextWithActions(ctx, "main", int64Pointer(1), scheduledTestSpecDigest,
+		func(state *world.State, due time.Time, _ int64, _ string, _ map[string]any) (CallOutcome, error) {
+			scheduler := state.EnsureScheduler()
+			scheduler.NextCreationSequence++
+			scheduler.Events["injected"] = world.ScheduledEvent{
+				ID: "injected", DueAt: due.Add(time.Hour).Format(time.RFC3339Nano), CreationSequence: scheduler.NextCreationSequence,
+				Kind: SchedulerKindSignal, Payload: map[string]any{}, Status: SchedulerPending,
+			}
+			return CallOutcome{Result: map[string]any{"error": map[string]any{"code": "REJECTED"}}, ErrorClass: "REJECTED"}, nil
+		})
+	if !errors.Is(err, ErrSchedulerInvalid) {
+		t.Fatalf("failed callback cascade error = %v", err)
+	}
+	branch, err := s.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.HeadVersion != 1 || branch.CallCount != 0 || len(branch.State.Scheduler.Events) != 1 || branch.State.Scheduler.Events["hidden-cascade"].Status != SchedulerPending {
+		t.Fatalf("failed callback cascade mutated branch = %#v", branch)
+	}
+}
+
+func TestScheduledActionBudgetSplitsOnlyAtTotalOrderBoundary(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	dueAt := clock.Add(time.Hour).Format(time.RFC3339Nano)
+	initial := scheduledActionState(limits.MaxScheduledActions+1, dueAt)
+	if err := s.InitializeBranch(ctx, "main", scheduledTestSpecDigest, initial, clock); err != nil {
+		t.Fatal(err)
+	}
+	preview, err := s.NextDueBatch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if preview.BatchSize != limits.MaxScheduledActions || preview.BatchActions != limits.MaxScheduledActions || !preview.RequiresDrain {
+		t.Fatalf("action preview = %#v", preview)
+	}
+	executor := func(*world.State, time.Time, int64, string, map[string]any) (CallOutcome, error) {
+		return CallOutcome{Result: map[string]any{"ok": true}, CommitState: true}, nil
+	}
+	first, err := s.AdvanceClockToNextWithActions(ctx, "main", int64Pointer(0), scheduledTestSpecDigest, executor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.ExecutedActions != limits.MaxScheduledActions || !first.MoreAtInstant || len(first.Processed) != limits.MaxScheduledActions {
+		t.Fatalf("first action batch = %#v", first)
+	}
+	second, err := s.AdvanceClockToNextWithActions(ctx, "main", int64Pointer(1), scheduledTestSpecDigest, executor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.ExecutedActions != 1 || second.MoreAtInstant || second.ClockAdvanced {
+		t.Fatalf("second action batch = %#v", second)
+	}
+	branch, err := s.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.CallCount != int64(limits.MaxScheduledActions+1) || branch.HeadVersion != 2 {
+		t.Fatalf("action batch branch = %#v", branch)
+	}
+}
+
+func TestScheduledActionBudgetIncludesFollowingSignalWithoutExceedingActionCap(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	dueAt := clock.Add(time.Hour).Format(time.RFC3339Nano)
+	initial := scheduledActionState(limits.MaxScheduledActions, dueAt)
+	scheduler := initial.EnsureScheduler()
+	scheduler.NextCreationSequence++
+	scheduler.Events["signal-after-actions"] = world.ScheduledEvent{
+		ID: "signal-after-actions", DueAt: dueAt, CreationSequence: scheduler.NextCreationSequence,
+		Kind: SchedulerKindSignal, Payload: map[string]any{"ready": true}, Status: SchedulerPending,
+	}
+	if err := s.InitializeBranch(ctx, "main", scheduledTestSpecDigest, initial, clock); err != nil {
+		t.Fatal(err)
+	}
+	executor := func(*world.State, time.Time, int64, string, map[string]any) (CallOutcome, error) {
+		return CallOutcome{Result: map[string]any{"ok": true}, CommitState: true}, nil
+	}
+	first, err := s.AdvanceClockToNextWithActions(ctx, "main", int64Pointer(0), scheduledTestSpecDigest, executor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.ExecutedActions != limits.MaxScheduledActions || first.DeliveredSignals != 1 || first.MoreAtInstant ||
+		len(first.Delivered) != 1 || first.Delivered[0].ID != "signal-after-actions" {
+		t.Fatalf("ordered-prefix batch = %#v", first)
+	}
+}
+
+func TestScheduledActionOversizedResultRollsBackWholeStep(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	clock := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	if err := s.InitializeBranch(ctx, "main", scheduledTestSpecDigest, world.New(), clock); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ScheduleEvent(ctx, ScheduleRequest{
+		ID: "oversized", BranchID: "main", DueAt: clock.Add(time.Hour).Format(time.RFC3339Nano), Kind: SchedulerKindAction,
+		Action: &world.ScheduledAction{Tool: "create_item", Input: map[string]any{}, SpecDigest: scheduledTestSpecDigest},
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+	_, err := s.AdvanceClockToNextWithActions(ctx, "main", int64Pointer(1), scheduledTestSpecDigest,
+		func(*world.State, time.Time, int64, string, map[string]any) (CallOutcome, error) {
+			return CallOutcome{Result: map[string]any{"blob": strings.Repeat("x", limits.MaxOutputBytes)}, CommitState: true}, nil
+		})
+	if !errors.Is(err, ErrResourceLimit) {
+		t.Fatalf("oversized result error = %v", err)
+	}
+	branch, err := s.Branch(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch.HeadVersion != 1 || branch.CallCount != 0 || branch.State.Scheduler.Events["oversized"].Status != SchedulerPending {
+		t.Fatalf("oversized result mutated branch = %#v", branch)
+	}
+}
+
+func scheduledActionState(count int, dueAt string) *world.State {
+	state := world.New()
+	scheduler := state.EnsureScheduler()
+	for index := 0; index < count; index++ {
+		id := fmt.Sprintf("action-%03d", index)
+		scheduler.NextCreationSequence++
+		scheduler.Events[id] = world.ScheduledEvent{
+			ID: id, DueAt: dueAt, CreationSequence: scheduler.NextCreationSequence, Kind: SchedulerKindAction,
+			Action: &world.ScheduledAction{Tool: "create_item", Input: map[string]any{"id": id}, SpecDigest: scheduledTestSpecDigest},
+			Status: SchedulerPending,
+		}
+	}
+	return state
+}

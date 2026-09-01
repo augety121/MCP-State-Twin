@@ -31,7 +31,7 @@ change state digest.
 ## 3. Bounded processing
 
 At most 256 events may be delivered by one advance under the current
-`local-preview-v6` (the bound was introduced by `local-preview-v5`). If the due set is larger, the request returns
+`local-preview-v7` (the bound was introduced by `local-preview-v5`). If the due set is larger, the request returns
 `RESOURCE_LIMIT`. The runtime MUST NOT deliver a prefix, silently drop events
 or defer an arbitrary suffix. Smaller time steps do not solve an overfull
 equal-time set; SPEC-0029 prevents new instances and SPEC-0030 provides an

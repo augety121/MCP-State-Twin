@@ -8,7 +8,7 @@
 
 Scheduler order compares parsed UTC instants rather than RFC3339Nano text. New
 event admission limits a branch to 256 pending signals at one canonical world
-instant under `local-preview-v6`.
+instant under `local-preview-v6`; `local-preview-v7` retains that bound.
 
 The limit is enforced in the event-creation transaction. It is not imposed as
 a read-time invariant on older preview state; legacy overfull instants are
@@ -20,6 +20,6 @@ drained through ADR-0030.
 - newly admitted equal-time sets fit the ordinary atomic delivery budget;
 - cancellation releases pending capacity without deleting lifecycle evidence;
 - the resource-profile digest changes from `local-preview-v5` to
-  `local-preview-v6`;
+  `local-preview-v6`, retained by `local-preview-v7`;
 - existing overfull preview queues remain readable rather than being silently
   repaired or rendered unrecoverable.

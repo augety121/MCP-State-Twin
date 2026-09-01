@@ -34,7 +34,7 @@ invalid persisted state and MUST fail explicitly before business execution.
 
 ## 3. Per-instant admission
 
-Under resource profile `local-preview-v6`, at most 256 **pending** events may
+Under resource profile `local-preview-v7`, at most 256 **pending** events may
 share one canonical `dueAt` in a branch. Event creation MUST count the existing
 pending set in the same branch transaction and fail with `RESOURCE_LIMIT`
 before state, digest, head version or audit mutation when the limit is reached.
@@ -59,7 +59,7 @@ admission at the final slot; a stale head or resource failure commits nothing.
 ## 5. Resource identity
 
 The following values are part of `statetwin.dev/resource-profile/v1alpha1`
-`local-preview-v6`:
+`local-preview-v7`:
 
 | Field | Value |
 |---|---:|

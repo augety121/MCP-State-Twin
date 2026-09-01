@@ -19,3 +19,10 @@ transition.
 - callers choose explicitly between arbitrary atomic jumps and bounded steps;
 - retries can use branch-head CAS to prevent double delivery;
 - no scheduled business effect, Agent wakeup or distributed lease is implied.
+
+## Amendment (2026-09-01)
+
+ADR-0032 through ADR-0034 extend `advance-next` to a contiguous prefix capped
+at 256 total events and 32 runtime-bound local TwinSpec actions. Action effects
+and terminal evidence share the step transaction. Ordinary advance now refuses
+due actions. Agent/provider/external work remains excluded.

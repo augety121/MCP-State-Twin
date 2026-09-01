@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
 	"time"
 
@@ -17,32 +18,39 @@ import (
 )
 
 var (
-	ErrSchedulerNotFound = errors.New("scheduled event not found")
-	ErrSchedulerInvalid  = errors.New("invalid scheduled event")
-	ErrSchedulerConflict = errors.New("scheduled event lifecycle conflict")
-	ErrSchedulerEmpty    = errors.New("scheduler has no pending events")
-	ErrSchedulerCursor   = errors.New("invalid scheduler cursor")
+	ErrSchedulerNotFound   = errors.New("scheduled event not found")
+	ErrSchedulerInvalid    = errors.New("invalid scheduled event")
+	ErrSchedulerConflict   = errors.New("scheduled event lifecycle conflict")
+	ErrSchedulerEmpty      = errors.New("scheduler has no pending events")
+	ErrSchedulerCursor     = errors.New("invalid scheduler cursor")
+	ErrSchedulerAction     = errors.New("scheduled action requires a compatible runtime")
+	scheduledToolPattern   = regexp.MustCompile(`^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$`)
+	scheduledDigestPattern = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
 )
 
 const (
 	SchedulerFormat       = "statetwin.dev/scheduler-state/v1alpha1"
-	SchedulerPolicy       = "signal-queue-v1"
+	SchedulerPolicy       = "deterministic-queue-v2"
 	SchedulerKindSignal   = world.SchedulerKindSignal
+	SchedulerKindAction   = world.SchedulerKindAction
 	SchedulerPending      = world.SchedulerPending
 	SchedulerDelivered    = world.SchedulerDelivered
 	SchedulerCanceled     = world.SchedulerCanceled
+	SchedulerCompleted    = world.SchedulerCompleted
+	SchedulerFailed       = world.SchedulerFailed
 	MinSchedulerPriority  = -1000
 	MaxSchedulerPriority  = 1000
 	SchedulerCursorFormat = "statetwin.dev/scheduler-cursor/v1"
 )
 
 type ScheduleRequest struct {
-	ID       string `json:"id"`
-	BranchID string `json:"branch"`
-	DueAt    string `json:"dueAt"`
-	Priority int    `json:"priority"`
-	Kind     string `json:"kind"`
-	Payload  any    `json:"payload"`
+	ID       string                 `json:"id"`
+	BranchID string                 `json:"branch"`
+	DueAt    string                 `json:"dueAt"`
+	Priority int                    `json:"priority"`
+	Kind     string                 `json:"kind"`
+	Payload  any                    `json:"payload"`
+	Action   *world.ScheduledAction `json:"action,omitempty"`
 }
 
 type ClockAdvanceResult struct {
@@ -81,19 +89,24 @@ type NextDueBatch struct {
 	SchedulerDigest string `json:"schedulerDigest"`
 	DueAt           string `json:"dueAt"`
 	PendingAtDueAt  int    `json:"pendingAtDueAt"`
+	PendingActions  int    `json:"pendingActions"`
 	BatchSize       int    `json:"batchSize"`
+	BatchActions    int    `json:"batchActions"`
 	RequiresDrain   bool   `json:"requiresDrain"`
 }
 
 type SchedulerStepResult struct {
-	BranchID        string                 `json:"branch"`
-	Clock           string                 `json:"clock"`
-	ClockAdvanced   bool                   `json:"clockAdvanced"`
-	HeadVersion     int64                  `json:"headVersion"`
-	Delivered       []world.ScheduledEvent `json:"delivered"`
-	MoreAtInstant   bool                   `json:"moreAtInstant"`
-	NextDueAt       string                 `json:"nextDueAt,omitempty"`
-	SchedulerDigest string                 `json:"schedulerDigest"`
+	BranchID         string                 `json:"branch"`
+	Clock            string                 `json:"clock"`
+	ClockAdvanced    bool                   `json:"clockAdvanced"`
+	HeadVersion      int64                  `json:"headVersion"`
+	Delivered        []world.ScheduledEvent `json:"delivered"`
+	Processed        []world.ScheduledEvent `json:"processed"`
+	DeliveredSignals int                    `json:"deliveredSignals"`
+	ExecutedActions  int                    `json:"executedActions"`
+	MoreAtInstant    bool                   `json:"moreAtInstant"`
+	NextDueAt        string                 `json:"nextDueAt,omitempty"`
+	SchedulerDigest  string                 `json:"schedulerDigest"`
 }
 
 type schedulerCursor struct {
@@ -114,6 +127,8 @@ type schedulerIdentity struct {
 	State  *world.SchedulerState `json:"state,omitempty"`
 }
 
+type ScheduledActionApply func(state *world.State, clock time.Time, callIndex int64, tool string, input map[string]any) (CallOutcome, error)
+
 func (s *Store) ScheduleEvent(ctx context.Context, request ScheduleRequest, expectedHeadVersion *int64) (*world.ScheduledEvent, error) {
 	if err := validateID("scheduled event id", request.ID); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrSchedulerInvalid, err)
@@ -121,8 +136,21 @@ func (s *Store) ScheduleEvent(ctx context.Context, request ScheduleRequest, expe
 	if err := validateID("branch id", request.BranchID); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrSchedulerInvalid, err)
 	}
-	if request.Kind != SchedulerKindSignal {
-		return nil, fmt.Errorf("%w: kind must be %q", ErrSchedulerInvalid, SchedulerKindSignal)
+	switch request.Kind {
+	case SchedulerKindSignal:
+		if request.Action != nil {
+			return nil, fmt.Errorf("%w: signal must not contain action", ErrSchedulerInvalid)
+		}
+	case SchedulerKindAction:
+		if request.Payload != nil || request.Action == nil || !scheduledToolPattern.MatchString(request.Action.Tool) ||
+			request.Action.Input == nil || !scheduledDigestPattern.MatchString(request.Action.SpecDigest) {
+			return nil, fmt.Errorf("%w: tool-call requires a valid action envelope and no payload", ErrSchedulerInvalid)
+		}
+		if err := limits.ValidateJSON(request.Action.Input, limits.MaxInputBytes); err != nil {
+			return nil, fmt.Errorf("%w: action input: %v", ErrSchedulerInvalid, err)
+		}
+	default:
+		return nil, fmt.Errorf("%w: kind must be %q or %q", ErrSchedulerInvalid, SchedulerKindSignal, SchedulerKindAction)
 	}
 	if request.Priority < MinSchedulerPriority || request.Priority > MaxSchedulerPriority {
 		return nil, fmt.Errorf("%w: priority must be %d..%d", ErrSchedulerInvalid, MinSchedulerPriority, MaxSchedulerPriority)
@@ -147,6 +175,9 @@ func (s *Store) ScheduleEvent(ctx context.Context, request ScheduleRequest, expe
 	}
 	if expectedHeadVersion != nil && *expectedHeadVersion != branch.HeadVersion {
 		return nil, fmt.Errorf("%w: branch %s expected head %d, current %d", ErrBranchConflict, request.BranchID, *expectedHeadVersion, branch.HeadVersion)
+	}
+	if request.Kind == SchedulerKindAction && request.Action.SpecDigest != branch.SpecDigest {
+		return nil, fmt.Errorf("%w: action spec digest %s does not match branch %s", ErrSchedulerConflict, request.Action.SpecDigest, branch.SpecDigest)
 	}
 	if !dueAt.After(branch.Clock) {
 		return nil, fmt.Errorf("%w: dueAt must be after current virtual clock", ErrSchedulerInvalid)
@@ -177,7 +208,7 @@ func (s *Store) ScheduleEvent(ctx context.Context, request ScheduleRequest, expe
 	event := world.ScheduledEvent{
 		ID: request.ID, DueAt: dueAt.Format(time.RFC3339Nano), Priority: request.Priority,
 		CreationSequence: scheduler.NextCreationSequence, Kind: request.Kind,
-		Payload: request.Payload, Status: SchedulerPending,
+		Payload: request.Payload, Action: request.Action, Status: SchedulerPending,
 	}
 	scheduler.Events[event.ID] = event
 	if err := branch.State.ValidateBudget(); err != nil {
@@ -369,25 +400,26 @@ func (s *Store) NextDueBatch(ctx context.Context, branchID string) (*NextDueBatc
 	}
 	dueAt := events[0].DueAt
 	count := 0
+	actionCount := 0
 	for _, event := range events {
 		if event.DueAt != dueAt {
 			break
 		}
 		count++
+		if event.Kind == SchedulerKindAction {
+			actionCount++
+		}
 	}
 	digest, err := schedulerDigest(branch.State)
 	if err != nil {
 		return nil, err
 	}
-	batchSize := count
-	if batchSize > limits.MaxScheduledDelivery {
-		batchSize = limits.MaxScheduledDelivery
-	}
+	batchSize, batchActions := scheduledBatchSize(events)
 	return &NextDueBatch{
 		Format: SchedulerFormat, Policy: SchedulerPolicy, BranchID: branchID,
 		Clock: branch.Clock.UTC().Format(time.RFC3339Nano), HeadVersion: branch.HeadVersion,
-		SchedulerDigest: digest, DueAt: dueAt, PendingAtDueAt: count,
-		BatchSize: batchSize, RequiresDrain: count > batchSize,
+		SchedulerDigest: digest, DueAt: dueAt, PendingAtDueAt: count, PendingActions: actionCount,
+		BatchSize: batchSize, BatchActions: batchActions, RequiresDrain: count > batchSize,
 	}, nil
 }
 
@@ -430,9 +462,28 @@ func pendingScheduledEvents(state *world.State) []world.ScheduledEvent {
 	return pending
 }
 
+func scheduledBatchSize(pending []world.ScheduledEvent) (int, int) {
+	if len(pending) == 0 {
+		return 0, 0
+	}
+	dueAt := pending[0].DueAt
+	count := 0
+	actions := 0
+	for count < len(pending) && pending[count].DueAt == dueAt && count < limits.MaxScheduledDelivery {
+		if pending[count].Kind == SchedulerKindAction {
+			if actions >= limits.MaxScheduledActions {
+				break
+			}
+			actions++
+		}
+		count++
+	}
+	return count, actions
+}
+
 func validSchedulerStatusFilter(status string) bool {
 	switch status {
-	case "", SchedulerPending, SchedulerDelivered, SchedulerCanceled:
+	case "", SchedulerPending, SchedulerDelivered, SchedulerCanceled, SchedulerCompleted, SchedulerFailed:
 		return true
 	default:
 		return false

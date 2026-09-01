@@ -23,7 +23,7 @@ features into implementation claims; `IMPLEMENTATION-STATUS.md` and
 
 ## Phase 0 — specification and claim consolidation
 
-Current progress: ADR-0021 through ADR-0031, SPEC-0019 through SPEC-0031,
+Current progress: ADR-0021 through ADR-0034, SPEC-0019 through SPEC-0034,
 unified traceability, claim, compatibility and decision ledgers, phase
 contracts, conservative local ExecutionProfile, HTTP admission, and private
 health/readiness exist. Exit still requires final link/translation review and
@@ -43,9 +43,12 @@ claims nor requires Internet-ready data-plane security.
 ## Phase 2 — determinism and recovery completion
 
 Partial preview capability exists for monotonic branch heads, a private virtual
-clock, `sha256-ctr-v1` modeled entropy, a bounded branch-local signal queue,
-atomic ordered due delivery, two transaction fault phases and versioned
-resource limits. Scheduled tool effects/cascades, full fault taxonomy and
+clock, `sha256-ctr-v1` modeled entropy, a bounded branch-local deterministic
+queue, atomic ordered due delivery, digest-bound inspection, runtime-bound
+one-attempt local TwinSpec actions, two transaction fault phases and versioned
+resource limits. Each action step is capped at 32 actions/256 total events and
+zero cascade. Scheduled Agent/provider/external effects, automatic retry,
+recurrence/dead letters, non-zero cascades, the full fault taxonomy and
 cross-platform deterministic artifact evidence remain open.
 
 The accepted operational-safety subset now includes a soft Go heap target and

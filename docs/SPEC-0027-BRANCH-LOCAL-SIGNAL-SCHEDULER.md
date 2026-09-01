@@ -3,7 +3,7 @@
 - **Status:** Accepted via ADR-0027
 - **Implementation status:** implemented bounded signal queue
 - **Verification status:** ordering, lifecycle, CAS, snapshot/fork isolation and HTTP tests
-- **Policy:** `signal-queue-v1`
+- **Policy introduced here:** `signal-queue-v1`; current combined queue policy is `deterministic-queue-v2` via ADR-0032
 
 ## 1. Scope
 
@@ -13,14 +13,14 @@ Agent/workflow scheduler.
 
 ## 2. Event record
 
-Each immutable-identity event contains:
+Each signal event contains:
 
 ```text
 id
 dueAt                    RFC3339Nano UTC
 priority                 integer -1000..1000
 creationSequence         branch-local monotonic integer
-kind                     exactly "signal"
+kind                     exactly "signal" under this event subtype
 payload                  bounded canonical JSON
 status                   pending | delivered | canceled
 deliveredAt              set only for delivered
@@ -29,7 +29,9 @@ canceledAt               set only for canceled
 
 Event IDs use the repository control identifier grammar and are never reusable
 within retained branch scheduler state. Payload has no executable semantics.
-Unknown `kind` values fail closed.
+Unknown `kind` values fail closed. ADR-0032 later admits the separate
+`tool-call` subtype under `deterministic-queue-v2`; it does not change signal
+payload or lifecycle semantics.
 
 ## 3. Ordering
 
@@ -96,7 +98,7 @@ production traces and personal data MUST NOT be submitted.
 
 ## 7. Limits
 
-The current `local-preview-v6` retains the 1,024-event branch bound introduced
+The current `local-preview-v7` retains the 1,024-event branch bound introduced
 by `local-preview-v5`. Pending,
 delivered and canceled events all count because automatic retention/GC is not
 implemented. Payload is bounded by the normal 1 MiB input limit and the final
@@ -112,6 +114,8 @@ queue, head or audit ledger.
 
 ## 9. Explicit non-claims
 
-No recurring schedule, cron parser, background goroutine, wall-clock wakeup,
-Agent resume, provider call, TwinSpec tool dispatch, retry queue, distributed
-lease, multi-coordinator ordering, retention/GC or external effect is present.
+This signal subtype has no executable payload semantics. The repository has no
+recurring schedule, cron parser, background goroutine, wall-clock wakeup,
+Agent resume, provider call, retry queue, distributed lease,
+multi-coordinator ordering, retention/GC or external effect. Runtime-bound
+local TwinSpec actions are governed only by SPEC-0032 through SPEC-0034.

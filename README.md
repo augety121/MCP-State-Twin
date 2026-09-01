@@ -244,8 +244,8 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 | Exactly-once terminal acceptance | ✅ 有界语义 | 一个 parent Episode 最多接受一个匹配的 Evidence；**不**承诺 provider/tool/外部副作用 exactly-once |
 | HostCompatibilityReport admission | ✅ | 严格 schema、bounded evidence、credential/private-key/email pattern rejection；不等于 live provider 通过 |
 | OpenAI / Anthropic provider smoke harness | 🧪 合同级已实现 | OpenAI background/retrieve/cancel 与 Anthropic MCP connector mock contract tests；真实 live 报告尚未生成 |
-| Deterministic fault injection / virtual-clock advancement | 🧪 部分实现 | 私有 clock、两个 fault transaction phases；其余 fault/scheduled-effect semantics 未实现 |
-| Deterministic entropy / signal scheduler | ✅ 有界语义 | `sha256-ctr-v1`、私有 `signal-queue-v1`、真实 UTC 顺序、同刻准入、原子/next-due 交付和摘要绑定分页；不是密码学 RNG、Agent 唤醒或工作流队列 |
+| Deterministic fault injection / virtual-clock advancement | 🧪 部分实现 | 私有 clock；普通调用与 scheduled TwinSpec action 覆盖两个 fault transaction phases；其余 fault semantics 未实现 |
+| Deterministic entropy / world scheduler | ✅ 有界语义 | `sha256-ctr-v1`、私有 `deterministic-queue-v2`、真实 UTC 顺序、同刻准入、摘要绑定分页；支持一次性 runtime-bound 本地 TwinSpec action（每步最多 32、zero cascade），不支持 Agent/provider/外部任务 |
 | Versioned semantic resource governance | 🧪 部分实现 | `statetwin limits`、environment digest、fail-closed local budgets；OS/remote quotas 未实现 |
 | Conservative local execution governor | ✅ soft boundary | `local-v2` 默认 `quiet`：`GOMAXPROCS=1`、512 MiB Go heap 软目标、每个 listener 4 个 in-flight；不是 OS/RSS 硬配额，不覆盖 native/子进程 |
 | HTTP admission/backpressure | ✅ local boundary | data/control/coordinator 独立非排队 permit pool；过载返回 redacted `503 SERVER_BUSY`；不是分布式限流或 DDoS 防护 |
@@ -282,9 +282,10 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 - provider-neutral remote worker：只认领 `hermetic` profile，通过独立 HTTP control plane 执行 TwinBundle，并原子提交 Evidence；
 - OpenAI/Anthropic smoke harness：使用官方当前 API contract 的请求形状和 mock-server 正/负测试，报告只保留 digest、能力与计数，不保存 token、raw response 或 prompt；
 - bounded branch-local fault plans：`before-validation` 与 `after-commit-before-response`，带稳定 plan digest、事务内计数和 fault-event audit。
-- deterministic world inputs：显式 public synthetic seed 的 `sha256-ctr-v1` 熵流，以及私有 branch-local signal queue；snapshot/fork/reset 绑定计数器和队列状态。
+- deterministic world inputs：显式 public synthetic seed 的 `sha256-ctr-v1` 熵流，以及私有 branch-local `deterministic-queue-v2`；snapshot/fork/reset 绑定计数器和完整队列状态。
 - atomic due-signal delivery：按解析后的 UTC due time、priority、creation sequence、ID 全序交付；普通 clock advance 单次上限 256 并在超限时整次回滚。
-- scheduler liveness/inspection：新队列每个 world instant 最多 256 个 pending signals；旧的超额预览队列可通过明确的 `advance-next` 分批恢复；list 默认 100、最大 256，并用 scheduler digest 拒绝跨变更续页。
+- scheduler liveness/inspection：新队列每个 world instant 最多 256 个 pending events；旧的超额预览队列可通过明确的 `advance-next` 分批恢复；list 默认 100、最大 256，并用 scheduler digest 拒绝跨变更续页。
+- runtime-bound scheduled TwinSpec actions：私有 control plane 在准入时验证已加载 tool、input schema 与 branch/spec digest；`advance-next` 在一个 SQLite 事务中提交 tool effect、fault、audit、终态 evidence、clock/call-count/head。`local-preview-v7` 每步最多 32 actions / 256 total events、attempt=1、cascade=0。
 - versioned resource profile：input/output/state、JSON depth/members、effect/query、diff/report、branch/snapshot limits 以 `RESOURCE_LIMIT` fail closed，并绑定 Scenario environment digest。
 - 独立的 versioned ExecutionProfile：所有命令执行前默认应用 `quiet` 单槽 Go scheduler；可通过 CLI/环境显式提高，且不会冒充 OS 硬配额。
 - Go heap soft target 与 HTTP admission：默认 512 MiB runtime target，每个 listener 独立 4-request 非排队容量；拒绝请求不会进入业务 handler。
@@ -298,7 +299,8 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 <summary><strong>展开：尚未实现或尚未验证</strong></summary>
 
 - recorder、cassette replay、trace redaction、自动 upstream surface inspection/refresh；
-- 其余 deterministic fault phases、scheduled tool/Agent effects、recurrence/cascade、idempotency collapse、crash/cancellation 与 eventual consistency；private clock、modeled entropy、opaque signals 和两个 fault phases 已实现；
+- 其余 deterministic fault phases、idempotency collapse、crash/cancellation 与 eventual consistency；private clock、modeled entropy、signals、一次性本地 TwinSpec actions 和两个 fault phases 已实现；
+- scheduled Agent/provider/process/外部 effects、recurrence、automatic retry/dead letters 与 non-zero cascade；
 - live ChatGPT、Claude 产品或 Claude Code smoke tests；
 - dated OpenAI/Anthropic live reports 与 evidence-derived compatibility matrix；当前环境未配置 provider key 和公网 synthetic MCP endpoint；
 - differential validation 或 L2 fidelity promotion workflow；
@@ -312,7 +314,7 @@ Record/replay 计划作为 `L0` fidelity 模式存在；它与 State Twin 是互
 
 ---
 
-## 确定性熵与未来信号
+## 确定性熵、未来信号与有界 world actions
 
 TwinSpec 可以显式选择模拟专用熵流：
 
@@ -340,6 +342,20 @@ curl -H "Authorization: Bearer $STATETWIN_CONTROL_TOKEN" \
   http://127.0.0.1:8091/v1/scheduler/events
 ```
 
+也可以调度一个**已由当前 TwinSpec 建模**的本地 hermetic tool。客户端不提供
+`specDigest`；runtime 验证 schema 后注入并在执行时再次核对：
+
+```bash
+curl -H "Authorization: Bearer $STATETWIN_CONTROL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"id":"close-later","branch":"main","dueAt":"2026-09-01T01:00:00Z","priority":10,"kind":"tool-call","action":{"tool":"close_issue","input":{"owner":"octo","repository":"demo","number":1}}}' \
+  http://127.0.0.1:8091/v1/scheduler/events
+```
+
+普通 `/v1/clock/advance` 遇到 due action 会整次拒绝；只有 runtime-backed
+`advance-next` 能执行。成功、domain failure 与 `TIMEOUT_AFTER_EFFECT` 都会
+留下带 `callIndex`、`effectCommitted` 和可选 fault identity 的终态记录。
+
 推进虚拟时钟时，所有有界 due signals 与 clock/head/state digest 原子提交。
 普通任意时钟推进保持 all-or-nothing；需要逐个 world instant 推进或恢复旧的
 同刻超额队列时，先预览并显式执行 bounded step：
@@ -359,12 +375,15 @@ curl -H "Authorization: Bearer $STATETWIN_CONTROL_TOKEN" \
 
 分页 cursor 绑定 branch、filter 与 scheduler digest；队列在两页之间变化时
 返回 conflict，客户端必须从第一页重新开始，而不是合并不一致结果。
-这些信号不会自动执行 TwinSpec tool、调用 provider 或唤醒 Agent；control
-routes 也不会出现在 MCP `tools/list`。完整语义见
+Signal payload 永远不会自动执行。`tool-call` 也只执行已加载的本地 TwinSpec
+transition，不会调用 provider、进程、远程 MCP 或外部系统，更不会唤醒
+Agent；control routes 不会出现在 MCP `tools/list`。完整语义见
 [SPEC-0026](docs/SPEC-0026-DETERMINISTIC-ENTROPY-STREAMS.md)、
 [SPEC-0027](docs/SPEC-0027-BRANCH-LOCAL-SIGNAL-SCHEDULER.md) 和
 [SPEC-0028](docs/SPEC-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md) 至
-[SPEC-0031](docs/SPEC-0031-DIGEST-BOUND-SCHEDULER-PAGINATION.md)。
+[SPEC-0031](docs/SPEC-0031-DIGEST-BOUND-SCHEDULER-PAGINATION.md)，以及
+[SPEC-0032](docs/SPEC-0032-RUNTIME-BOUND-SCHEDULED-ACTIONS.md) 至
+[SPEC-0034](docs/SPEC-0034-SCHEDULED-ACTION-BUDGET-AND-ZERO-CASCADE.md)。
 
 ---
 
@@ -876,7 +895,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 
 - [RFC-0001](docs/RFC-0001.md) — revision 3 product boundary、hard invariants、architecture 与版本维度
 - [RFC-0002](docs/RFC-0002-V0.1-RELEASE-PROFILE.md) — local hermetic v0.1 release profile、limits、traceability、gates
-- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 evaluation platform；仅 ADR-0018–ADR-0020 与 ADR-0026–ADR-0031 所列子集已接受
+- [RFC-0003](docs/RFC-0003-V0.2-LOCAL-EVALUATION-PLATFORM.md) — v0.2 evaluation platform；仅 ADR-0018–ADR-0020 与 ADR-0026–ADR-0034 所列子集已接受
 
 ### ADR
 
@@ -904,6 +923,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [ADR-0022](docs/ADR-0022-LOCAL-EXECUTION-GOVERNANCE.md) — 默认安静的本地 Go 执行策略及硬配额非声明
 - [ADR-0023](docs/ADR-0023-GO-HEAP-SOFT-LIMIT.md) / [ADR-0024](docs/ADR-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md) / [ADR-0025](docs/ADR-0025-AUTHENTICATED-HEALTH-READINESS.md)
 - [ADR-0026](docs/ADR-0026-DETERMINISTIC-ENTROPY-STREAMS.md) / [ADR-0027](docs/ADR-0027-BRANCH-LOCAL-SIGNAL-SCHEDULER.md) / [ADR-0028](docs/ADR-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md) / [ADR-0029](docs/ADR-0029-TEMPORAL-ORDER-AND-INSTANT-ADMISSION.md) / [ADR-0030](docs/ADR-0030-BOUNDED-NEXT-DUE-ADVANCEMENT.md) / [ADR-0031](docs/ADR-0031-DIGEST-BOUND-SCHEDULER-PAGINATION.md)
+- [ADR-0032](docs/ADR-0032-RUNTIME-BOUND-SCHEDULED-ACTIONS.md) / [ADR-0033](docs/ADR-0033-SCHEDULED-ACTION-TERMINAL-EVIDENCE.md) / [ADR-0034](docs/ADR-0034-SCHEDULED-ACTION-BUDGET-AND-ZERO-CASCADE.md)
 
 ### Unified lifecycle and evidence
 
@@ -912,6 +932,7 @@ README 中的环境/CI 状态可能随开发变化。可复现证据应优先查
 - [Claim Registry](docs/CLAIM-REGISTRY.md) — public claim 的精确状态和边界
 - [Compatibility Matrix](docs/COMPATIBILITY-MATRIX.md) — API/product profiles 分离的兼容矩阵
 - [SPEC-0019](docs/SPEC-0019-HOST-PROFILE-AND-LIVE-EVIDENCE.md) / [SPEC-0020](docs/SPEC-0020-REMOTE-SECURITY-PROFILE.md) / [SPEC-0021](docs/SPEC-0021-CLAIM-REGISTRY-AND-FRESHNESS.md) / [SPEC-0022](docs/SPEC-0022-LOCAL-CPU-AND-EXECUTION-GOVERNANCE.md) / [SPEC-0023](docs/SPEC-0023-GO-HEAP-MEMORY-GOVERNANCE.md) / [SPEC-0024](docs/SPEC-0024-HTTP-ADMISSION-AND-BACKPRESSURE.md) / [SPEC-0025](docs/SPEC-0025-OPERATIONAL-HEALTH-AND-READINESS.md) / [SPEC-0026](docs/SPEC-0026-DETERMINISTIC-ENTROPY-STREAMS.md) / [SPEC-0027](docs/SPEC-0027-BRANCH-LOCAL-SIGNAL-SCHEDULER.md) / [SPEC-0028](docs/SPEC-0028-ATOMIC-DUE-SIGNAL-DELIVERY.md) / [SPEC-0029](docs/SPEC-0029-TEMPORAL-ORDER-AND-INSTANT-ADMISSION.md) / [SPEC-0030](docs/SPEC-0030-BOUNDED-NEXT-DUE-ADVANCEMENT.md) / [SPEC-0031](docs/SPEC-0031-DIGEST-BOUND-SCHEDULER-PAGINATION.md)
+- [SPEC-0032](docs/SPEC-0032-RUNTIME-BOUND-SCHEDULED-ACTIONS.md) / [SPEC-0033](docs/SPEC-0033-SCHEDULED-ACTION-TERMINAL-EVIDENCE.md) / [SPEC-0034](docs/SPEC-0034-SCHEDULED-ACTION-BUDGET-AND-ZERO-CASCADE.md)
 
 ### Evidence / Research
 

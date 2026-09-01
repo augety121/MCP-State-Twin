@@ -1050,6 +1050,9 @@ func (s *Store) AdvanceClock(ctx context.Context, branchID string, target time.T
 		if dueAt.After(target) {
 			continue
 		}
+		if event.Kind == SchedulerKindAction {
+			return nil, fmt.Errorf("%w: event %s is due; use bounded advance-next", ErrSchedulerAction, event.ID)
+		}
 		delivered = append(delivered, event)
 	}
 	if len(delivered) > limits.MaxScheduledDelivery {
@@ -1104,6 +1107,32 @@ WHERE id = ? AND head_version = ?`, target.Format(time.RFC3339Nano), stateJSON, 
 // while draining an overfull legacy instant. The operation is private control
 // plane state and never appears in the Agent MCP tool surface.
 func (s *Store) AdvanceClockToNext(ctx context.Context, branchID string, expectedHeadVersion *int64) (*SchedulerStepResult, error) {
+	return s.advanceClockToNext(ctx, branchID, expectedHeadVersion, "", nil)
+}
+
+// AdvanceClockToNextWithActions additionally executes scheduled hermetic
+// TwinSpec actions through the supplied runtime callback. The callback runs
+// inside the branch transaction and must not mutate scheduler state.
+func (s *Store) AdvanceClockToNextWithActions(
+	ctx context.Context,
+	branchID string,
+	expectedHeadVersion *int64,
+	expectedSpecDigest string,
+	apply ScheduledActionApply,
+) (*SchedulerStepResult, error) {
+	if !scheduledDigestPattern.MatchString(expectedSpecDigest) || apply == nil {
+		return nil, fmt.Errorf("%w: a canonical runtime digest and executor are required", ErrSchedulerAction)
+	}
+	return s.advanceClockToNext(ctx, branchID, expectedHeadVersion, expectedSpecDigest, apply)
+}
+
+func (s *Store) advanceClockToNext(
+	ctx context.Context,
+	branchID string,
+	expectedHeadVersion *int64,
+	expectedSpecDigest string,
+	apply ScheduledActionApply,
+) (*SchedulerStepResult, error) {
 	if err := validateID("branch id", branchID); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrSchedulerInvalid, err)
 	}
@@ -1118,6 +1147,9 @@ func (s *Store) AdvanceClockToNext(ctx context.Context, branchID string, expecte
 	}
 	if expectedHeadVersion != nil && *expectedHeadVersion != branch.HeadVersion {
 		return nil, fmt.Errorf("%w: branch %s expected head %d, current %d", ErrBranchConflict, branchID, *expectedHeadVersion, branch.HeadVersion)
+	}
+	if expectedSpecDigest != "" && branch.SpecDigest != expectedSpecDigest {
+		return nil, fmt.Errorf("SPEC_DRIFT: branch is bound to %s, runtime loaded %s", branch.SpecDigest, expectedSpecDigest)
 	}
 	pending := pendingScheduledEvents(branch.State)
 	if len(pending) == 0 {
@@ -1135,18 +1167,132 @@ func (s *Store) AdvanceClockToNext(ctx context.Context, branchID string, expecte
 			return nil, fmt.Errorf("%w: maximum advance is %s", ErrClockLimit, MaxClockAdvance)
 		}
 	}
-	batchEnd := 0
-	for batchEnd < len(pending) && pending[batchEnd].DueAt == pending[0].DueAt && batchEnd < limits.MaxScheduledDelivery {
-		batchEnd++
+	batchEnd, batchActions := scheduledBatchSize(pending)
+	if batchEnd == 0 {
+		return nil, fmt.Errorf("%w: scheduler step budgets select no events", ErrResourceLimit)
 	}
-	delivered := append([]world.ScheduledEvent(nil), pending[:batchEnd]...)
-	for index := range delivered {
-		event := delivered[index]
-		event.Status = SchedulerDelivered
-		event.DeliveredAt = event.DueAt
-		branch.State.Scheduler.Events[event.ID] = event
-		delivered[index] = event
+	selected := append([]world.ScheduledEvent(nil), pending[:batchEnd]...)
+	if batchActions > 0 && apply == nil {
+		return nil, fmt.Errorf("%w: event %s is due", ErrSchedulerAction, firstScheduledActionID(selected))
 	}
+	working := branch.State
+	callCount := branch.CallCount
+	processed := make([]world.ScheduledEvent, 0, len(selected))
+	delivered := make([]world.ScheduledEvent, 0, len(selected)-batchActions)
+	executedActions := 0
+	for _, selectedEvent := range selected {
+		switch selectedEvent.Kind {
+		case SchedulerKindSignal:
+			event := working.Scheduler.Events[selectedEvent.ID]
+			event.Status = SchedulerDelivered
+			event.DeliveredAt = event.DueAt
+			working.Scheduler.Events[event.ID] = event
+			processed = append(processed, event)
+			delivered = append(delivered, event)
+		case SchedulerKindAction:
+			if selectedEvent.Action == nil || selectedEvent.Action.SpecDigest != branch.SpecDigest {
+				return nil, fmt.Errorf("%w: action %s does not match branch spec", ErrSchedulerConflict, selectedEvent.ID)
+			}
+			beforeDigest, digestErr := canonical.Digest(working)
+			if digestErr != nil {
+				return nil, digestErr
+			}
+			beforeSchedulerDigest, digestErr := schedulerDigest(working)
+			if digestErr != nil {
+				return nil, digestErr
+			}
+			candidate, cloneErr := working.Clone()
+			if cloneErr != nil {
+				return nil, cloneErr
+			}
+			callCount++
+			fired, faultErr := takeFault(ctx, tx, branchID, selectedEvent.Action.Tool, FaultPhaseBeforeValidation)
+			var outcome CallOutcome
+			if faultErr != nil {
+				return nil, faultErr
+			}
+			if fired != nil {
+				outcome = faultOutcome(fired, false)
+			} else {
+				outcome, err = apply(candidate, target, callCount, selectedEvent.Action.Tool, selectedEvent.Action.Input)
+				if err != nil {
+					return nil, err
+				}
+				if outcome.ErrorClass == "" {
+					fired, faultErr = takeFault(ctx, tx, branchID, selectedEvent.Action.Tool, FaultPhaseAfterCommitBeforeResponse)
+					if faultErr != nil {
+						return nil, faultErr
+					}
+					if fired != nil {
+						outcome = faultOutcome(fired, true)
+					}
+				}
+			}
+			afterCallbackSchedulerDigest, digestErr := schedulerDigest(candidate)
+			if digestErr != nil {
+				return nil, digestErr
+			}
+			if afterCallbackSchedulerDigest != beforeSchedulerDigest {
+				return nil, fmt.Errorf("%w: action %s attempted to mutate scheduler state", ErrSchedulerInvalid, selectedEvent.ID)
+			}
+			if outcome.ErrorClass == "" && !outcome.CommitState {
+				return nil, fmt.Errorf("scheduled action %s returned success without committing state", selectedEvent.ID)
+			}
+			if outcome.ErrorClass != "" && !idPattern.MatchString(outcome.ErrorClass) {
+				return nil, fmt.Errorf("%w: action %s returned invalid error class", ErrSchedulerInvalid, selectedEvent.ID)
+			}
+			if outcome.ErrorClass != "" && outcome.CommitState && (fired == nil || fired.Phase != FaultPhaseAfterCommitBeforeResponse) {
+				return nil, fmt.Errorf("%w: action %s reported a committed failure without after-effect fault evidence", ErrSchedulerInvalid, selectedEvent.ID)
+			}
+			if err := limits.ValidateJSON(outcome.Result, limits.MaxOutputBytes); err != nil {
+				return nil, fmt.Errorf("%w: scheduled action result: %v", ErrResourceLimit, err)
+			}
+			if !outcome.CommitState {
+				candidate, cloneErr = working.Clone()
+				if cloneErr != nil {
+					return nil, cloneErr
+				}
+			}
+			event := candidate.Scheduler.Events[selectedEvent.ID]
+			event.AttemptCount = limits.MaxScheduledAttempts
+			event.FinishedAt = event.DueAt
+			event.Outcome = &world.ScheduledActionOutcome{
+				CallIndex: callCount, Result: outcome.Result, ErrorClass: outcome.ErrorClass,
+				EffectCommitted: outcome.CommitState,
+			}
+			if fired != nil {
+				event.Outcome.FaultID = fired.ID
+				event.Outcome.FaultPhase = fired.Phase
+			}
+			if outcome.ErrorClass == "" {
+				event.Status = SchedulerCompleted
+			} else {
+				event.Status = SchedulerFailed
+			}
+			candidate.Scheduler.Events[event.ID] = event
+			if err := candidate.ValidateBudget(); err != nil {
+				return nil, fmt.Errorf("%w: %v", ErrResourceLimit, err)
+			}
+			afterDigest, digestErr := canonical.Digest(candidate)
+			if digestErr != nil {
+				return nil, digestErr
+			}
+			if err := appendToolAudit(ctx, tx, branchID, callCount, selectedEvent.Action.Tool, selectedEvent.Action.Input, outcome, beforeDigest, afterDigest); err != nil {
+				return nil, err
+			}
+			if fired != nil {
+				if err := appendFaultEvent(ctx, tx, branchID, callCount, fired, beforeDigest, afterDigest); err != nil {
+					return nil, err
+				}
+			}
+			working = candidate
+			processed = append(processed, event)
+			executedActions++
+		default:
+			return nil, fmt.Errorf("%w: unsupported event kind %q", ErrSchedulerInvalid, selectedEvent.Kind)
+		}
+	}
+	branch.State = working
 	if err := branch.State.ValidateBudget(); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrResourceLimit, err)
 	}
@@ -1159,8 +1305,8 @@ func (s *Store) AdvanceClockToNext(ctx context.Context, branchID string, expecte
 		return nil, fmt.Errorf("digest scheduler step state: %w", err)
 	}
 	result, err := tx.ExecContext(ctx, `
-UPDATE branches SET clock = ?, state_json = ?, state_digest = ?, head_version = head_version + 1
-WHERE id = ? AND head_version = ?`, target.UTC().Format(time.RFC3339Nano), stateJSON, afterDigest, branchID, branch.HeadVersion)
+UPDATE branches SET clock = ?, state_json = ?, state_digest = ?, call_count = ?, head_version = head_version + 1
+WHERE id = ? AND head_version = ?`, target.UTC().Format(time.RFC3339Nano), stateJSON, afterDigest, callCount, branchID, branch.HeadVersion)
 	if err != nil {
 		return nil, fmt.Errorf("persist scheduler step: %w", err)
 	}
@@ -1190,9 +1336,48 @@ WHERE id = ? AND head_version = ?`, target.UTC().Format(time.RFC3339Nano), state
 	}
 	return &SchedulerStepResult{
 		BranchID: branchID, Clock: target.UTC().Format(time.RFC3339Nano), ClockAdvanced: clockAdvanced,
-		HeadVersion: branch.HeadVersion + 1, Delivered: delivered, MoreAtInstant: moreAtInstant,
+		HeadVersion: branch.HeadVersion + 1, Delivered: delivered, Processed: processed,
+		DeliveredSignals: len(delivered), ExecutedActions: executedActions, MoreAtInstant: moreAtInstant,
 		NextDueAt: nextDueAt, SchedulerDigest: digest,
 	}, nil
+}
+
+func firstScheduledActionID(events []world.ScheduledEvent) string {
+	for _, event := range events {
+		if event.Kind == SchedulerKindAction {
+			return event.ID
+		}
+	}
+	return "unknown"
+}
+
+func appendToolAudit(ctx context.Context, tx *sql.Tx, branchID string, callIndex int64, toolName string, input any, outcome CallOutcome, beforeDigest, afterDigest string) error {
+	resultJSON, err := canonical.JSON(outcome.Result)
+	if err != nil {
+		return fmt.Errorf("canonicalize scheduled tool result: %w", err)
+	}
+	inputJSON, err := canonical.JSON(input)
+	if err != nil {
+		return fmt.Errorf("canonicalize scheduled tool input: %w", err)
+	}
+	if len(inputJSON)+len(resultJSON) > limits.MaxAuditEventBytes {
+		return fmt.Errorf("%w: audit payload bytes %d exceed limit %d", ErrResourceLimit, len(inputJSON)+len(resultJSON), limits.MaxAuditEventBytes)
+	}
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO audit(branch_id, call_index, tool_name, input_json, result_json, error_class, before_digest, after_digest, created_at)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`, branchID, callIndex, toolName, inputJSON, resultJSON, outcome.ErrorClass, beforeDigest, afterDigest, time.Now().UTC().Format(time.RFC3339Nano)); err != nil {
+		return fmt.Errorf("append scheduled action audit: %w", err)
+	}
+	return nil
+}
+
+func appendFaultEvent(ctx context.Context, tx *sql.Tx, branchID string, callIndex int64, fired *FaultPlan, beforeDigest, afterDigest string) error {
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO fault_events(branch_id, fault_id, call_index, phase, error_class, before_digest, after_digest, created_at)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?)`, branchID, fired.ID, callIndex, fired.Phase, fired.ErrorClass, beforeDigest, afterDigest, time.Now().UTC().Format(time.RFC3339Nano)); err != nil {
+		return fmt.Errorf("append scheduled fault event: %w", err)
+	}
+	return nil
 }
 
 type sqlExecer interface {
