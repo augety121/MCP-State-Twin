@@ -1,9 +1,9 @@
 # Implementation Status
 
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
-**Last verified:** 2026-09-01; local single-core suite plus public CI
-[run 33456196081](https://github.com/augety121/MCP-State-Twin/actions/runs/33456196081)
-for implementation commit `e3f0355` completed successfully, including Linux
+**Last verified:** 2026-09-02; local single-core suite plus public CI
+[run 33579877698](https://github.com/augety121/MCP-State-Twin/actions/runs/33579877698)
+for implementation commit `61aac2d` completed successfully, including Linux
 race, Windows/macOS, fuzz, secret policy, hermetic egress and MCP conformance
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 is the accepted v0.1 release profile. RFC-0003 is a
@@ -19,13 +19,17 @@ through SPEC-0034 are accepted only to the exact
 states recorded below; acceptance is not an implementation claim. Complete
 remote-staging security and dated live HostProfiles remain absent.
 
-**2026-09-02 maintenance candidate:** ADR-0035–0037 accept count-bounded fuzz
+**2026-09-02 maintenance verification:** ADR-0035–0037 accept count-bounded fuzz
 smoke, the `cel.dev/cel-go v0.32.0` module migration and the CEL null-to-JSON
 correction. Local single-core vet/full tests, module checksum verification,
 200,000-iteration parser fuzz and 10,000-iteration CEL fuzz budgets pass.
-Local race testing is unavailable because CGO is disabled; Linux CI is required.
-Fresh remote CI/updater results must be recorded separately; the
-last verified run above predates this candidate.
+Local race testing is unavailable because CGO is disabled; the Linux race
+evidence is the successful CI run above. The fresh
+[Dependabot run 33579893053](https://github.com/augety121/MCP-State-Twin/actions/runs/33579893053)
+also succeeded on `61aac2d`, explicitly checking `cel.dev/cel-go`. Historical
+failed runs remain unchanged. SQLite PR #5 was refreshed for independent
+[candidate CI](https://github.com/augety121/MCP-State-Twin/actions/runs/33580014685)
+and has not been merged; main remains on SQLite v1.56.0.
 
 ## Implemented and tested
 
@@ -38,7 +42,7 @@ last verified run above predates this candidate.
 | Canonical spec and state digest | golden map-order tests |
 | Bounded declarative expressions | 4,096-byte source limit; CEL programs compiled once with a cost limit of 10,000 |
 | CEL migration/value regression | literal/nested null, map/list/arithmetic/error vectors, nullable output-schema and stored-null tests; `TestCELModuleMigrationIsComplete`; SPEC-0036/0037 |
-| Bounded fuzz maintenance | count budgets, one worker, independent watchdogs, failure propagation and synthetic counterexample artifact contract; SPEC-0035; fresh remote run required for CI evidence |
+| Bounded fuzz maintenance | count budgets, one worker, independent watchdogs, failure propagation and synthetic counterexample artifact contract; SPEC-0035; both targets passed in CI run 33579877698 |
 | Canonical MCP tool-surface digest | order-independent name/description/schema/annotation digest; mutation tests |
 | Surface admission enforcement | matching `current` binding accepted; mismatch, `drifted`, and `unknown` fail `SPEC_DRIFT` |
 | Top-level input validation subset | required/additionalProperties/type/enum tests through engine calls |

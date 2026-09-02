@@ -36,9 +36,9 @@
 
 | Maintenance requirement | Authority | Evidence | Status |
 |---|---|---|---|
-| ST-MAINT-001 bounded failure-preserving fuzz | SPEC-0035 | workflow contract + POSIX wrapper exit tests + actual fuzz job | accepted; remote evidence tracked separately |
-| ST-MAINT-002 dependency migration admission | SPEC-0036 | module/import checks, checksum verification and expression vectors | locally tested candidate |
-| ST-MAINT-003 null/zero distinction | SPEC-0037 | engine null/nested/schema/stored-state regression tests | locally tested candidate |
+| ST-MAINT-001 bounded failure-preserving fuzz | SPEC-0035 | workflow contract + POSIX wrapper exit tests + actual fuzz job | verified CI run 33579877698 |
+| ST-MAINT-002 dependency migration admission | SPEC-0036 | module/import checks, checksum verification and expression vectors | verified CI run 33579877698; updater run 33579893053 |
+| ST-MAINT-003 null/zero distinction | SPEC-0037 | engine null/nested/schema/stored-state regression tests | verified CI run 33579877698 |
 
 A release gate is closed only when the evidence passes on the exact release
 candidate revision. `Partial`, `experimental` and `unverified` rows may ship
