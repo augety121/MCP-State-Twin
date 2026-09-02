@@ -28,6 +28,9 @@ function access is registered.
 
 ## Consequences
 
+The 2026-09-02 amendments are ADR-0036 (declared CEL module path and upgrade
+admission) and ADR-0037 (preserve null at the native-to-JSON boundary).
+
 - expressions are reviewable and deterministic for the supported value domain;
 - CEL syntax becomes part of the alpha TwinSpec contract;
 - dynamic values defer some type errors until validation/runtime;

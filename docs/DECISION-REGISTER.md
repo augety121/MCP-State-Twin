@@ -32,6 +32,9 @@
 | DEC-026 | Scheduled actions are private, runtime-bound executions of an existing modeled TwinSpec tool; they are not Agent/provider/external tasks | resolved | ADR-0032 / SPEC-0032 |
 | DEC-027 | Scheduled action effects, terminal evidence, faults, audit and aggregate branch-head update share one SQLite transaction | resolved | ADR-0033 / SPEC-0033 |
 | DEC-028 | `local-preview-v7` caps a step at 32 actions/256 events, permits one attempt and rejects every callback scheduler mutation | resolved | ADR-0034 / SPEC-0034 |
+| DEC-029 | Fuzz search uses count budgets with independent watchdogs; failures remain failures and counterexamples are retained narrowly | resolved | ADR-0035 / SPEC-0035 |
+| DEC-030 | CEL follows its declared `cel.dev/cel-go` module path; no ignore rule or replacement shim | resolved | ADR-0036 / SPEC-0036 |
+| DEC-031 | CEL null stays JSON null, never numeric zero; historical artifacts are not rewritten | resolved | ADR-0037 / SPEC-0037 |
 
 Open decisions are roadmap work. They MUST NOT be silently resolved by an
 implementation-only change.

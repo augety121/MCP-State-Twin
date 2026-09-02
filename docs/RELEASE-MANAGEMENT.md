@@ -113,6 +113,14 @@ records instead.
 
 ## Maintainer operations between releases
 
+Follow [SPEC-0035](SPEC-0035-BOUNDED-FUZZ-AND-FAILURE-EVIDENCE.md) for fuzz
+timeouts/counterexamples and [SPEC-0036](SPEC-0036-DEPENDENCY-MIGRATION-ADMISSION.md)
+for dependency-path migrations. Record old failed runs rather than deleting
+them, validate fresh candidate revisions, and never suppress a failure to
+make a badge green. The preview null correction in
+[SPEC-0037](SPEC-0037-CEL-NULL-AND-JSON-BOUNDARY.md) must be disclosed in notes
+because affected outputs/state digests intentionally change.
+
 At least one maintenance record should be visible per cycle:
 
 - triage an issue to a reproducible fixture;

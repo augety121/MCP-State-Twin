@@ -7,6 +7,11 @@ alpha prerelease but no stable release yet.
 
 ### Added
 
+- ADR/SPEC-0035–0037: bounded fuzz evidence, dependency migration admission,
+  and CEL null/JSON value-boundary contracts;
+- expression compatibility vectors, module/import migration checks and
+  failure-propagation tests for the bounded fuzz wrapper;
+
 - ADR-0021 and RFC-0001 revision 3, establishing the bounded product identity,
   independent version dimensions and a non-circular v0.1–v1.0 release train;
 - SPEC-0019 through SPEC-0021 for exact HostProfiles, remote-staging security,
@@ -55,6 +60,16 @@ alpha prerelease but no stable release yet.
   attempt and cascade depth zero, while retaining the 256-total-event bound;
 
 ### Changed
+
+- CEL module/import path migrated from `github.com/google/cel-go v0.31.0` to
+  the upstream-declared `cel.dev/cel-go v0.32.0`; no Dependabot ignore rule;
+- fuzz smoke uses 200,000 parser / 10,000 compiler iterations, one worker,
+  explicit watchdogs and narrow counterexample artifacts; timeout is still
+  failure, and the compiler target runs independently after parser failure;
+- fixed pre-existing CEL null conversion to numeric zero, including nested
+  values and persisted effects. Affected results/state digests intentionally
+  change; existing snapshots/Evidence are not rewritten. Compare under the
+  same runtime revision, not merely the same TwinSpec digest;
 
 - live OpenAI-family and Anthropic-family evidence is no longer a local-core
   v0.1 gate; it targets the v0.3 secure provider/host profile;

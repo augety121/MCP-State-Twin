@@ -84,9 +84,18 @@ local TwinSpec-action subset. It does not implement cryptographic randomness,
 scheduled Agent/provider/external execution, recurrence/automatic retry or a
 distributed workflow queue.
 
+Maintenance hardening is specified by
+[`SPEC-0035`](SPEC-0035-BOUNDED-FUZZ-AND-FAILURE-EVIDENCE.md),
+[`SPEC-0036`](SPEC-0036-DEPENDENCY-MIGRATION-ADMISSION.md), and
+[`SPEC-0037`](SPEC-0037-CEL-NULL-AND-JSON-BOUNDARY.md), accepted through
+ADR-0035–0037. These cover count-bounded fuzz evidence, CEL module-path
+migration and a reproduced null-to-zero conversion defect. Historical CI
+failures and fresh verification are separate records; this batch does not
+close provider-live, remote security or fidelity gates.
+
 # MCP State Twin Lifecycle SPEC Pack
 
-> **Status:** Proposal / Unverified  
+> **Status:** Proposal / Unverified
 > **Research cut:** 2026-08-18  
 > **Default language:** 简体中文  
 > **Important:** This pack does not modify the implementation and does not claim that proposed features have been tested.

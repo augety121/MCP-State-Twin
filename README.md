@@ -1020,6 +1020,14 @@ Prior-art 调研记录在 [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md)
 
 ---
 
+## 开发预览兼容性提示
+
+2026-09-02 的维护修复将 CEL 迁移到官方 `cel.dev/cel-go` 模块，并修正了
+CEL `null` 被错误输出为数字 `0` 的问题。受影响的结果/状态摘要会改变；
+旧快照和证据不会被改写。比较评测时必须固定 runtime revision。
+详见 [维护 SPEC 索引](docs/README.md) 与
+[空值兼容边界](docs/SPEC-0037-CEL-NULL-AND-JSON-BOUNDARY.md)。
+
 ## License
 
 MCP State Twin 使用 **MIT License**。完整、具有约束力的许可证文本见 [LICENSE](LICENSE)。

@@ -19,6 +19,14 @@ through SPEC-0034 are accepted only to the exact
 states recorded below; acceptance is not an implementation claim. Complete
 remote-staging security and dated live HostProfiles remain absent.
 
+**2026-09-02 maintenance candidate:** ADR-0035–0037 accept count-bounded fuzz
+smoke, the `cel.dev/cel-go v0.32.0` module migration and the CEL null-to-JSON
+correction. Local single-core vet/full tests, module checksum verification,
+200,000-iteration parser fuzz and 10,000-iteration CEL fuzz budgets pass.
+Local race testing is unavailable because CGO is disabled; Linux CI is required.
+Fresh remote CI/updater results must be recorded separately; the
+last verified run above predates this candidate.
+
 ## Implemented and tested
 
 | Capability | Evidence |
@@ -29,6 +37,8 @@ remote-staging security and dated live HostProfiles remain absent.
 | Hermetic schema loading | external `$ref` resource test fails closed |
 | Canonical spec and state digest | golden map-order tests |
 | Bounded declarative expressions | 4,096-byte source limit; CEL programs compiled once with a cost limit of 10,000 |
+| CEL migration/value regression | literal/nested null, map/list/arithmetic/error vectors, nullable output-schema and stored-null tests; `TestCELModuleMigrationIsComplete`; SPEC-0036/0037 |
+| Bounded fuzz maintenance | count budgets, one worker, independent watchdogs, failure propagation and synthetic counterexample artifact contract; SPEC-0035; fresh remote run required for CI evidence |
 | Canonical MCP tool-surface digest | order-independent name/description/schema/annotation digest; mutation tests |
 | Surface admission enforcement | matching `current` binding accepted; mismatch, `drifted`, and `unknown` fail `SPEC_DRIFT` |
 | Top-level input validation subset | required/additionalProperties/type/enum tests through engine calls |
@@ -129,8 +139,8 @@ implementation evidence.
 ```bash
 go test ./...
 go test -race ./...
-go test ./internal/spec -run=^$ -fuzz=FuzzDecodeTwinSpec -fuzztime=10s
-go test ./internal/engine -run=^$ -fuzz=FuzzExpressionCompilation -fuzztime=10s
+bash scripts/run-bounded-fuzz.sh spec
+bash scripts/run-bounded-fuzz.sh engine
 go vet ./...
 go build ./cmd/statetwin
 go run ./cmd/statetwin validate --spec examples/issue-tracker/twin.yaml

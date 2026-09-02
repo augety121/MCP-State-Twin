@@ -11,12 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"cel.dev/cel-go/cel"
 	"github.com/augety121/mcp-state-twin/internal/canonical"
 	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/spec"
 	"github.com/augety121/mcp-state-twin/internal/store"
 	"github.com/augety121/mcp-state-twin/internal/world"
-	"github.com/google/cel-go/cel"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const MaxExpressionBytes = limits.MaxExpressionBytes
@@ -459,6 +460,13 @@ func (r *Runtime) eval(expression string, activation map[string]any) (any, error
 
 func normalizeNative(value any) (any, error) {
 	switch typed := value.(type) {
+	case structpb.NullValue:
+		// CEL exposes null as a protobuf enum when converting to interface{}.
+		// encoding/json would otherwise serialize that enum as the number zero.
+		if typed != structpb.NullValue_NULL_VALUE {
+			return nil, fmt.Errorf("invalid protobuf null value %d", typed)
+		}
+		return nil, nil
 	case map[any]any:
 		result := make(map[string]any, len(typed))
 		for rawKey, rawValue := range typed {

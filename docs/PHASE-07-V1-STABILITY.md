@@ -25,6 +25,13 @@ format or semantic changes require an accepted ADR, migration guidance and a
 major version. A v1 release is defined by narrow reliable contracts, not by
 shipping every roadmap item.
 
+## Maintenance gates available before v1.0
+
+SPEC-0035 and SPEC-0036 define bounded fuzz evidence and reviewed dependency
+migration admission. They are useful now but do not satisfy all v1.0 gates.
+An updater job, a dependency PR, default-branch CI and a release candidate are
+different evidence scopes; a green result for one must not stand in for another.
+
 ## Explicitly independent future work
 
 Cloud multi-tenancy, distributed storage, arbitrary native Twin plugins,

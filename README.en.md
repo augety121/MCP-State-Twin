@@ -983,6 +983,14 @@ The prior-art search is documented in [Competitive Landscape](docs/COMPETITIVE-L
 
 ---
 
+## Preview compatibility note
+
+The 2026-09-02 maintenance change migrates CEL to `cel.dev/cel-go` and fixes
+CEL null being encoded as numeric zero. Affected result/state digests change;
+existing snapshots and Evidence are not rewritten. Compare evaluations under
+the same runtime revision. See the [maintenance SPEC index](docs/README.md)
+and [null compatibility contract](docs/SPEC-0037-CEL-NULL-AND-JSON-BOUNDARY.md).
+
 ## License
 
 MCP State Twin is licensed under the **MIT License**. See [LICENSE](LICENSE) for the complete license text.

@@ -79,6 +79,12 @@ and logs are not part of deterministic state.
 
 ## 8. Error preservation
 
+The native CEL-to-JSON boundary is additionally governed by accepted
+[SPEC-0037](SPEC-0037-CEL-NULL-AND-JSON-BOUNDARY.md). CEL null must remain JSON
+null, including nested values. The historical null-to-zero fix changes
+affected outputs/state digests across runtime revisions but does not rewrite
+stored data, snapshots or Evidence.
+
 The internal canonical error class MUST remain available in audit/evidence. MCP
 presentation MAY use an upstream-like envelope, but it MUST NOT turn unknown,
 timeout, validation, or authorization failures into success.

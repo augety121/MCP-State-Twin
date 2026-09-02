@@ -58,6 +58,20 @@ The repository's contribution contract is CONTRIBUTING.md and its safety
 boundary is SECURITY.md. These documents define process; they are not proof
 that the process has already happened.
 
+## 2026-09-02 maintenance incident record
+
+- [PR #5 CI failure](https://github.com/augety121/MCP-State-Twin/actions/runs/33498653329):
+  parser fuzz exited with `context deadline exceeded`; no saved crashing input
+  appears in the log. Other jobs passed. The timeout's underlying cause is
+  not proven by this log.
+- [Dependabot failure](https://github.com/augety121/MCP-State-Twin/actions/runs/33498581757):
+  CEL `go_module_path_mismatch`; upstream v0.32.0 requires `cel.dev/cel-go`.
+- Corrective contracts: SPEC-0035/0036, with the independently reproduced CEL
+  null conversion defect tracked by SPEC-0037. Exact fresh CI evidence belongs
+  in `IMPLEMENTATION-STATUS.md`; old run results are not overwritten.
+- Integration route: direct main update under the maintainer's explicit
+  request to keep this work on main; no unrelated dependency PR is merged.
+
 ## Codex/API use plan
 
 The official Codex for Open Source form asks how API credits would be used. A

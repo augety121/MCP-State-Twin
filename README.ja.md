@@ -399,6 +399,14 @@ Synthetic local fixture 以外のデータを利用する前に [SECURITY.md](SE
 
 Prior-art 調査は [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) にあります。より強い prior art が見つかった場合、positioning は証拠に応じて更新されるべきです。
 
+## Preview 互換性について
+
+2026-09-02 の変更では CEL を `cel.dev/cel-go` に移行し、`null` が数値 `0`
+として出力される不具合を修正します。影響する結果・状態の digest は変わりますが、
+既存の snapshot と Evidence は書き換えません。同じ runtime revision で比較してください。
+詳細は [SPEC 索引](docs/README.md) と
+[null 互換性仕様](docs/SPEC-0037-CEL-NULL-AND-JSON-BOUNDARY.md) を参照してください。
+
 ## License
 
 MCP State Twin は **MIT License** の下で提供されます。完全なライセンス本文は [LICENSE](LICENSE) を参照してください。README 内の説明と相違がある場合は `LICENSE` の標準 MIT 本文が優先されます。

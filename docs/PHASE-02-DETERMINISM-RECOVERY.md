@@ -36,6 +36,11 @@ future performance comparison must record it as host evidence.
 
 ## Safety rules
 
+SPEC-0036/0037 also gate expression dependency/value-boundary changes. The
+null-to-zero correction is a deliberate preview semantic fix; comparisons
+across that runtime revision must not assume identical state/result digests.
+Existing artifacts are immutable, and numeric zero is never migrated by guess.
+
 Wall clock, Go map order, goroutine completion order, process-global randomness
 and database-generated IDs MUST NOT become simulation semantics. Operational
 timestamps remain outside deterministic equality and invisible to TwinSpec.

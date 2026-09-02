@@ -70,6 +70,9 @@ jobs:
 
   fuzz-smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GOMAXPROCS: "1"
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
@@ -77,9 +80,22 @@ jobs:
           go-version: "1.26.x"
           cache: true
       - name: TwinSpec parser fuzz
-        run: go test ./internal/spec -run=^$ -fuzz=FuzzDecodeTwinSpec -fuzztime=10s
+        timeout-minutes: 5
+        run: bash scripts/run-bounded-fuzz.sh spec
       - name: CEL compiler fuzz
-        run: go test ./internal/engine -run=^$ -fuzz=FuzzExpressionCompilation -fuzztime=10s
+        if: ${{ !cancelled() }}
+        timeout-minutes: 5
+        run: bash scripts/run-bounded-fuzz.sh engine
+      - name: Preserve synthetic fuzz counterexamples
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-counterexamples-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            internal/spec/testdata/fuzz/
+            internal/engine/testdata/fuzz/
+          if-no-files-found: warn
+          retention-days: 14
 
   secret-policy:
     runs-on: ubuntu-latest

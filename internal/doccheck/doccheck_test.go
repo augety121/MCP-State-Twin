@@ -30,7 +30,7 @@ func TestLocalMarkdownLinksResolve(t *testing.T) {
 			return walkErr
 		}
 		if entry.IsDir() {
-			if entry.Name() == ".git" || strings.HasPrefix(entry.Name(), ".codex-go-cache") {
+			if entry.Name() == ".git" || entry.Name() == ".tmp" || strings.HasPrefix(entry.Name(), ".codex-go-cache") {
 				return filepath.SkipDir
 			}
 			return nil
