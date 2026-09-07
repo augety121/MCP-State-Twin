@@ -33,6 +33,15 @@ and has not been merged; main remains on SQLite v1.56.0.
 
 ## Implemented and tested
 
+**2026-09-08 offline Task increment (ADR/SPEC-0038):** independent AgentTask
+strict parsing and surface admission, scalar resource rules, bounded read-only
+goal/policy grading, six synthetic witnesses and `task validate` / `task witness`
+are present. Targeted local tests pass; exact-commit CI is tracked separately.
+The witness runner traverses the official MCP SDK with no listening port or
+network fallback. It reports `scripted-witness`, not autonomous/live evidence.
+This closes neither full B02/B03 external semantic review nor B04–B10 live,
+AgentEpisode, sealed trace/replay, comparison or external-adoption gates.
+
 | Capability | Evidence |
 |---|---|
 | Strict TwinSpec YAML decoding | 1 MiB limit, exactly one document, unknown fields rejected by `yaml.v3`; spec tests and fuzz target |

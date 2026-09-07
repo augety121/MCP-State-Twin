@@ -410,3 +410,7 @@ Prior-art 調査は [Competitive Landscape](docs/COMPETITIVE-LANDSCAPE.md) に�
 ## License
 
 MCP State Twin は **MIT License** の下で提供されます。完全なライセンス本文は [LICENSE](LICENSE) を参照してください。README 内の説明と相違がある場合は `LICENSE` の標準 MIT 本文が優先されます。
+
+## AgentTask のオフライン検証（実験的）
+
+独立した Task 検証、読み取り専用の目標・ポリシー評価、6 件の合成 witness を追加しました。`task witness` は MCP 経由で既知の操作列を実行し、`scripted-witness` と明示します。自律モデル実行、provider live 互換性、完全な証拠 replay ではありません。[SPEC-0038](docs/SPEC-0038-AGENT-TASK-OFFLINE-ADMISSION.md) を参照してください。

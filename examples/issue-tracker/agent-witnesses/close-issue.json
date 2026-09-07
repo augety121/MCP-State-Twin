@@ -1,0 +1,16 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "close-issue",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "close_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 1
+      }
+    }
+  ],
+  "answer": null
+}

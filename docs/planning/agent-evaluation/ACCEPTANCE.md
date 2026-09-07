@@ -1,5 +1,9 @@
 # 补充需求与验收清单
 
+> 后续实施记录：见 [ADR-0038](../../ADR-0038-AGENT-TASK-AND-OFFLINE-GRADING.md)
+> 和 [Implementation Status](../../IMPLEMENTATION-STATUS.md)。以下状态表保留原 Spec
+> 评审时点；不将已经实现的有限 offline subset 误报为不存在，也不将整个 AE 条款自动关闭。
+
 状态：Proposal；2026-09-08。AE 编号是本轮新条款，不替代 109 项缺失的 MST26 需求正文。
 所有“验收”列均为计划，不是测试执行结果；本轮只有文档检查。实现状态一律 not-started，
 除非明确为继承要求；此处不修改 IMPLEMENTATION-STATUS 或 public claim。

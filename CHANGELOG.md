@@ -7,6 +7,11 @@ alpha prerelease but no stable release yet.
 
 ### Added
 
+- ADR/SPEC-0038: independent experimental AgentTask admission, bounded read-only
+  grading, six synthetic task/witness pairs and `task validate` / `task witness`;
+  witness playback traverses the official MCP SDK with an in-process HTTP
+  transport and is explicitly not live-agent or sealed replay evidence;
+
 - ADR/SPEC-0035–0037: bounded fuzz evidence, dependency migration admission,
   and CEL null/JSON value-boundary contracts;
 - expression compatibility vectors, module/import migration checks and

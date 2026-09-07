@@ -1,0 +1,10 @@
+apiVersion: statetwin.dev/v1alpha1
+kind: TwinBundle
+format: statetwin.dev/twin-bundle/v1alpha1
+metadata:
+  name: issue-tracker-agent-tasks
+  version: 0.2.0-alpha.1
+spec: twin.yaml
+fixture: agent-state.json
+scenarios:
+  - scenario-close-issue.yaml

@@ -1,0 +1,24 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "scope-protection",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "get_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 1
+      }
+    },
+    {
+      "tool": "close_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 1
+      }
+    }
+  ],
+  "answer": null
+}

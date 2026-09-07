@@ -996,3 +996,7 @@ and [null compatibility contract](docs/SPEC-0037-CEL-NULL-AND-JSON-BOUNDARY.md).
 MCP State Twin is licensed under the **MIT License**. See [LICENSE](LICENSE) for the complete license text.
 
 Any license summary in this README is explanatory only; the standard MIT text in `LICENSE` controls.
+
+## Offline AgentTask authoring (experimental)
+
+Independent Task admission, read-only goal/policy grading and six synthetic witnesses are available. `task validate` checks structure/surface; `task witness` executes a known trajectory through MCP and grades it as `scripted-witness`. This is not autonomous model execution, provider-live compatibility or sealed evidence replay. See [SPEC-0038](docs/SPEC-0038-AGENT-TASK-OFFLINE-ADMISSION.md) for commands and limits.

@@ -1,0 +1,24 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "already-closed",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "close_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 3
+      }
+    },
+    {
+      "tool": "get_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 3
+      }
+    }
+  ],
+  "answer": null
+}

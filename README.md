@@ -1033,3 +1033,7 @@ CEL `null` 被错误输出为数字 `0` 的问题。受影响的结果/状态摘
 MCP State Twin 使用 **MIT License**。完整、具有约束力的许可证文本见 [LICENSE](LICENSE)。
 
 README 中对许可证的任何说明仅用于帮助阅读；若存在差异，以 `LICENSE` 文件中的标准 MIT 文本为准。
+
+## AgentTask 离线验证（实验性）
+
+新增独立任务准入、只读目标/策略评分和六个合成 witness。`task validate` 仅检查结构与工具面；`task witness` 经过 MCP 执行已知轨迹，再独立评分，明确标为 `scripted-witness`。它不是自主模型运行、provider live 或完整证据 replay。命令与限制见 [SPEC-0038](docs/SPEC-0038-AGENT-TASK-OFFLINE-ADMISSION.md)。

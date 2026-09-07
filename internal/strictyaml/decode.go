@@ -14,6 +14,14 @@ const MaxDocumentDepth = 128
 // DecodeOne decodes one bounded YAML document with a closed field set.
 // Anchors, aliases, and explicit tags are rejected before typed decoding.
 func DecodeOne(data []byte, maxBytes int, label string, target any) error {
+	return DecodeOneWithDepth(data, maxBytes, MaxDocumentDepth, label, target)
+}
+
+// DecodeOneWithDepth allows stricter formats without relaxing existing bounds.
+func DecodeOneWithDepth(data []byte, maxBytes, maxDepth int, label string, target any) error {
+	if maxDepth < 1 || maxDepth > MaxDocumentDepth {
+		return errors.New("invalid YAML depth limit")
+	}
 	if len(data) > maxBytes {
 		return fmt.Errorf("decode %s: document exceeds %d bytes", label, maxBytes)
 	}
@@ -23,7 +31,7 @@ func DecodeOne(data []byte, maxBytes int, label string, target any) error {
 	if err := nodeDecoder.Decode(&document); err != nil {
 		return fmt.Errorf("decode %s: %w", label, err)
 	}
-	if err := rejectExtensions(&document, 0); err != nil {
+	if err := rejectExtensions(&document, 0, maxDepth); err != nil {
 		return fmt.Errorf("decode %s: %w", label, err)
 	}
 	var trailing yaml.Node
@@ -42,12 +50,12 @@ func DecodeOne(data []byte, maxBytes int, label string, target any) error {
 	return nil
 }
 
-func rejectExtensions(node *yaml.Node, depth int) error {
+func rejectExtensions(node *yaml.Node, depth, maxDepth int) error {
 	if node == nil {
 		return errors.New("empty YAML document")
 	}
-	if depth > MaxDocumentDepth {
-		return fmt.Errorf("YAML document exceeds depth limit %d", MaxDocumentDepth)
+	if depth > maxDepth {
+		return fmt.Errorf("YAML document exceeds depth limit %d", maxDepth)
 	}
 	if node.Kind == yaml.AliasNode || node.Anchor != "" {
 		return errors.New("YAML anchors and aliases are not allowed")
@@ -56,7 +64,7 @@ func rejectExtensions(node *yaml.Node, depth int) error {
 		return errors.New("explicit YAML tags are not allowed")
 	}
 	for _, child := range node.Content {
-		if err := rejectExtensions(child, depth+1); err != nil {
+		if err := rejectExtensions(child, depth+1, maxDepth); err != nil {
 			return err
 		}
 	}

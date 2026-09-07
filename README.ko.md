@@ -410,3 +410,7 @@ Evidence는 다시 쓰지 않습니다. 같은 runtime revision에서 평가를 
 ## License
 
 MCP State Twin은 **MIT License**로 제공됩니다. 전체 라이선스 본문은 [LICENSE](LICENSE)를 확인하세요. README의 설명과 차이가 있는 경우 `LICENSE`의 표준 MIT 본문이 우선합니다.
+
+## AgentTask 오프라인 검증 (실험적)
+
+독립 Task 검증, 읽기 전용 목표·정책 평가와 합성 witness 6개를 추가했습니다. `task witness`는 MCP를 통해 알려진 호출 순서를 실행하며 `scripted-witness`로 표시합니다. 자율 모델 실행, provider live 호환성 또는 완전한 증거 replay가 아닙니다. 명령과 제한은 [SPEC-0038](docs/SPEC-0038-AGENT-TASK-OFFLINE-ADMISSION.md)을 참조하세요.

@@ -52,11 +52,13 @@ The [acceptance additions](planning/agent-evaluation/ACCEPTANCE.md) and
 [source register](planning/agent-evaluation/SOURCE-REGISTER.md) distinguish
 new design requirements from missing source material and existing evidence.
 
-This is a documentation-only proposal, not an accepted replacement for the
-current lifecycle. AgentTask, autonomous AgentEpisode, local API bridge,
-independent grading and configuration comparison are not implemented by this
-review. No proposed CLI is a current quickstart command. Existing Scenario,
-Bundle, Journal, release gates and native-provider security boundaries remain.
+The original review was documentation-only. Subsequent implementation accepts
+only the [ADR-0038](ADR-0038-AGENT-TASK-AND-OFFLINE-GRADING.md) /
+[SPEC-0038](SPEC-0038-AGENT-TASK-OFFLINE-ADMISSION.md) offline Task/grading/witness
+subset. Autonomous AgentEpisode, local provider API bridge and configuration
+comparison remain unimplemented. Other proposed CLI commands are not current
+quickstart commands. Existing Scenario, Bundle, Journal, release gates and
+native-provider security boundaries remain.
 
 ## Unified lifecycle adopted on 2026-08-31
 

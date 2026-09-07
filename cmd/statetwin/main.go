@@ -104,6 +104,8 @@ func main() {
 		err = runEpisode(ctx, args[1:])
 	case "provider":
 		err = runProviderSmoke(ctx, args[1:])
+	case "task":
+		err = runTask(ctx, args[1:])
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -139,6 +141,8 @@ Commands:
   statetwin fork --db twin.db --snapshot base --branch run-a
   statetwin diff --db twin.db --before run-a --after run-b
   statetwin scenario --spec twin.yaml --fixture state.json --scenario scenario.yaml
+  statetwin task validate --root DIR --task tasks/close.json
+  statetwin task witness --root DIR --task tasks/close.json --witness witnesses/close.json
   statetwin serve --spec twin.yaml --fixture state.json --db twin.db
   statetwin protocols
   statetwin limits

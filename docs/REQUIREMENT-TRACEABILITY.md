@@ -34,6 +34,13 @@
 
 ## Release use
 
+The separate [AgentTask offline contract](SPEC-0038-AGENT-TASK-OFFLINE-ADMISSION.md)
+maps AE-001/002/004/005/006/007 and the local path/authority portion of AE-012
+to `internal/task`, `internal/evaluator`, `internal/agenteval` and their tests.
+AE-003 has six executable authoring witnesses; arbitrary-task solvability and
+independent semantic review remain distinct. These are experimental local
+results, not admission of full B04–B12 or new stable/live claims.
+
 | Maintenance requirement | Authority | Evidence | Status |
 |---|---|---|---|
 | ST-MAINT-001 bounded failure-preserving fuzz | SPEC-0035 | workflow contract + POSIX wrapper exit tests + actual fuzz job | verified CI run 33579877698 |

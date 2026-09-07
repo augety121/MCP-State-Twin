@@ -35,6 +35,7 @@
 | DEC-029 | Fuzz search uses count budgets with independent watchdogs; failures remain failures and counterexamples are retained narrowly | resolved | ADR-0035 / SPEC-0035 |
 | DEC-030 | CEL follows its declared `cel.dev/cel-go` module path; no ignore rule or replacement shim | resolved | ADR-0036 / SPEC-0036 |
 | DEC-031 | CEL null stays JSON null, never numeric zero; historical artifacts are not rewritten | resolved | ADR-0037 / SPEC-0037 |
+| DEC-032 | Independent AgentTask and read-only grading with an explicitly scripted, offline MCP witness lane | resolved, bounded subset only | ADR-0038 / SPEC-0038 |
 
 Open decisions are roadmap work. They MUST NOT be silently resolved by an
 implementation-only change.
