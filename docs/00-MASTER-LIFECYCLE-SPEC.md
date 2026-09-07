@@ -1,5 +1,12 @@
 # MCP State Twin — Master Lifecycle Specification
 
+> **Historical proposal notice (2026-09-08):** Source-reported implementation
+> gaps in this research document are not the current implementation ledger.
+> See [Implementation Status](IMPLEMENTATION-STATUS.md) and accepted ADRs.
+> The [Agent regression review](planning/agent-evaluation/REVIEW.md) proposes
+> the next product slice without replacing this pack or accepting its entire
+> future scope.
+
 > **Revision:** Lifecycle Architecture Proposal v2  
 > **Status:** Proposal / Unverified  
 > **Research cut:** 2026-08-18  

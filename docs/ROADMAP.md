@@ -10,6 +10,12 @@ environment for testing tool-using agents. The roadmap does not turn planned
 features into implementation claims; `IMPLEMENTATION-STATUS.md` and
 `CLAIM-REGISTRY.md` control those claims.
 
+The [2026-09-08 Agent regression proposal](planning/agent-evaluation/REVIEW.md)
+adds a reviewed candidate product sequence: Task → local bridge → independent
+grading → Evidence → configuration comparison. Its D0–D8/P-A–P-E labels do not
+replace the accepted Phase 0–7 release train below. Implementation and public
+claims require separate acceptance and executable evidence.
+
 ## Release train
 
 | Product line | Primary contract | Scope |
@@ -58,10 +64,11 @@ separate platform evidence.
 
 ## Phase 3 — durable remote Episodes
 
-Candidate implementation includes Journal schema v2, leases, heartbeat,
+The current main implementation includes Journal schema v2, leases, heartbeat,
 fencing, bounded hermetic recovery, cooperative cancellation, remote workers,
-`COMMIT_UNKNOWN` and exactly-once terminal Evidence acceptance. It remains an
-experimental candidate until merged and evidenced by CI. Multi-coordinator HA,
+`COMMIT_UNKNOWN` and exactly-once terminal Evidence acceptance. Existing
+verification is recorded in `IMPLEMENTATION-STATUS.md`; this is still a bounded
+experimental subset, not completion of every Phase 3 gate. Multi-coordinator HA,
 replication, retention and external-effect exactly-once remain excluded.
 
 ## Phase 4 — provider/host validation

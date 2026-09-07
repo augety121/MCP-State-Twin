@@ -40,6 +40,24 @@ The accepted normative documents are the ADRs and SPECs linked from the status
 ledger. The large pack below is deliberately preserved as proposal material so
 that design work remains reviewable without silently changing the runtime.
 
+## Agent regression product proposal — reviewed 2026-09-08
+
+The next product slice is proposed in
+[`planning/agent-evaluation/REVIEW.md`](planning/agent-evaluation/REVIEW.md).
+Read the [32-chapter master](planning/agent-evaluation/MASTER-SPEC.zh-CN.md),
+[phase contracts](planning/agent-evaluation/PHASE-SPECS.md),
+[six task cards](planning/agent-evaluation/TASK-CATALOG.md), and
+[B01–B32 backlog](planning/agent-evaluation/IMPLEMENTATION-BACKLOG.md).
+The [acceptance additions](planning/agent-evaluation/ACCEPTANCE.md) and
+[source register](planning/agent-evaluation/SOURCE-REGISTER.md) distinguish
+new design requirements from missing source material and existing evidence.
+
+This is a documentation-only proposal, not an accepted replacement for the
+current lifecycle. AgentTask, autonomous AgentEpisode, local API bridge,
+independent grading and configuration comparison are not implemented by this
+review. No proposed CLI is a current quickstart command. Existing Scenario,
+Bundle, Journal, release gates and native-provider security boundaries remain.
+
 ## Unified lifecycle adopted on 2026-08-31
 
 ADR-0021 adopts the bounded product definition, independent version dimensions

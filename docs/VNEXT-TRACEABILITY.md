@@ -104,10 +104,17 @@ of a deterministic, hermetic, tools-first MCP State Twin** with:
 - a private, forward-only virtual clock with CAS protection and audit; and
 - control-plane isolation from the agent-visible MCP tool surface.
 
+The accepted bounded implementation additionally includes modeled entropy,
+private signals and one-attempt local TwinSpec actions, two deterministic fault
+transaction phases, and the Journal/fenced coordinator subset, as recorded in
+`IMPLEMENTATION-STATUS.md`. This does not imply a general durable Agent
+scheduler, the complete fault model, or exactly-once external effects.
+
 It may **not** be described as a universal AGI base, a verified ChatGPT/Claude
-integration, a durable scheduler, a fault-injection system, an upstream-fidelity
-service, a remote multi-tenant service, or a complete evaluation platform. Those
-are valid directions in the pack, but they require the gates above.
+integration, an upstream-fidelity service, a remote multi-tenant service, or a
+complete autonomous Agent evaluation platform. The
+[2026-09-08 Agent regression proposal](planning/agent-evaluation/REVIEW.md)
+defines a candidate next product slice; it does not close these evidence gates.
 
 ## 4. Required evidence for the next promotion
 
