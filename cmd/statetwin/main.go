@@ -106,6 +106,8 @@ func main() {
 		err = runProviderSmoke(ctx, args[1:])
 	case "task":
 		err = runTask(ctx, args[1:])
+	case "eval":
+		err = runAgentEval(ctx, args[1:])
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -143,6 +145,10 @@ Commands:
   statetwin scenario --spec twin.yaml --fixture state.json --scenario scenario.yaml
   statetwin task validate --root DIR --task tasks/close.json
   statetwin task witness --root DIR --task tasks/close.json --witness witnesses/close.json
+  statetwin eval preflight --root DIR --task tasks/close.json --config runs/baseline.json
+  statetwin eval mock --root DIR --task tasks/close.json --config runs/baseline.json --responses mock/close.json --out results/baseline
+  statetwin eval verify --root DIR --evidence results/baseline/terminal.json
+  statetwin eval compare --root DIR --plan comparison.json --format markdown
   statetwin serve --spec twin.yaml --fixture state.json --db twin.db
   statetwin protocols
   statetwin limits

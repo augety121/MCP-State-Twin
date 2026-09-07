@@ -7,6 +7,11 @@ alpha prerelease but no stable release yet.
 
 ### Added
 
+- ADR/SPEC-0039: experimental offline Responses codec and sequential mock Agent
+  loop, per-trial budgets, private continuation, retained synthetic evidence with
+  no-clobber publication and world replay, fixed-plan JSON/Markdown comparison,
+  and an executable first-value regression guide. No live transport is enabled.
+
 - ADR/SPEC-0038: independent experimental AgentTask admission, bounded read-only
   grading, six synthetic task/witness pairs and `task validate` / `task witness`;
   witness playback traverses the official MCP SDK with an in-process HTTP

@@ -1,6 +1,7 @@
 # 补充需求与验收清单
 
 > 后续实施记录：见 [ADR-0038](../../ADR-0038-AGENT-TASK-AND-OFFLINE-GRADING.md)
+> 、[ADR-0039](../../ADR-0039-OFFLINE-AGENT-REGRESSION-LOOP.md)
 > 和 [Implementation Status](../../IMPLEMENTATION-STATUS.md)。以下状态表保留原 Spec
 > 评审时点；不将已经实现的有限 offline subset 误报为不存在，也不将整个 AE 条款自动关闭。
 

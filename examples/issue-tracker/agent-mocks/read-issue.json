@@ -1,0 +1,32 @@
+{
+  "kind": "MockResponses",
+  "syntheticOnly": true,
+  "responses": [
+    {
+      "status": "completed",
+      "output": [
+        {
+          "type": "function_call",
+          "call_id": "synthetic_call_1",
+          "name": "get_issue",
+          "arguments": "{\"owner\":\"octo\",\"repository\":\"demo\",\"number\":1}"
+        }
+      ]
+    },
+    {
+      "status": "completed",
+      "output": [
+        {
+          "type": "message",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "output_text",
+              "text": "{\"repository\":\"octo/demo\",\"number\":1,\"state\":\"open\",\"title\":\"Target issue\"}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

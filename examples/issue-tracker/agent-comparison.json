@@ -1,0 +1,22 @@
+{
+  "format": "statetwin.dev/agent-compare-offline/v1alpha1",
+  "baselineModel": "mock-baseline",
+  "candidateModel": "mock-candidate",
+  "allowedDifferences": [
+    "model"
+  ],
+  "pairs": [
+    {
+      "taskId": "close-issue",
+      "repeat": 1,
+      "baseline": {
+        "trialId": "baseline",
+        "artifact": ".statetwin/baseline/terminal.json"
+      },
+      "candidate": {
+        "trialId": "candidate",
+        "artifact": ".statetwin/candidate/terminal.json"
+      }
+    }
+  ]
+}

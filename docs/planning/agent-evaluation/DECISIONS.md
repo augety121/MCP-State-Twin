@@ -5,7 +5,9 @@
 
 后续实施更新：用户明确要求“推送、接着干活”后，
 [ADR-0038](../../ADR-0038-AGENT-TASK-AND-OFFLINE-GRADING.md) 接受独立 Task/只读评分/
-六任务 offline witness 的有限子集。此表其余 provider、持久化证据和发行决策仍待各自接受，
+六任务 offline witness 的有限子集；[ADR-0039](../../ADR-0039-OFFLINE-AGENT-REGRESSION-LOOP.md)
+随后接受合成 Responses 循环、有限证据重放与模型标签比较。真正的 provider transport/live、
+通用远程恢复和发行决策仍待各自接受，
 不把本轮原始评审记录改写为全生命周期已接受。
 
 | ID | 推荐选择 | 替代与代价 | 实施前要求 |

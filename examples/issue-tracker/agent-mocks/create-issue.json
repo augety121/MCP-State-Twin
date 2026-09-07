@@ -1,0 +1,32 @@
+{
+  "kind": "MockResponses",
+  "syntheticOnly": true,
+  "responses": [
+    {
+      "status": "completed",
+      "output": [
+        {
+          "type": "function_call",
+          "call_id": "synthetic_call_1",
+          "name": "create_issue",
+          "arguments": "{\"owner\":\"octo\",\"repository\":\"demo\",\"title\":\"Synthetic regression probe\",\"body\":\"Fixture-only task\"}"
+        }
+      ]
+    },
+    {
+      "status": "completed",
+      "output": [
+        {
+          "type": "message",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "output_text",
+              "text": "null"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

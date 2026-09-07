@@ -30,6 +30,16 @@ merged and its required CI evidence passes on that revision.
 | CLM-DETERMINISM-002 | Private branch-local signals have parsed-time deterministic order/lifecycle, liveness-safe admission, bounded atomic/next-due delivery and consistent inspection | verified locally | store/control sub-second ordering, cancel, fork isolation, per-instant admission, legacy drain, cursor and budget rollback tests | signal claim only; not Agent wakeup, recurring timers, distributed queue or external effects |
 | CLM-DETERMINISM-003 | Private runtime-bound scheduled actions execute an existing hermetic TwinSpec tool with one-attempt terminal evidence, at most 32 actions/256 events per step and zero scheduler cascade | verified in CI | runtime/store/control success, schema/spec binding, domain/fault outcome, transaction rollback, mixed-prefix, result-bound and callback-mutation tests; [run 33456196081](https://github.com/augety121/MCP-State-Twin/actions/runs/33456196081) | not Agent/provider/process work, wall-clock wakeup, automatic retry/recurrence/dead letters, external effects or distributed exactly-once |
 
+## Experimental offline Agent regression increment (2026-09-08)
+
+| ID | Bounded public claim | State | Evidence | Exclusions |
+|---|---|---|---|---|
+| CLM-AGENT-001 | Independent Task and read-only grading with six scripted SDK-MCP witnesses | verified in CI | ADR/SPEC-0038; CI 34163406749 on `fcde8ae` | no real provider or arbitrary-task solvability claim |
+| CLM-AGENT-002 | Synthetic Responses loop, bounded retained-world replay and fixed-plan regression comparison | experimental, locally tested; exact-commit CI tracked in implementation ledger | ADR/SPEC-0039; agenthost/agenteval/CLI tests | no live transport, provider provenance, general remote recovery, full crash guarantee or automatic upgrade |
+
+These rows add an offline lane and do not promote any existing live/product
+HostProfile. Complete evidence may prove an unsuccessful task faithfully.
+
 ## Maintenance
 
 Update this file in the same change as any public claim. A release candidate

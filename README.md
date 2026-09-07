@@ -1037,3 +1037,9 @@ README 中对许可证的任何说明仅用于帮助阅读；若存在差异，�
 ## AgentTask 离线验证（实验性）
 
 新增独立任务准入、只读目标/策略评分和六个合成 witness。`task validate` 仅检查结构与工具面；`task witness` 经过 MCP 执行已知轨迹，再独立评分，明确标为 `scripted-witness`。它不是自主模型运行、provider live 或完整证据 replay。命令与限制见 [SPEC-0038](docs/SPEC-0038-AGENT-TASK-OFFLINE-ADMISSION.md)。
+
+进一步的 `eval mock` 已支持合成 Responses 循环、独立世界、预算停止、证据保存与
+`eval verify` 离线重放。`eval compare` 保留计划分母并输出回归/不可比/证据不足报告。
+先跑 [离线回归教程](docs/guides/OFFLINE-AGENT-REGRESSION.md)：故意遗漏动作的候选
+应被判为回归，而不是得到假成功。此路线仍是 **mock 测试，不是实际模型能力或 live 兼容证据**；
+完整边界见 [SPEC-0039](docs/SPEC-0039-OFFLINE-AGENT-REGRESSION.md)。

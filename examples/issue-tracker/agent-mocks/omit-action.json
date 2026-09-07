@@ -1,0 +1,21 @@
+{
+  "kind": "MockResponses",
+  "syntheticOnly": true,
+  "responses": [
+    {
+      "status": "completed",
+      "output": [
+        {
+          "type": "message",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "output_text",
+              "text": "null"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

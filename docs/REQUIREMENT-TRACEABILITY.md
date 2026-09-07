@@ -41,6 +41,13 @@ AE-003 has six executable authoring witnesses; arbitrary-task solvability and
 independent semantic review remain distinct. These are experimental local
 results, not admission of full B04–B12 or new stable/live claims.
 
+The subsequent [offline Agent regression contract](SPEC-0039-OFFLINE-AGENT-REGRESSION.md)
+adds tested portions of AE-004/008–013/015–019/021–024 through `internal/agenthost`,
+`internal/agenteval` and CLI integration tests. AE-014/020 remain limited to
+joined in-process work and bounded terminal inspection; general remote drain,
+OS/disk fault injection and cleanup recovery are not closed. No full 109-item
+source audit, independent semantic review, live profile or external use is claimed.
+
 | Maintenance requirement | Authority | Evidence | Status |
 |---|---|---|---|
 | ST-MAINT-001 bounded failure-preserving fuzz | SPEC-0035 | workflow contract + POSIX wrapper exit tests + actual fuzz job | verified CI run 33579877698 |

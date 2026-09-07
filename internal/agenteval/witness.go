@@ -11,17 +11,12 @@ import (
 	"time"
 
 	"github.com/augety121/mcp-state-twin/internal/bundle"
-	"github.com/augety121/mcp-state-twin/internal/engine"
 	"github.com/augety121/mcp-state-twin/internal/evaluator"
 	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/logging"
-	"github.com/augety121/mcp-state-twin/internal/server"
 	"github.com/augety121/mcp-state-twin/internal/spec"
-	"github.com/augety121/mcp-state-twin/internal/store"
 	"github.com/augety121/mcp-state-twin/internal/strictyaml"
 	"github.com/augety121/mcp-state-twin/internal/task"
-	"github.com/augety121/mcp-state-twin/internal/world"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 type Call struct {
@@ -137,145 +132,33 @@ func RunWitness(ctx context.Context, t *task.Task, b *bundle.Artifact, w *Witnes
 	}
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(t.Budgets.EpisodeSeconds)*time.Second)
 	defer cancel()
-	twin, _ := spec.Decode(b.Files[b.Manifest.Spec])
-	initial, err := world.DecodeStrict(b.Files[b.Manifest.Fixture])
-	if err != nil {
-		return nil, err
-	}
-	db, err := store.Open(":memory:")
+	env, err := provision(ctx, t, b)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
-		if closeErr := db.Close(); closeErr != nil {
-			err = errors.New("CLEANUP_FAILED: world store")
+		if closeErr := env.close(); closeErr != nil {
+			err = closeErr
 			if report != nil {
 				report.CleanupStatus = "failed"
 			}
 		}
 	}()
-	runtime, err := engine.New(twin, db)
-	if err != nil {
-		return nil, err
-	}
-	if err = runtime.Initialize(ctx, "witness", initial); err != nil {
-		return nil, err
-	}
-	if t.FaultTool != "" {
-		_, err = db.InstallFault(ctx, store.FaultPlan{ID: "task-after-commit", BranchID: "witness", ToolName: t.FaultTool, Phase: store.FaultPhaseAfterCommitBeforeResponse, ErrorClass: "TIMEOUT_AFTER_EFFECT", Message: "synthetic response failure", RemainingCount: 1}, nil)
-		if err != nil {
-			return nil, err
-		}
-	}
-	base, err := db.Branch(ctx, "witness")
-	if err != nil {
-		return nil, err
-	}
-	transport := localTransport{server.NewDataPlane(runtime)}
-	client := mcp.NewClient(&mcp.Implementation{Name: "task-witness", Version: "experimental"}, nil)
-	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{Endpoint: "https://statetwin.invalid/mcp/witness", HTTPClient: &http.Client{Transport: transport, Timeout: time.Duration(t.Budgets.RequestSeconds) * time.Second}}, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if closeErr := session.Close(); closeErr != nil {
-			err = errors.New("CLEANUP_FAILED: MCP session")
-			if report != nil {
-				report.CleanupStatus = "failed"
-			}
-		}
-	}()
-	listed, err := session.ListTools(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	available := map[string]bool{}
-	for _, tool := range listed.Tools {
-		available[tool.Name] = true
-	}
-	for _, name := range t.Tools {
-		if !available[name] {
-			return nil, errors.New("HOST_NOT_READY: required tool missing")
-		}
-	}
-	report = &Report{Format: "statetwin.dev/task-witness-report/v1alpha1", Source: "scripted-witness", TaskID: t.ID, ExecutionStatus: "completed", CleanupStatus: "complete", View: evaluator.View{Before: base.State, Events: []evaluator.Event{}, Answer: w.Answer}}
-	effectful := map[string]bool{}
-	for _, tool := range twin.Tools {
-		effectful[tool.Name] = len(tool.Effects) > 0
-	}
-	for i, call := range w.Calls {
-		if err = ctx.Err(); err != nil {
-			return nil, err
-		}
-		e := evaluator.Event{Sequence: i, Tool: call.Tool, Input: call.Input, Authorized: t.Authorized(call.Tool, call.Input)}
-		if !e.Authorized {
-			e.ErrorClass = "AUTHORITY_DENIED"
-			e.Result = map[string]any{"error": map[string]any{"code": e.ErrorClass}}
-			e.Delivered = true
-		} else if validationErr := runtime.ValidateScheduledAction(call.Tool, call.Input); validationErr != nil {
-			e.ErrorClass = "INVALID_INPUT"
-			e.Result = map[string]any{"error": map[string]any{"code": e.ErrorClass}}
-			e.Delivered = true
-		} else {
-			result, callErr := session.CallTool(ctx, &mcp.CallToolParams{Name: call.Tool, Arguments: call.Input})
-			if callErr != nil {
-				return nil, errors.New("INFRASTRUCTURE_ERROR: local MCP call")
-			}
-			e.Dispatched = true
-			e.Delivered = true
-			if result.StructuredContent != nil {
-				e.Result = result.StructuredContent
-			} else {
-				for _, c := range result.Content {
-					if text, ok := c.(*mcp.TextContent); ok {
-						if decodeErr := json.Unmarshal([]byte(text.Text), &e.Result); decodeErr != nil {
-							return nil, errors.New("INFRASTRUCTURE_ERROR: malformed MCP result")
-						}
-						break
-					}
-				}
-			}
-			encoded, _ := json.Marshal(e.Result)
-			var object map[string]any
-			if json.Unmarshal(encoded, &object) != nil {
-				return nil, errors.New("INFRASTRUCTURE_ERROR: MCP result is not an object")
-			}
-			if result.IsError {
-				if detail, ok := object["error"].(map[string]any); ok {
-					e.ErrorClass, _ = detail["code"].(string)
-				}
-				if e.ErrorClass == "" {
-					return nil, errors.New("INFRASTRUCTURE_ERROR: missing tool error code")
-				}
-			}
-			current, readErr := db.Branch(ctx, "witness")
-			if readErr != nil {
-				return nil, readErr
-			}
-			faults, readErr := db.FaultEvents(ctx, "witness")
-			if readErr != nil {
-				return nil, readErr
-			}
-			for _, fault := range faults {
-				if fault.CallIndex == current.CallCount {
-					e.FaultPhase = fault.Phase
-				}
-			}
-			e.EffectCommitted = effectful[call.Tool] && (e.ErrorClass == "" || e.FaultPhase == store.FaultPhaseAfterCommitBeforeResponse)
-		}
-		if err = safe(e, t.Budgets.ResponseBytes); err != nil {
-			return nil, err
+	report = &Report{Format: "statetwin.dev/task-witness-report/v1alpha1", Source: "scripted-witness", TaskID: t.ID, ExecutionStatus: "completed", CleanupStatus: "complete", View: evaluator.View{Before: env.before, Events: []evaluator.Event{}, Answer: w.Answer}}
+	for _, call := range w.Calls {
+		e, stepErr := env.step(ctx, call)
+		if stepErr != nil {
+			return nil, stepErr
 		}
 		report.View.Events = append(report.View.Events, e)
 		if err = safe(report.View.Events, t.Budgets.TraceBytes-(64<<10)); err != nil {
 			return nil, err
 		}
 	}
-	terminal, err := db.Branch(ctx, "witness")
+	report.View.After, err = env.state(ctx)
 	if err != nil {
 		return nil, err
 	}
-	report.View.After = terminal.State
 	grade, err := evaluator.Compile(t)
 	if err != nil {
 		return nil, err

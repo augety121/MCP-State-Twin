@@ -1000,3 +1000,9 @@ Any license summary in this README is explanatory only; the standard MIT text in
 ## Offline AgentTask authoring (experimental)
 
 Independent Task admission, read-only goal/policy grading and six synthetic witnesses are available. `task validate` checks structure/surface; `task witness` executes a known trajectory through MCP and grades it as `scripted-witness`. This is not autonomous model execution, provider-live compatibility or sealed evidence replay. See [SPEC-0038](docs/SPEC-0038-AGENT-TASK-OFFLINE-ADMISSION.md) for commands and limits.
+
+The separate `eval mock` lane adds a synthetic Responses loop, bounded execution,
+retained world evidence, `eval verify` replay and fixed-plan `eval compare`
+reports. Follow the [offline regression walkthrough](docs/guides/OFFLINE-AGENT-REGRESSION.md)
+to catch an intentionally omitted action. These are mock host tests, **not live
+model capability or product-host compatibility evidence**. See [SPEC-0039](docs/SPEC-0039-OFFLINE-AGENT-REGRESSION.md).

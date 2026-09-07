@@ -53,12 +53,16 @@ The [acceptance additions](planning/agent-evaluation/ACCEPTANCE.md) and
 new design requirements from missing source material and existing evidence.
 
 The original review was documentation-only. Subsequent implementation accepts
-only the [ADR-0038](ADR-0038-AGENT-TASK-AND-OFFLINE-GRADING.md) /
+the [ADR-0038](ADR-0038-AGENT-TASK-AND-OFFLINE-GRADING.md) /
 [SPEC-0038](SPEC-0038-AGENT-TASK-OFFLINE-ADMISSION.md) offline Task/grading/witness
-subset. Autonomous AgentEpisode, local provider API bridge and configuration
-comparison remain unimplemented. Other proposed CLI commands are not current
-quickstart commands. Existing Scenario, Bundle, Journal, release gates and
-native-provider security boundaries remain.
+subset and [ADR-0039](ADR-0039-OFFLINE-AGENT-REGRESSION-LOOP.md) /
+[SPEC-0039](SPEC-0039-OFFLINE-AGENT-REGRESSION.md) synthetic Responses loop,
+bounded evidence replay and model-label comparison. Start with the
+[offline regression guide](guides/OFFLINE-AGENT-REGRESSION.md).
+Real provider transport/live autonomous trials, native product hosts and general
+configuration comparison remain unimplemented. Other proposed CLI commands are
+not current quickstart commands. Existing Scenario, Bundle, Journal, release
+gates and native-provider security boundaries remain.
 
 ## Unified lifecycle adopted on 2026-08-31
 

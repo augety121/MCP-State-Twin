@@ -414,3 +414,9 @@ MCP State Twin은 **MIT License**로 제공됩니다. 전체 라이선스 본문
 ## AgentTask 오프라인 검증 (실험적)
 
 독립 Task 검증, 읽기 전용 목표·정책 평가와 합성 witness 6개를 추가했습니다. `task witness`는 MCP를 통해 알려진 호출 순서를 실행하며 `scripted-witness`로 표시합니다. 자율 모델 실행, provider live 호환성 또는 완전한 증거 replay가 아닙니다. 명령과 제한은 [SPEC-0038](docs/SPEC-0038-AGENT-TASK-OFFLINE-ADMISSION.md)을 참조하세요.
+
+별도의 `eval mock` 경로는 합성 Responses 루프, 실행 예산, 증거 보존,
+`eval verify` 세계 재실행 및 고정 계획 `eval compare` 보고서를 제공합니다.
+[오프라인 안내](docs/guides/OFFLINE-AGENT-REGRESSION.md)와
+[SPEC-0039](docs/SPEC-0039-OFFLINE-AGENT-REGRESSION.md)를 참고하세요.
+실제 모델 능력이나 제품 호스트 호환성을 증명하는 live 테스트는 아닙니다.

@@ -1,0 +1,8 @@
+{
+  "format": "statetwin.dev/agent-run-offline/v1alpha1",
+  "trialId": "candidate",
+  "profile": "responses-functions-offline-v1",
+  "model": "mock-candidate",
+  "maxOutputTokens": 1024,
+  "syntheticOnly": true
+}

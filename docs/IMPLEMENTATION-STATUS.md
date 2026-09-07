@@ -36,11 +36,25 @@ and has not been merged; main remains on SQLite v1.56.0.
 **2026-09-08 offline Task increment (ADR/SPEC-0038):** independent AgentTask
 strict parsing and surface admission, scalar resource rules, bounded read-only
 goal/policy grading, six synthetic witnesses and `task validate` / `task witness`
-are present. Targeted local tests pass; exact-commit CI is tracked separately.
+are present. Local tests and exact-commit CI
+[34163406749](https://github.com/augety121/MCP-State-Twin/actions/runs/34163406749)
+on `fcde8ae27a44e8bbc1bbc1536c72204e002c658c` pass, including Linux race,
+Windows/macOS, fuzz, secret policy, hermetic egress and MCP conformance.
 The witness runner traverses the official MCP SDK with no listening port or
 network fallback. It reports `scripted-witness`, not autonomous/live evidence.
-This closes neither full B02/B03 external semantic review nor B04–B10 live,
-AgentEpisode, sealed trace/replay, comparison or external-adoption gates.
+This does not close independent B02/B03 semantic review or live/external gates.
+
+**2026-09-08 offline regression increment (ADR/SPEC-0039):** the offline portions
+of B04/B05/B06/B07/B09/B10/B12 now include strict mock run configuration,
+Responses function projection/continuation, sequential SDK-MCP loop, count/byte/
+deadline admission, retained synthetic world evidence, no-clobber publication,
+replay verification, fixed-plan model-label comparison and the clean-root CLI
+guide. Tests exercise success, actual task failure, committed-but-undelivered
+prefix, protocol/privacy stops, replay tampering and incomplete denominators.
+This increment's exact-commit CI must be checked independently of `fcde8ae`.
+No paid provider transport, real model scores, product-host compatibility,
+general remote drain/recovery, all-filesystem crash guarantee or automatic
+upgrade is claimed. Full AE/B work-package completion is not implied.
 
 | Capability | Evidence |
 |---|---|
