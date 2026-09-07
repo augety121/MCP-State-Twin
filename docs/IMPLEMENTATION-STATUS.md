@@ -1,9 +1,9 @@
 # Implementation Status
 
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
-**Last verified:** 2026-09-02; local single-core suite plus public CI
-[run 33579877698](https://github.com/augety121/MCP-State-Twin/actions/runs/33579877698)
-for implementation commit `61aac2d` completed successfully, including Linux
+**Last verified committed baseline:** 2026-09-08; local single-core suite plus public CI
+[run 34165668106](https://github.com/augety121/MCP-State-Twin/actions/runs/34165668106)
+for implementation commit `7ec3fd3` completed successfully, including Linux
 race, Windows/macOS, fuzz, secret policy, hermetic egress and MCP conformance
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 is the accepted v0.1 release profile. RFC-0003 is a
@@ -24,7 +24,8 @@ smoke, the `cel.dev/cel-go v0.32.0` module migration and the CEL null-to-JSON
 correction. Local single-core vet/full tests, module checksum verification,
 200,000-iteration parser fuzz and 10,000-iteration CEL fuzz budgets pass.
 Local race testing is unavailable because CGO is disabled; the Linux race
-evidence is the successful CI run above. The fresh
+evidence for that maintenance batch is
+[CI 33579877698](https://github.com/augety121/MCP-State-Twin/actions/runs/33579877698). The fresh
 [Dependabot run 33579893053](https://github.com/augety121/MCP-State-Twin/actions/runs/33579893053)
 also succeeded on `61aac2d`, explicitly checking `cel.dev/cel-go`. Historical
 failed runs remain unchanged. SQLite PR #5 was refreshed for independent
@@ -51,10 +52,23 @@ deadline admission, retained synthetic world evidence, no-clobber publication,
 replay verification, fixed-plan model-label comparison and the clean-root CLI
 guide. Tests exercise success, actual task failure, committed-but-undelivered
 prefix, protocol/privacy stops, replay tampering and incomplete denominators.
-This increment's exact-commit CI must be checked independently of `fcde8ae`.
-No paid provider transport, real model scores, product-host compatibility,
+Exact-commit CI 34165668106 passed on `7ec3fd3`; it is independent of `fcde8ae`.
+That offline increment did not implement paid transport or claim real model scores, product-host compatibility,
 general remote drain/recovery, all-filesystem crash guarantee or automatic
-upgrade is claimed. Full AE/B work-package completion is not implied.
+upgrade. Full AE/B work-package completion is not implied.
+
+**2026-09-08 API readiness increment (ADR/SPEC-0040–0041):** explicit synthetic
+live-plan generation/preflight/approval, a fixed-endpoint Responses transport,
+per-plan request caps, failure/unknown-cost receipts, private continuation,
+the local SDK-MCP loop and independent live-kind evidence/replay are implemented.
+Local single-core contract tests cover six tasks, approval/binding refusals,
+HTTP/cancellation/usage/privacy failures, committed-but-undelivered prefixes,
+single-use output, receipt/state tampering and CLI admission. Exact-candidate CI
+must be checked for this new increment before claiming cross-platform/race success.
+No actual model request has been executed as validation of this increment; no
+new profile is live-compatible, no paid budget is inferred, and no release is tagged.
+This closes bounded implementation prerequisites, not B08 real six-task evidence,
+B09-live, B10-external, full storage crash recovery or product-host validation.
 
 | Capability | Evidence |
 |---|---|

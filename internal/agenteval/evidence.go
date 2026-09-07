@@ -77,13 +77,18 @@ func replay(ctx context.Context, e *AgentEvidence, terminal bool) error {
 	if r.Format != EpisodeFormat || r.Source != "mock-responses" || d.Projection != agenthost.Profile || d.Isolation != "in-process-offline-trusted" || d.ModelSnapshot != "not-applicable-mock" || d.RuntimeVersion != server.Version || d.RuntimeRevision != server.Revision {
 		return errors.New("EVIDENCE_INCOMPATIBLE")
 	}
+	return replayWorld(ctx, e.Bundle, r, terminal)
+}
+
+func replayWorld(ctx context.Context, encoded string, r *AgentEpisode, terminal bool) error {
+	d := r.Definition
 	if r.ExecutionStatus != "completed" || r.FailureCode != "" || r.Evaluation == nil {
 		return errors.New("EVIDENCE_PARTIAL")
 	}
 	if terminal && (r.CleanupStatus != "complete" || r.EvidenceStatus != "complete" || !r.WorldReplayable) {
 		return errors.New("EVIDENCE_PARTIAL")
 	}
-	raw, err := base64.StdEncoding.DecodeString(e.Bundle)
+	raw, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		return errors.New("EVIDENCE_INVALID")
 	}
@@ -166,6 +171,16 @@ func RecordMock(ctx context.Context, root, out string, t *task.Task, bundleBytes
 	if err := c.Validate(); err != nil {
 		return nil, err
 	}
+	e := &AgentEvidence{Format: EvidenceFormat, Bundle: base64.StdEncoding.EncodeToString(bundleBytes)}
+	return recordEpisode(ctx, root, out, t, bundleBytes, c, func(b *bundle.Artifact, stage func(*AgentEpisode) error) (*AgentEpisode, error) {
+		return runMock(ctx, t, b, c, m, stage)
+	}, func(r *AgentEpisode) any { e.Episode = r; return e }, func(ctx context.Context, r *AgentEpisode) error { e.Episode = r; return replay(ctx, e, false) })
+}
+
+func recordEpisode(ctx context.Context, root, out string, t *task.Task, bundleBytes []byte, claim any, run func(*bundle.Artifact, func(*AgentEpisode) error) (*AgentEpisode, error), wrap func(*AgentEpisode) any, verify func(context.Context, *AgentEpisode) error) (*AgentEpisode, error) {
+	if err := task.PortablePath(out); err != nil {
+		return nil, err
+	}
 	b, err := bundle.OpenBytes(bundleBytes)
 	if err != nil {
 		return nil, errors.New("TASK_INVALID")
@@ -219,33 +234,30 @@ func RecordMock(ctx context.Context, root, out string, t *task.Task, bundleBytes
 		}
 		return nil
 	}
-	if err = write("claim.json", c); err != nil {
+	if err = write("claim.json", claim); err != nil {
 		return nil, err
 	}
-	e := &AgentEvidence{Format: EvidenceFormat, Bundle: base64.StdEncoding.EncodeToString(bundleBytes)}
 	closed := false
-	r, err := runMock(ctx, t, b, c, m, func(r *AgentEpisode) error {
-		e.Episode = r
+	r, err := run(b, func(r *AgentEpisode) error {
 		if err := safe(r, limits.MaxReportBytes); err != nil {
 			return err
 		}
 		if r.ExecutionStatus == "completed" && r.Evaluation != nil && r.FailureCode == "" {
-			if err := replay(ctx, e, false); err != nil {
+			if err := verify(ctx, r); err != nil {
 				return err
 			}
 			closed = true
 		}
-		return write("closure.json", e)
+		return write("closure.json", wrap(r))
 	})
 	if err != nil {
 		return nil, err
 	}
-	e.Episode = r
 	if closed && r.CleanupStatus == "complete" {
 		r.WorldReplayable = true
 		r.EvidenceStatus = "complete"
 	}
-	if err = write("terminal.pending.json", e); err != nil {
+	if err = write("terminal.pending.json", wrap(r)); err != nil {
 		return nil, err
 	}
 	// Same-directory hard-link publication is atomic and no-clobber. Filesystems

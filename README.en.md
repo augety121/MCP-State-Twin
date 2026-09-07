@@ -1006,3 +1006,15 @@ retained world evidence, `eval verify` replay and fixed-plan `eval compare`
 reports. Follow the [offline regression walkthrough](docs/guides/OFFLINE-AGENT-REGRESSION.md)
 to catch an intentionally omitted action. These are mock host tests, **not live
 model capability or product-host compatibility evidence**. See [SPEC-0039](docs/SPEC-0039-OFFLINE-AGENT-REGRESSION.md).
+
+## Optional local API bridge (experimental; live unverified)
+
+Separate `eval live-plan`, `live-preflight`, `live` and `live-verify` commands
+require an explicitly reviewed synthetic Task, model, request cap, approval
+window and `--allow-live` before a fixed OpenAI endpoint is called. No model
+default, redirect, retry or production-tool passthrough. Acceptance after timeout
+and currency cost remain unknown; offline world verification is not proof of
+provider origin. Six-task contract tests exist, **not actual live evidence for
+this profile or ChatGPT/Codex/Claude compatibility**. Read the
+[guide](docs/guides/LOCAL-API-BRIDGE.md), [approval contract](docs/SPEC-0040-LIVE-PLAN-AND-APPROVAL.md)
+and [transport/evidence contract](docs/SPEC-0041-PROVIDER-TRANSPORT-AND-EVIDENCE.md).

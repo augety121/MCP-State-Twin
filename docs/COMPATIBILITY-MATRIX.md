@@ -6,6 +6,7 @@
 | Profile | Protocol/API surface | State | Current evidence | Missing evidence |
 |---|---|---|---|---|
 | `responses-functions-offline-v1` | synthetic non-streaming Responses function codec + local SDK MCP | experimental offline only | agenthost/agenteval/CLI tests; SPEC-0039 | actual API transport, account/model availability, approved live run; not a product-host profile |
+| `openai-responses-local-bridge-v1alpha1` | opt-in fixed HTTPS Responses functions + in-process MCP world | experimental contract-tested; live unverified | SPEC-0040/0041; agentapi/agenteval/CLI tests | explicit account/model/data/budget approval and actual six-task live evidence; no native MCP or product-host claim |
 | `generic-mcp-modern-2026-07-28` | stateless tools-first Streamable HTTP | experimental | raw wire tests for discovery/list/call/result/header rules | complete optional-feature conformance |
 | `generic-mcp-legacy-2025-11-25` | initialize + tools-first Streamable HTTP | experimental | pinned SDK/conformance subset and direct handshake tests | broader client matrix |
 | `openai-responses-remote-mcp-v1alpha1` | Responses create/retrieve/cancel + remote MCP | unverified | mock contract tests and opt-in harness | SPEC-0019 live report through SPEC-0020 staging |

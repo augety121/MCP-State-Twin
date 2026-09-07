@@ -227,7 +227,9 @@ The [offline guide](guides/OFFLINE-AGENT-REGRESSION.md) is exercised in a clean
 temporary root by the CLI integration test. No real credentials or API calls are
 needed in ordinary CI. Exact-commit CI status belongs in the implementation ledger.
 
-Still open: real API transport/approved live matrix and cost policy; independent
+The separate ADR/SPEC-0040–0041 now implement an opt-in local API transport and
+explicit request-capped/unknown-cost plan; this does not change the offline lane.
+Still open: approved actual live matrix; independent
 Task/oracle review and external user trial; broader stage-by-stage storage/disk
 failure injection and cleanup recovery; signed provenance, remote reconciliation,
 native/product HostProfiles and general configuration comparison. These must

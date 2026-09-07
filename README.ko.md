@@ -420,3 +420,10 @@ MCP State Twin은 **MIT License**로 제공됩니다. 전체 라이선스 본문
 [오프라인 안내](docs/guides/OFFLINE-AGENT-REGRESSION.md)와
 [SPEC-0039](docs/SPEC-0039-OFFLINE-AGENT-REGRESSION.md)를 참고하세요.
 실제 모델 능력이나 제품 호스트 호환성을 증명하는 live 테스트는 아닙니다.
+
+별도의 실험적 local API bridge에는 `eval live-plan` / `live-preflight` / `live` /
+`live-verify`가 있습니다. 모델, 합성 데이터, 요청 상한, 유효 기간과 명시적 승인이
+필요합니다. 비용은 unknown이며 자동 retry는 없습니다. 6개 Task의 contract tests만
+수행했으며 실제 API 또는 제품 호스트 호환성은 검증되지 않았습니다.
+[안내](docs/guides/LOCAL-API-BRIDGE.md), [SPEC-0040](docs/SPEC-0040-LIVE-PLAN-AND-APPROVAL.md),
+[SPEC-0041](docs/SPEC-0041-PROVIDER-TRANSPORT-AND-EVIDENCE.md)를 참고하세요.

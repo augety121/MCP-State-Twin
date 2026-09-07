@@ -6,8 +6,11 @@
 后续实施更新：用户明确要求“推送、接着干活”后，
 [ADR-0038](../../ADR-0038-AGENT-TASK-AND-OFFLINE-GRADING.md) 接受独立 Task/只读评分/
 六任务 offline witness 的有限子集；[ADR-0039](../../ADR-0039-OFFLINE-AGENT-REGRESSION-LOOP.md)
-随后接受合成 Responses 循环、有限证据重放与模型标签比较。真正的 provider transport/live、
-通用远程恢复和发行决策仍待各自接受，
+随后接受合成 Responses 循环、有限证据重放与模型标签比较。
+[ADR-0040](../../ADR-0040-OPT-IN-LOCAL-API-PLAN.md) 和
+[ADR-0041](../../ADR-0041-BOUNDED-PROVIDER-TRANSPORT-EVIDENCE.md) 再接受明确审批的
+本地 API bridge transport 与独立证据；只做 contract tests，未执行真实付费 API。
+真实 live、通用远程恢复和发行决策仍待各自条件满足，
 不把本轮原始评审记录改写为全生命周期已接受。
 
 | ID | 推荐选择 | 替代与代价 | 实施前要求 |

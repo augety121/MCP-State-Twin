@@ -1043,3 +1043,15 @@ README 中对许可证的任何说明仅用于帮助阅读；若存在差异，�
 先跑 [离线回归教程](docs/guides/OFFLINE-AGENT-REGRESSION.md)：故意遗漏动作的候选
 应被判为回归，而不是得到假成功。此路线仍是 **mock 测试，不是实际模型能力或 live 兼容证据**；
 完整边界见 [SPEC-0039](docs/SPEC-0039-OFFLINE-AGENT-REGRESSION.md)。
+
+## 可选本地 API bridge（实验性，live 未验证）
+
+新增独立的 `eval live-plan` / `live-preflight` / `live` / `live-verify`：先审阅完整
+合成任务、明确模型、请求上限和有效期；只有批准计划并传入 `--allow-live` 才访问固定
+OpenAI API endpoint。无默认模型、重试、重定向或 production tool passthrough。
+超时保留未知接受状态，费用 unknown；证据重放不调用模型，也不证明 Provider 来源。
+
+目前验证来自本地六任务 contract tests，**尚无这个新 profile 的真实 API 验收报告**，
+不代表 ChatGPT/Codex/Claude 产品兼容。使用前请读 [分步指南](docs/guides/LOCAL-API-BRIDGE.md)、
+[授权 Spec](docs/SPEC-0040-LIVE-PLAN-AND-APPROVAL.md) 和
+[传输/证据 Spec](docs/SPEC-0041-PROVIDER-TRANSPORT-AND-EVIDENCE.md)。

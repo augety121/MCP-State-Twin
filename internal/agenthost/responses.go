@@ -1,4 +1,4 @@
-// Package agenthost implements an offline Responses function-call codec. It has
+// Package agenthost implements a transport-free Responses function-call codec. It has
 // no credentials, HTTP client, network route, shell or filesystem capabilities.
 package agenthost
 
@@ -19,6 +19,7 @@ const Instructions = "Use only the supplied tools to satisfy the user's objectiv
 
 var functionName = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 var privateID = regexp.MustCompile(`^[A-Za-z0-9_-]{1,200}$`)
+var responseModel = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$`)
 
 type Function struct {
 	Type        string `json:"type"`
@@ -58,13 +59,24 @@ type Session struct {
 }
 
 func New(model string, maxTokens int, t *task.Task, listed []*mcp.Tool) (*Session, error) {
-	if err := t.Validate(); err != nil {
-		return nil, err
-	}
-	// This codec is only admitted for synthetic tests. A future live transport
-	// requires a separate accepted profile and explicit cost authorization.
 	if !strings.HasPrefix(model, "mock-") || !functionName.MatchString(model) || maxTokens < 1 || maxTokens > 8192 {
 		return nil, errors.New("HOST_PROFILE_UNSUPPORTED")
+	}
+	return newSession(model, maxTokens, t, listed)
+}
+
+// NewResponses only creates a codec; it grants no network or spend authority.
+// The separate agentapi profile enforces live approval at every actual POST.
+func NewResponses(model string, maxTokens int, t *task.Task, listed []*mcp.Tool) (*Session, error) {
+	if !responseModel.MatchString(model) || strings.HasPrefix(model, "mock-") || maxTokens < 1 || maxTokens > 8192 {
+		return nil, errors.New("HOST_PROFILE_UNSUPPORTED")
+	}
+	return newSession(model, maxTokens, t, listed)
+}
+
+func newSession(model string, maxTokens int, t *task.Task, listed []*mcp.Tool) (*Session, error) {
+	if err := t.Validate(); err != nil {
+		return nil, err
 	}
 	byName := map[string]*mcp.Tool{}
 	for _, tool := range listed {

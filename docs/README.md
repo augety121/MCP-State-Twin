@@ -59,8 +59,14 @@ subset and [ADR-0039](ADR-0039-OFFLINE-AGENT-REGRESSION-LOOP.md) /
 [SPEC-0039](SPEC-0039-OFFLINE-AGENT-REGRESSION.md) synthetic Responses loop,
 bounded evidence replay and model-label comparison. Start with the
 [offline regression guide](guides/OFFLINE-AGENT-REGRESSION.md).
-Real provider transport/live autonomous trials, native product hosts and general
-configuration comparison remain unimplemented. Other proposed CLI commands are
+The separate [ADR-0040](ADR-0040-OPT-IN-LOCAL-API-PLAN.md) /
+[SPEC-0040](SPEC-0040-LIVE-PLAN-AND-APPROVAL.md) and
+[ADR-0041](ADR-0041-BOUNDED-PROVIDER-TRANSPORT-EVIDENCE.md) /
+[SPEC-0041](SPEC-0041-PROVIDER-TRANSPORT-AND-EVIDENCE.md) accept the opt-in local
+Responses plan, fixed transport and separate evidence contract. See the
+[local API bridge guide](guides/LOCAL-API-BRIDGE.md); only contract tests have
+run, not real model trials. Native product hosts and general live configuration
+comparison remain unverified/unimplemented. Other proposed CLI commands are
 not current quickstart commands. Existing Scenario, Bundle, Journal, release
 gates and native-provider security boundaries remain.
 

@@ -88,6 +88,21 @@ func runMock(parent context.Context, t *task.Task, b *bundle.Artifact, c *RunCon
 	if err = c.Validate(); err != nil {
 		return nil, err
 	}
+	if m == nil || m.Kind != "MockResponses" || !m.SyntheticOnly || len(m.Responses) == 0 || len(m.Responses) > 16 {
+		return nil, errors.New("HOST_PROFILE_UNSUPPORTED")
+	}
+	return runLoop(parent, t, b, c, loopDriver{steps: len(m.Responses), exhausted: "MOCK_EXHAUSTED", next: func(_ context.Context, _ []byte, i int) ([]byte, error) { return m.Responses[i], nil }}, stage)
+}
+
+type loopDriver struct {
+	live      bool
+	steps     int
+	source    string
+	exhausted string
+	next      func(context.Context, []byte, int) ([]byte, error)
+}
+
+func runLoop(parent context.Context, t *task.Task, b *bundle.Artifact, c *RunConfig, driver loopDriver, stage func(*AgentEpisode) error) (r *AgentEpisode, err error) {
 	if err = Admit(t, b); err != nil {
 		return nil, err
 	}
@@ -102,9 +117,6 @@ func runMock(parent context.Context, t *task.Task, b *bundle.Artifact, c *RunCon
 	}
 	configCopy := *c
 	c = &configCopy
-	if m == nil || m.Kind != "MockResponses" || !m.SyntheticOnly || len(m.Responses) == 0 || len(m.Responses) > 16 {
-		return nil, errors.New("HOST_PROFILE_UNSUPPORTED")
-	}
 	ctx, cancel := context.WithTimeout(parent, time.Duration(t.Budgets.EpisodeSeconds)*time.Second)
 	defer cancel()
 	env, err := provision(ctx, t, b)
@@ -116,18 +128,34 @@ func runMock(parent context.Context, t *task.Task, b *bundle.Artifact, c *RunCon
 			_ = env.close()
 		}
 	}()
-	host, err := agenthost.New(c.Model, c.MaxOutputTokens, t, env.tools)
+	newHost := agenthost.New
+	if driver.live {
+		newHost = agenthost.NewResponses
+	}
+	host, err := newHost(c.Model, c.MaxOutputTokens, t, env.tools)
 	if err != nil {
 		return nil, err
 	}
 	defer host.Stop()
 	r = &AgentEpisode{Format: EpisodeFormat, Source: "mock-responses", Definition: RunDefinition{Config: *c, Task: t, BundleDigest: b.Digest, RuntimeVersion: server.Version, RuntimeRevision: server.Revision, Isolation: "in-process-offline-trusted", Projection: agenthost.Profile, ModelSnapshot: "not-applicable-mock"}, ExecutionStatus: "running", EvidenceStatus: "partial", CleanupStatus: "pending", View: evaluator.View{Before: env.before, Events: []evaluator.Event{}}}
+	if driver.live {
+		r.Format = LiveEpisodeFormat
+		r.Source = driver.source
+		r.Definition.Isolation = "in-process-tools-fixed-provider-egress"
+		r.Definition.Projection = LiveProfile
+		r.Definition.ModelSnapshot = "unknown"
+	}
 	failure := error(nil)
-	for _, raw := range m.Responses {
-		if _, failure = host.Request(ctx); failure != nil {
+	for step := 0; step < driver.steps; step++ {
+		var request []byte
+		if request, failure = host.Request(ctx); failure != nil {
 			break
 		}
 		r.RequestFrontiers = append(r.RequestFrontiers, len(r.View.Events))
+		var raw []byte
+		if raw, failure = driver.next(ctx, request, step); failure != nil {
+			break
+		}
 		for i := range r.View.Events {
 			r.View.Events[i].Delivered = true
 		}
@@ -173,8 +201,8 @@ func runMock(parent context.Context, t *task.Task, b *bundle.Artifact, c *RunCon
 		r.ExecutionStatus = status(failure)
 		r.FailureCode = code(failure)
 	} else if r.ExecutionStatus != "completed" {
-		r.ExecutionStatus = "host_error"
-		r.FailureCode = "MOCK_EXHAUSTED"
+		r.ExecutionStatus = status(errors.New(driver.exhausted))
+		r.FailureCode = driver.exhausted
 	}
 	// A canceled execution context never prevents bounded terminal inspection.
 	finish, finishCancel := context.WithTimeout(context.Background(), time.Duration(t.Budgets.CleanupSeconds)*time.Second)
@@ -217,7 +245,7 @@ func code(err error) string {
 	if errors.Is(err, context.DeadlineExceeded) {
 		return "EPISODE_TIMEOUT"
 	}
-	for _, c := range []string{"BUDGET_EXHAUSTED", "HOST_PROTOCOL_ERROR", "HOST_PROFILE_UNSUPPORTED", "DATA_POLICY_REJECTED", "INFRASTRUCTURE_ERROR", "EPISODE_TIMEOUT", "EPISODE_STOPPED"} {
+	for _, c := range []string{"BUDGET_EXHAUSTED", "HOST_PROTOCOL_ERROR", "HOST_PROFILE_UNSUPPORTED", "DATA_POLICY_REJECTED", "INFRASTRUCTURE_ERROR", "EPISODE_TIMEOUT", "EPISODE_STOPPED", "LIVE_APPROVAL_EXPIRED_OR_NOT_YET_VALID", "LIVE_NOT_AUTHORIZED", "PROVIDER_STOPPED", "PROVIDER_REQUEST_REFUSED", "PROVIDER_ACCEPTANCE_UNKNOWN", "PROVIDER_HTTP_ERROR", "PROVIDER_RESPONSE_INVALID", "PROVIDER_RESPONSE_LIMIT", "PROVIDER_USAGE_INVALID"} {
 		if err.Error() == c {
 			return c
 		}

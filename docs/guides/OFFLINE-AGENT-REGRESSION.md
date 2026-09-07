@@ -55,5 +55,6 @@ planned/started/terminal/validlyEvaluated 均为 2，并非零退出。`upgradeA
 这些未完成目录仅供人工检查，不会自动恢复或覆盖。根目录必须可信；未知输入和敏感
 模式会被拒绝。完整资源、保存和验证限制见 [SPEC-0039](../SPEC-0039-OFFLINE-AGENT-REGRESSION.md)。
 
-从这个演示到真实模型评测，仍需独立的 API transport、具体 model/profile、合成数据
-许可、请求/费用预算和实际 live 报告；这里的 `mock-*` 标签不是可调用模型 ID。
+从这个演示到真实模型评测，可审阅独立的 [本地 API bridge](LOCAL-API-BRIDGE.md)。
+它已有 contract-tested transport，但仍需具体 model/profile、合成数据许可、
+请求/费用授权和实际 live 报告；这里的 `mock-*` 标签不是可调用模型 ID。

@@ -14,11 +14,14 @@ import (
 
 func runAgentEval(ctx context.Context, args []string) error {
 	if len(args) == 0 {
-		return errors.New("eval requires preflight, mock, verify, or compare")
+		return errors.New("eval requires preflight, mock, verify, compare, live-plan, live-preflight, live, or live-verify")
 	}
 	command := args[0]
+	if command == "live-plan" || command == "live-preflight" || command == "live" || command == "live-verify" {
+		return runAgentLive(ctx, args)
+	}
 	if command != "preflight" && command != "mock" && command != "verify" && command != "compare" {
-		return errors.New("unsupported eval command; live is not enabled")
+		return errors.New("unsupported eval command")
 	}
 	f := flag.NewFlagSet("eval "+command, flag.ContinueOnError)
 	root := f.String("root", ".", "trusted artifact root")

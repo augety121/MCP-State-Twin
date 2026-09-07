@@ -40,9 +40,10 @@
 
 | 范围 | spec_status | implementation_status | verification_status | release_status |
 |---|---|---|---|---|
-| 本轮 Agent 回归增量 | proposed | not-started | design review only | not-released |
+| B02–B07/B09/B10/B12 的离线子集 | accepted ADR-0038/0039 | implemented bounded subset | 本地测试；CI 34163406749 / 34165668106 | experimental, not-released |
+| B04/B05/B06/B07/B12 的本地 API readiness 子集 | accepted ADR-0040/0041 | implemented bounded subset | contract tests；真实 API 未执行；候选 CI 另查 | experimental, not-released |
 | 核心/Scenario/Bundle/Journal 继承能力 | 以既有 accepted ADR 为准 | 以现有实现台账为准 | 历史证据；本轮未重跑 | 依既有 preview/stable 支持范围 |
-| B08/B09-live | proposed | not-started | 需 API/数据/预算授权及真实报告 | 不可宣称兼容 |
+| B08/B09-live 实际实验 | proposed live gate | readiness 不等于实际运行 | 需账户/model/数据/预算授权及真实报告 | 不可宣称兼容 |
 | B10-external | proposed | not-started | 需真实独立使用反馈 | 不可宣称采用量 |
 | 109 原需求/24 原任务逐项审计 | 原文未完整提供 | 不据此判断 | blocked-source | 不据此承诺 release |
 

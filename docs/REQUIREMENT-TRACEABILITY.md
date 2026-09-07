@@ -48,6 +48,15 @@ joined in-process work and bounded terminal inspection; general remote drain,
 OS/disk fault injection and cleanup recovery are not closed. No full 109-item
 source audit, independent semantic review, live profile or external use is claimed.
 
+[SPEC-0040](SPEC-0040-LIVE-PLAN-AND-APPROVAL.md) and
+[SPEC-0041](SPEC-0041-PROVIDER-TRANSPORT-AND-EVIDENCE.md) add the local API
+readiness portions of AE-009/011–020/023: explicit approval/count caps, fixed
+transport, private continuation, failure receipts, non-reusable plan directories
+and separate evidence replay. `internal/agentapi`, `internal/agenteval/live_test.go`
+and `cmd/statetwin/agent_live_test.go` contain executable contract checks.
+AE-023 still lacks actual approved live evidence; AE-014/019/020 retain the
+remote/OS fault limitations above. No incomplete work package is closed wholesale.
+
 | Maintenance requirement | Authority | Evidence | Status |
 |---|---|---|---|
 | ST-MAINT-001 bounded failure-preserving fuzz | SPEC-0035 | workflow contract + POSIX wrapper exit tests + actual fuzz job | verified CI run 33579877698 |

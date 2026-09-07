@@ -36,8 +36,9 @@ merged and its required CI evidence passes on that revision.
 |---|---|---|---|---|
 | CLM-AGENT-001 | Independent Task and read-only grading with six scripted SDK-MCP witnesses | verified in CI | ADR/SPEC-0038; CI 34163406749 on `fcde8ae` | no real provider or arbitrary-task solvability claim |
 | CLM-AGENT-002 | Synthetic Responses loop, bounded retained-world replay and fixed-plan regression comparison | experimental, locally tested; exact-commit CI tracked in implementation ledger | ADR/SPEC-0039; agenthost/agenteval/CLI tests | no live transport, provider provenance, general remote recovery, full crash guarantee or automatic upgrade |
+| CLM-AGENT-003 | Separately approved local Responses plan/transport and bounded world evidence with safe failure receipts | experimental contract-tested; exact-candidate CI tracked in implementation ledger | ADR/SPEC-0040/0041; agentapi/agenteval/CLI tests | no actual live matrix, authenticated provider provenance, monetary cap, native/product-host compatibility, remote cancellation or exactly-once effects |
 
-These rows add an offline lane and do not promote any existing live/product
+These rows distinguish offline and opt-in local API lanes and do not promote any live/product
 HostProfile. Complete evidence may prove an unsuccessful task faithfully.
 
 ## Maintenance

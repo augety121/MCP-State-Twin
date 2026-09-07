@@ -2,7 +2,7 @@
 
 **v3.1 / 2026-09-08：提案；没有创建 GitHub Issue/PR。原稿列有 32 个工作包，引用了 109 个不同需求 ID；需求正文未随附，尚不能证明其映射完整或正确。**
 
-本轮修正与实际执行顺序见 [REVIEW](REVIEW.md) 和 [PHASE-SPECS](PHASE-SPECS.md)。[补充验收清单](ACCEPTANCE.md) 不替代缺失的原始需求目录。以下所有新增能力仍为 proposed，开发门槛与 live/发布门槛分别核验。
+原始评审修正与执行顺序见 [REVIEW](REVIEW.md) 和 [PHASE-SPECS](PHASE-SPECS.md)。[补充验收清单](ACCEPTANCE.md) 不替代缺失的原始需求目录。以下工作包正文保留提案范围；后续 ADR-0038–0041 已接受并实现有限离线/API readiness 子集，实际状态见验收清单和 [实现台账](../../IMPLEMENTATION-STATUS.md)，不能把整个工作包标成完成。开发门槛与 live/发布门槛分别核验。
 
 ## 使用规则
 
