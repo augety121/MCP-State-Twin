@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -35,5 +36,46 @@ func TestContainsSensitive(t *testing.T) {
 	}
 	if ContainsSensitive("sha256:0123456789abcdef") {
 		t.Fatal("digest-like value was incorrectly classified as sensitive")
+	}
+}
+
+func TestStructuredJSONCredentialAdmission(t *testing.T) {
+	for _, raw := range []string{
+		`{"api_key":"synthetic-private-sentinel"}`,
+		`{"nested":[{"api\u005fkey":"synthetic-private-sentinel"}]}`,
+		`{"Authorization":"Bearer synthetic-private-sentinel"}`,
+		`{"authorization":["Bearer synthetic-private-sentinel"]}`,
+		`{"refresh-token":"synthetic-private-sentinel"}`,
+		`{"password":123456}`,
+		`{"secret":{"nested":"synthetic-private-sentinel"}}`,
+		`{"arguments":"{\"api_key\":\"synthetic-private-sentinel\"}"}`,
+		`{"text":"api_key\u003dsynthetic-private-sentinel"}`,
+	} {
+		if !ContainsSensitive(raw) {
+			t.Fatal("structured credential missed", raw)
+		}
+		if strings.Contains(Redact(raw), "synthetic-private-sentinel") {
+			t.Fatal("structured secret leaked")
+		}
+	}
+	for _, raw := range []string{`{"authorization":[{"tool":"get_issue","equals":{"owner":"octo"}}]}`, `{"tokens":{"input":1,"output":2,"total":3}}`, `{"policy":{"required":true},"events":[]}`, `{"task":"token refresh review","value":null}`, `[null,false,12,"ordinary text"]`} {
+		if ContainsSensitive(raw) {
+			t.Fatal("noncredential metadata rejected", raw)
+		}
+	}
+}
+
+func TestJSONCredentialScanResourceBounds(t *testing.T) {
+	deep := strings.Repeat("[", 129) + "null" + strings.Repeat("]", 129)
+	if !ContainsSensitive(deep) {
+		t.Fatal("excessive JSON depth silently admitted")
+	}
+	nested := `{"ordinary":"text"}`
+	for i := 0; i < 6; i++ {
+		b, _ := json.Marshal(nested)
+		nested = string(b)
+	}
+	if !ContainsSensitive(nested) {
+		t.Fatal("excessive embedded JSON silently skipped")
 	}
 }

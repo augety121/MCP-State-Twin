@@ -37,6 +37,8 @@ func TestOfflineAgentCLIQuickstartAndRegression(t *testing.T) {
 		{"preflight", "--root", root, "--task", "agent-tasks/close-issue.json", "--config", "agent-runs/baseline.json"},
 		{"mock", "--root", root, "--task", "agent-tasks/close-issue.json", "--config", "agent-runs/baseline.json", "--responses", "agent-mocks/close-issue.json", "--out", ".statetwin/baseline"},
 		{"verify", "--root", root, "--evidence", ".statetwin/baseline/terminal.json"},
+		{"inspect", "--root", root, "--out", ".statetwin/baseline"},
+		{"inspect", "--root", root, "--out", ".statetwin/not-created"},
 	} {
 		if err := runAgentEval(ctx, args); err != nil {
 			t.Fatalf("%v: %v", args, err)
@@ -53,6 +55,12 @@ func TestOfflineAgentCLIQuickstartAndRegression(t *testing.T) {
 		if err := runAgentEval(ctx, []string{"compare", "--root", root, "--plan", "agent-comparison.json", "--format", format}); err == nil {
 			t.Fatal("regression exit code")
 		}
+	}
+	if err := os.WriteFile(filepath.Join(root, ".statetwin", "baseline", "closure.json"), []byte(`{"broken":`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := runAgentEval(ctx, []string{"inspect", "--root", root, "--out", ".statetwin/baseline"}); err == nil || err.Error() != "EVIDENCE_DIRECTORY_INVALID" {
+		t.Fatal("invalid inspection must fail CLI admission", err)
 	}
 	for _, args := range [][]string{{}, {"live"}, {"mock", "--endpoint", "https://example.invalid"}, {"verify", "--root", root, "--evidence", "../terminal.json"}, {"compare", "--root", root, "--plan", "agent-comparison.json", "--format", "html"}} {
 		if err := runAgentEval(ctx, args); err == nil {

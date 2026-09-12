@@ -14,19 +14,21 @@ import (
 
 func runAgentEval(ctx context.Context, args []string) error {
 	if len(args) == 0 {
-		return errors.New("eval requires preflight, mock, verify, compare, live-plan, live-preflight, live, or live-verify")
+		return errors.New("eval requires preflight, mock, verify, inspect, compare, live-plan, live-preflight, live, or live-verify")
 	}
 	command := args[0]
 	if command == "live-plan" || command == "live-preflight" || command == "live" || command == "live-verify" {
 		return runAgentLive(ctx, args)
 	}
-	if command != "preflight" && command != "mock" && command != "verify" && command != "compare" {
+	if command != "preflight" && command != "mock" && command != "verify" && command != "compare" && command != "inspect" {
 		return errors.New("unsupported eval command")
 	}
 	f := flag.NewFlagSet("eval "+command, flag.ContinueOnError)
 	root := f.String("root", ".", "trusted artifact root")
 	var taskName, configName, responsesName, outName, evidenceName, planName, format string
 	switch command {
+	case "inspect":
+		f.StringVar(&outName, "out", "", "relative existing artifact directory; read-only, no resume")
 	case "preflight", "mock":
 		f.StringVar(&taskName, "task", "", "relative AgentTask")
 		f.StringVar(&configName, "config", "", "relative offline run configuration")
@@ -45,6 +47,19 @@ func runAgentEval(ctx context.Context, args []string) error {
 	}
 	if f.NArg() != 0 {
 		return errors.New("unexpected eval arguments")
+	}
+	if command == "inspect" {
+		r, err := agenteval.InspectDirectory(ctx, *root, outName)
+		if err != nil {
+			return err
+		}
+		if err = printJSON(r); err != nil {
+			return err
+		}
+		if r.State == "invalid" {
+			return errors.New("EVIDENCE_DIRECTORY_INVALID")
+		}
+		return nil
 	}
 	if command == "verify" {
 		data, err := task.ReadFile(*root, evidenceName, limits.MaxReportBytes)

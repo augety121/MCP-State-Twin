@@ -39,6 +39,9 @@
 | DEC-033 | Synthetic Responses loop, bounded world-evidence replay and fixed-plan model-label regression comparison; no live transport | resolved, bounded offline subset only | ADR-0039 / SPEC-0039 |
 | DEC-034 | Explicit synthetic live plan, operator-selected model, approval window, request cap and unknown-cost policy; no inferred paid execution | resolved, experimental local API subset | ADR-0040 / SPEC-0040 |
 | DEC-035 | Fixed no-retry HTTPS transport, uncertain acceptance, separate live-kind evidence and offline world verification | resolved, contract-tested; actual live evidence open | ADR-0041 / SPEC-0041 |
+| DEC-036 | Artifact storage failures preserve owned staging; bounded terminal inspection preserves the first execution error | resolved, experimental local subset | ADR-0042 / SPEC-0042 |
+| DEC-037 | Interrupted Agent directories have read-only, non-atomic diagnosis; never automatic resume or repair | resolved, experimental local subset | ADR-0043 / SPEC-0043 |
+| DEC-038 | Decoded JSON credential patterns are checked before persistence; Task authorization rules are not credentials | resolved, finite security-policy correction | ADR-0044 / SPEC-0044 |
 
 Open decisions are roadmap work. They MUST NOT be silently resolved by an
 implementation-only change.

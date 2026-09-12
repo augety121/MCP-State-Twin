@@ -119,6 +119,11 @@ Provider 来源、账号身份、实际费用、人类审批或构建来源；�
 不承诺跨文件系统目录项 power-loss durability、每请求 WAL、自动恢复、resume API、
 远端 reconciliation 或 exactly-once 外部副作用/计费。原世界和旧 Journal schema 不升级。
 
+后续 [SPEC-0042](SPEC-0042-EVIDENCE-STORAGE-AND-TERMINAL-FAILURES.md) 补充独立终态
+context、首因保留、22 个存储注入故障和五个测试子进程退出点；
+[SPEC-0043](SPEC-0043-READ-ONLY-EVIDENCE-INSPECTION.md) 提供只读目录检查。
+这些验证不发送真实 Provider 请求，也不恢复或重发中断执行。
+
 ## 7. Failure matrix 与验收
 
 | 风险 | 行为 / 证据 | 当前验收边界 |
@@ -137,7 +142,7 @@ Provider 来源、账号身份、实际费用、人类审批或构建来源；�
 | cap 用尽但 goal 已达成 | 不冒充模型完成 | live loop budget test |
 | 重复/中断 output | 零新 POST，不重用 | single-use tests |
 | 换 Task/model/receipt/state | cross-binding 或 replay 失败 | tamper tests |
-| SIGKILL / disk full / link unsupported | 保留 claim/staging；绝不自动重发 | 继承失败关闭设计；完整 OS fault matrix 尚未完成 |
+| 进程退出 / 注入 ENOSPC / link 失败 | 保留 claim/staging；绝不自动重发 | SPEC-0042 共享 writer 的 22 个注入故障和五个子进程退出点；非真实满盘/硬件断电证明 |
 | 远端继续执行/计费 | 未知；本地无法担保 cancel/exactly-once | 明确不支持 |
 | 真 Provider API/模型版本变化 | 返回可解释失败；独立重新验证 | 尚无实际 live 证据 |
 

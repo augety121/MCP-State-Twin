@@ -1,9 +1,9 @@
 # Implementation Status
 
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
-**Last verified committed baseline:** 2026-09-08; local single-core suite plus public CI
-[run 34165668106](https://github.com/augety121/MCP-State-Twin/actions/runs/34165668106)
-for implementation commit `7ec3fd3` completed successfully, including Linux
+**Last verified committed baseline:** checked 2026-09-12; local single-core suite plus public CI
+[run 34168365247](https://github.com/augety121/MCP-State-Twin/actions/runs/34168365247)
+for implementation commit `31af889` completed successfully, including Linux
 race, Windows/macOS, fuzz, secret policy, hermetic egress and MCP conformance
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 is the accepted v0.1 release profile. RFC-0003 is a
@@ -63,12 +63,31 @@ per-plan request caps, failure/unknown-cost receipts, private continuation,
 the local SDK-MCP loop and independent live-kind evidence/replay are implemented.
 Local single-core contract tests cover six tasks, approval/binding refusals,
 HTTP/cancellation/usage/privacy failures, committed-but-undelivered prefixes,
-single-use output, receipt/state tampering and CLI admission. Exact-candidate CI
-must be checked for this new increment before claiming cross-platform/race success.
+single-use output, receipt/state tampering and CLI admission. Exact-commit CI
+34168365247 passed on `31af889`, including Linux race and Windows/macOS.
 No actual model request has been executed as validation of this increment; no
 new profile is live-compatible, no paid budget is inferred, and no release is tagged.
 This closes bounded implementation prerequisites, not B08 real six-task evidence,
 B09-live, B10-external, full storage crash recovery or product-host validation.
+
+**2026-09-12 evidence hardening increment (ADR/SPEC-0042–0044):** the shared
+offline/local-API writer checks full envelopes before creating files, rejects
+short writes, retains interrupted artifacts and refuses directory reuse.
+Terminal inspection/replay uses an independent bounded context; terminal and
+cleanup failures no longer overwrite the original execution failure. Read-only
+`eval inspect` checks bounded fixed-name files, claim binding, cross-stage
+consistency and replay eligibility without network, credentials, writes or resume.
+A reproduced JSON credential-key detection gap is fixed with a bounded decoded
+JSON scan, including Unicode escapes and embedded tool-argument JSON.
+Local regression evidence includes 22 injected filesystem failures, five real
+test-subprocess exits, late cancellation, secondary failures, malformed/partial/
+conflicting directories and six-task offline/API-contract regression.
+Local single-core `go vet -p 1 ./...`, full package tests and subsequent changed-
+package/document checks pass. Local `go test -race -p 1 ./...` cannot run because
+CGO is disabled; this is a verification limitation, not a passing race result.
+Exact-candidate CI for this increment is independent of the baseline above.
+This is not all-filesystem durability, OS power-loss recovery, automatic cleanup,
+hostile concurrent-writer isolation, universal DLP or actual provider-live evidence.
 
 | Capability | Evidence |
 |---|---|
@@ -99,6 +118,9 @@ B09-live, B10-external, full storage crash recovery or product-host validation.
 | Control authentication | independent bearer-token HTTP test |
 | Control auth grammar | missing scheme and raw-token negative tests; constant-time token comparison |
 | Operational log boundary | CLI errors pass through secret/identifier redaction; redaction unit tests |
+| Structured credential admission | decoded JSON credential keys/values, bounded embedded JSON and depth refusal; synthetic sentinel and legitimate Task authorization-rule tests; SPEC-0044; finite patterns only |
+| Agent artifact failure boundary | shared no-clobber writer, 22 injected failure cases, five subprocess exits and first-cause/terminal-context tests; SPEC-0042; separate from SQLite schema compatibility |
+| Read-only Agent evidence diagnosis | `eval inspect` for offline/local-API directories, bounded fixed members, claim/cross-stage/replay checks, partial/invalid distinctions and no mutation; SPEC-0043; no resume or atomic snapshot |
 | Strict YAML safety | shared decoder rejects multiple documents, unknown fields, explicit tags, anchors, and aliases |
 | Reference environment | six-tool issue-tracker TwinSpec with synthetic fixture; package-registry domain is recorded by ADR-0014 |
 | Second reference domain | package-registry TwinSpec with publish, yank, install, advisory-query flows and negative scenario assertions |

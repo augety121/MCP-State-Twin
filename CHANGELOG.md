@@ -7,6 +7,19 @@ alpha prerelease but no stable release yet.
 
 ### Added
 
+- ADR/SPEC-0042–0044: evidence storage/terminal-failure contracts, read-only
+  `eval inspect` and structured JSON credential admission. Tests cover 22 injected
+  filesystem failures and five actual test-subprocess exits without filling a disk.
+  Inspection checks claim/staging consistency and world replay; it never resumes,
+  repairs, calls a Provider or proves provider origin. SQLite schemas are unchanged.
+- Fixed canceled execution context leaking into terminal replay, secondary
+  terminal/cleanup errors overwriting the first failure, and undetected short
+  evidence writes. Optional terminal/cleanup failure fields may be rejected by
+  older strict preview readers; historical artifacts are not rewritten.
+- Fixed known credential fields bypassing privacy admission when encoded as
+  JSON, including escaped keys and bounded embedded JSON. Full envelopes are
+  checked before file creation; this remains finite-pattern policy, not universal DLP.
+
 - ADR/SPEC-0040–0041: explicitly approved local Responses plans, fixed no-retry
   HTTPS transport, bounded unknown-cost receipts, a private-world API loop and
   separate live-kind world replay. New `eval live-plan`, `live-preflight`, `live`

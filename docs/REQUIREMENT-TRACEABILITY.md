@@ -1,7 +1,7 @@
 # Unified Requirement Traceability
 
 **Status:** executable mapping for accepted requirements
-**Last reviewed:** 2026-09-01
+**Last reviewed:** 2026-09-12
 
 | Requirement | Contract | Implementation/evidence | Current state |
 |---|---|---|---|
@@ -13,7 +13,7 @@
 | I-6 atomic transition | SPEC-0002 | rollback/invariant/schema tests | verified |
 | I-7 branch isolation | SPEC-0002 | 100-fork test | verified |
 | I-8 state oracle | SPEC-0004/0005 | Scenario state assertions/diff | verified scripted subset |
-| I-9 secret exclusion | ADR-0009 / SPEC-0020 | sanitizer and provider-report tests | partial; remote profile open |
+| I-9 secret exclusion | ADR-0009 / SPEC-0020 / SPEC-0044 | sanitizer, decoded JSON sentinel, Task-rule negative and provider-report tests | finite tested patterns; universal secret detection and remote profile open |
 | I-10 error preservation | SPEC-0002/0018 | domain/internal/unknown tests | verified implemented paths |
 | I-11 immutable Evidence | SPEC-0017/0018 | duplicate/conflict/tamper tests | experimental candidate |
 | I-12 bounded execution | SPEC-0015 / SPEC-0022–0024 | semantic limit tests, ResourceProfile digest, CPU/heap governor tests, admission saturation/recovery tests and inspection smoke | accepted local soft-governor subset; no OS hard quota or distributed fairness |
@@ -45,7 +45,7 @@ The subsequent [offline Agent regression contract](SPEC-0039-OFFLINE-AGENT-REGRE
 adds tested portions of AE-004/008–013/015–019/021–024 through `internal/agenthost`,
 `internal/agenteval` and CLI integration tests. AE-014/020 remain limited to
 joined in-process work and bounded terminal inspection; general remote drain,
-OS/disk fault injection and cleanup recovery are not closed. No full 109-item
+complete OS/disk fault coverage and cleanup recovery are not closed. No full 109-item
 source audit, independent semantic review, live profile or external use is claimed.
 
 [SPEC-0040](SPEC-0040-LIVE-PLAN-AND-APPROVAL.md) and
@@ -56,6 +56,18 @@ and separate evidence replay. `internal/agentapi`, `internal/agenteval/live_test
 and `cmd/statetwin/agent_live_test.go` contain executable contract checks.
 AE-023 still lacks actual approved live evidence; AE-014/019/020 retain the
 remote/OS fault limitations above. No incomplete work package is closed wholesale.
+
+[SPEC-0042](SPEC-0042-EVIDENCE-STORAGE-AND-TERMINAL-FAILURES.md),
+[SPEC-0043](SPEC-0043-READ-ONLY-EVIDENCE-INSPECTION.md) and
+[SPEC-0044](SPEC-0044-STRUCTURED-CREDENTIAL-ADMISSION.md) extend the tested local
+portions of AE-014/016/018/019/020: 22 filesystem fault injections, five real
+subprocess-exit cut points, independent terminal context, preserved first cause,
+read-only interrupted-directory diagnosis and pre-write decoded JSON privacy checks.
+Tests are in `internal/agenteval/{storage,terminal,inspect}_test.go`,
+`internal/logging/sanitize_test.go` and CLI tests. Injected `ENOSPC` is not an
+actual full disk, process exit is not power loss, and inspect never authorizes
+resume or proves provider origin. General remote drain/reconciliation, all-OS
+crash recovery, broad DLP and actual live evidence remain distinct open work.
 
 | Maintenance requirement | Authority | Evidence | Status |
 |---|---|---|---|

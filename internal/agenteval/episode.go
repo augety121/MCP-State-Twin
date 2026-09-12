@@ -15,6 +15,7 @@ import (
 	"github.com/augety121/mcp-state-twin/internal/server"
 	"github.com/augety121/mcp-state-twin/internal/strictyaml"
 	"github.com/augety121/mcp-state-twin/internal/task"
+	"github.com/augety121/mcp-state-twin/internal/world"
 )
 
 const EpisodeFormat = "statetwin.dev/agent-episode-offline/v1alpha1"
@@ -61,17 +62,19 @@ type RunDefinition struct {
 }
 
 type AgentEpisode struct {
-	Format           string            `json:"format"`
-	Source           string            `json:"source"`
-	Definition       RunDefinition     `json:"definition"`
-	ExecutionStatus  string            `json:"executionStatus"`
-	FailureCode      string            `json:"failureCode,omitempty"`
-	EvidenceStatus   string            `json:"evidenceStatus"`
-	CleanupStatus    string            `json:"cleanupStatus"`
-	Usage            agenthost.Usage   `json:"usage"`
-	RequestFrontiers []int             `json:"requestFrontiers"`
-	Evaluation       *evaluator.Result `json:"evaluation,omitempty"`
-	View             evaluator.View    `json:"view"`
+	Format              string            `json:"format"`
+	Source              string            `json:"source"`
+	Definition          RunDefinition     `json:"definition"`
+	ExecutionStatus     string            `json:"executionStatus"`
+	FailureCode         string            `json:"failureCode,omitempty"`
+	TerminalFailureCode string            `json:"terminalFailureCode,omitempty"`
+	CleanupFailureCode  string            `json:"cleanupFailureCode,omitempty"`
+	EvidenceStatus      string            `json:"evidenceStatus"`
+	CleanupStatus       string            `json:"cleanupStatus"`
+	Usage               agenthost.Usage   `json:"usage"`
+	RequestFrontiers    []int             `json:"requestFrontiers"`
+	Evaluation          *evaluator.Result `json:"evaluation,omitempty"`
+	View                evaluator.View    `json:"view"`
 	// The separate bounded evidence artifact is added only after the world
 	// replay closure has been checked; this in-memory object is not a seal.
 	WorldReplayable bool `json:"worldReplayable"`
@@ -84,7 +87,9 @@ func RunMock(parent context.Context, t *task.Task, b *bundle.Artifact, c *RunCon
 	return runMock(parent, t, b, c, m, nil)
 }
 
-func runMock(parent context.Context, t *task.Task, b *bundle.Artifact, c *RunConfig, m *agenthost.MockScript, stage func(*AgentEpisode) error) (r *AgentEpisode, err error) {
+type stageEpisode func(context.Context, *AgentEpisode) error
+
+func runMock(parent context.Context, t *task.Task, b *bundle.Artifact, c *RunConfig, m *agenthost.MockScript, stage stageEpisode) (r *AgentEpisode, err error) {
 	if err = c.Validate(); err != nil {
 		return nil, err
 	}
@@ -102,7 +107,7 @@ type loopDriver struct {
 	next      func(context.Context, []byte, int) ([]byte, error)
 }
 
-func runLoop(parent context.Context, t *task.Task, b *bundle.Artifact, c *RunConfig, driver loopDriver, stage func(*AgentEpisode) error) (r *AgentEpisode, err error) {
+func runLoop(parent context.Context, t *task.Task, b *bundle.Artifact, c *RunConfig, driver loopDriver, stage stageEpisode) (r *AgentEpisode, err error) {
 	if err = Admit(t, b); err != nil {
 		return nil, err
 	}
@@ -204,10 +209,26 @@ func runLoop(parent context.Context, t *task.Task, b *bundle.Artifact, c *RunCon
 		r.ExecutionStatus = status(errors.New(driver.exhausted))
 		r.FailureCode = driver.exhausted
 	}
-	// A canceled execution context never prevents bounded terminal inspection.
+	err = finishEpisode(t, r, env.state, env.close, stage)
+	env = nil // finishEpisode closes owned resources even when staging fails
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+// A canceled execution context must not prevent terminal inspection or replay
+// closure. OS filesystem calls are byte-bounded, not interruptible syscalls.
+func finishEpisode(t *task.Task, r *AgentEpisode, state func(context.Context) (*world.State, error), closeWorld func() error, stage stageEpisode) (err error) {
+	closed := false
+	defer func() {
+		if !closed {
+			_ = closeWorld()
+		}
+	}()
 	finish, finishCancel := context.WithTimeout(context.Background(), time.Duration(t.Budgets.CleanupSeconds)*time.Second)
 	defer finishCancel()
-	r.View.After, err = env.state(finish)
+	r.View.After, err = state(finish)
 	if err == nil {
 		var grade *evaluator.Evaluator
 		grade, err = evaluator.Compile(t)
@@ -217,25 +238,31 @@ func runLoop(parent context.Context, t *task.Task, b *bundle.Artifact, c *RunCon
 	}
 	if err != nil {
 		r.EvidenceStatus = "partial"
-		r.FailureCode = "TERMINAL_INSPECTION_FAILED"
+		r.TerminalFailureCode = "TERMINAL_INSPECTION_FAILED"
+		if r.FailureCode == "" {
+			r.FailureCode = r.TerminalFailureCode
+		}
 		err = nil
 	}
 	if stage != nil {
-		if stageErr := stage(r); stageErr != nil {
-			return nil, stageErr
+		if stageErr := stage(finish, r); stageErr != nil {
+			return stageErr
 		}
 	}
-	if closeErr := env.close(); closeErr != nil {
+	if closeErr := closeWorld(); closeErr != nil {
 		r.CleanupStatus = "failed"
-		r.FailureCode = "CLEANUP_FAILED"
+		r.CleanupFailureCode = "CLEANUP_FAILED"
+		if r.FailureCode == "" {
+			r.FailureCode = r.CleanupFailureCode
+		}
 	} else {
 		r.CleanupStatus = "complete"
 	}
-	env = nil
+	closed = true
 	if err = safe(r, limits.MaxReportBytes); err != nil {
-		return nil, err
+		return err
 	}
-	return r, nil
+	return nil
 }
 
 func code(err error) string {

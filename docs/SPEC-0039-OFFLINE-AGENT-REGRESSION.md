@@ -230,7 +230,14 @@ needed in ordinary CI. Exact-commit CI status belongs in the implementation ledg
 The separate ADR/SPEC-0040–0041 now implement an opt-in local API transport and
 explicit request-capped/unknown-cost plan; this does not change the offline lane.
 Still open: approved actual live matrix; independent
-Task/oracle review and external user trial; broader stage-by-stage storage/disk
-failure injection and cleanup recovery; signed provenance, remote reconciliation,
+Task/oracle review and external user trial; storage/power-loss guarantees beyond
+the 22 injected failures and five subprocess-exit points in
+[SPEC-0042](SPEC-0042-EVIDENCE-STORAGE-AND-TERMINAL-FAILURES.md); automatic cleanup
+recovery; signed provenance, remote reconciliation,
 native/product HostProfiles and general configuration comparison. These must
 not be marked implemented merely because this offline slice passes.
+
+Interrupted-directory inspection is now available through the read-only
+[SPEC-0043](SPEC-0043-READ-ONLY-EVIDENCE-INSPECTION.md) command; it does not change
+the no-resume boundary. [SPEC-0044](SPEC-0044-STRUCTURED-CREDENTIAL-ADMISSION.md)
+also tightens known JSON credential-pattern admission before any artifact write.

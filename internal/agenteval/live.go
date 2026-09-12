@@ -103,7 +103,7 @@ func recordLive(ctx context.Context, root string, p *agentapi.Plan, bundleBytes 
 		return nil, errors.New("HOST_PROFILE_UNSUPPORTED")
 	}
 	e := &LiveEvidence{Format: LiveEvidenceFormat, Plan: p, StartedAt: time.Now().UTC().Format(time.RFC3339Nano), Receipts: []agentapi.Receipt{}, Bundle: base64.StdEncoding.EncodeToString(bundleBytes)}
-	return recordEpisode(ctx, root, p.OutputDirectory(), p.Task, bundleBytes, p, func(b *bundle.Artifact, stage func(*AgentEpisode) error) (*AgentEpisode, error) {
+	return recordEpisode(ctx, root, p.OutputDirectory(), p.Task, bundleBytes, p, func(b *bundle.Artifact, stage stageEpisode) (*AgentEpisode, error) {
 		exchange, close, err := makeClient(p)
 		if err != nil {
 			return nil, err

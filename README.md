@@ -1055,3 +1055,17 @@ OpenAI API endpoint。无默认模型、重试、重定向或 production tool pa
 不代表 ChatGPT/Codex/Claude 产品兼容。使用前请读 [分步指南](docs/guides/LOCAL-API-BRIDGE.md)、
 [授权 Spec](docs/SPEC-0040-LIVE-PLAN-AND-APPROVAL.md) 和
 [传输/证据 Spec](docs/SPEC-0041-PROVIDER-TRANSPORT-AND-EVIDENCE.md)。
+
+## 证据故障诊断（实验性）
+
+`eval inspect --root DIR --out RELATIVE_DIRECTORY` 可只读检查 offline/local-API
+产物：区分未开始、未完成、已发布、有残留和无效目录，核对 claim、分阶段工件与世界 replay。
+不调用模型、不修改文件、不自动恢复；诊断退出码 0 不是任务成功或 Provider 来源证明。
+先读 [故障诊断指南](docs/guides/EVIDENCE-FAILURE-DIAGNOSIS.md)。
+
+保存链路已覆盖 22 个注入故障和五个测试子进程退出点，并修复短写漏检、取消影响终态
+检查、后续清理错误覆盖首因，以及 JSON credential 字段漏检。完整契约：
+[存储/终态](docs/SPEC-0042-EVIDENCE-STORAGE-AND-TERMINAL-FAILURES.md)、
+[只读检查](docs/SPEC-0043-READ-ONLY-EVIDENCE-INSPECTION.md)、
+[结构化隐私](docs/SPEC-0044-STRUCTURED-CREDENTIAL-ADMISSION.md)。
+这些测试不等于硬件断电安全、全部 storage compatibility 或完整 DLP；SQLite schema 不变。

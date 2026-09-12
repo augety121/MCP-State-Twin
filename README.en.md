@@ -1018,3 +1018,21 @@ provider origin. Six-task contract tests exist, **not actual live evidence for
 this profile or ChatGPT/Codex/Claude compatibility**. Read the
 [guide](docs/guides/LOCAL-API-BRIDGE.md), [approval contract](docs/SPEC-0040-LIVE-PLAN-AND-APPROVAL.md)
 and [transport/evidence contract](docs/SPEC-0041-PROVIDER-TRANSPORT-AND-EVIDENCE.md).
+
+## Evidence failure diagnosis (experimental)
+
+`eval inspect --root DIR --out RELATIVE_DIRECTORY` reads offline/local-API
+artifacts, checks claim/staging consistency and world replay, and distinguishes
+missing, incomplete, published, residual and invalid directories. It never
+calls a model, modifies files or resumes execution. A diagnostic exit code of 0
+is not task success or proof of provider origin. See the
+[diagnosis guide](docs/guides/EVIDENCE-FAILURE-DIAGNOSIS.md).
+
+The writer has 22 injected filesystem failure cases and five actual test-child
+exit points. Fixes cover short writes, terminal-context cancellation, first-cause
+preservation and decoded JSON credential admission. Read the
+[storage/terminal](docs/SPEC-0042-EVIDENCE-STORAGE-AND-TERMINAL-FAILURES.md),
+[inspection](docs/SPEC-0043-READ-ONLY-EVIDENCE-INSPECTION.md) and
+[privacy](docs/SPEC-0044-STRUCTURED-CREDENTIAL-ADMISSION.md) contracts.
+This is not hardware power-loss safety, all-storage compatibility or universal
+DLP. SQLite schemas are unchanged.

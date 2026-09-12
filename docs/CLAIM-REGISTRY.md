@@ -1,7 +1,7 @@
 # Public Claim Registry
 
 **Status:** normative evidence ledger under SPEC-0021
-**Candidate reviewed:** 2026-09-01
+**Candidate reviewed:** 2026-09-12
 **Rule:** a candidate worktree is not a published GitHub capability until it is
 merged and its required CI evidence passes on that revision.
 
@@ -37,6 +37,9 @@ merged and its required CI evidence passes on that revision.
 | CLM-AGENT-001 | Independent Task and read-only grading with six scripted SDK-MCP witnesses | verified in CI | ADR/SPEC-0038; CI 34163406749 on `fcde8ae` | no real provider or arbitrary-task solvability claim |
 | CLM-AGENT-002 | Synthetic Responses loop, bounded retained-world replay and fixed-plan regression comparison | experimental, locally tested; exact-commit CI tracked in implementation ledger | ADR/SPEC-0039; agenthost/agenteval/CLI tests | no live transport, provider provenance, general remote recovery, full crash guarantee or automatic upgrade |
 | CLM-AGENT-003 | Separately approved local Responses plan/transport and bounded world evidence with safe failure receipts | experimental contract-tested; exact-candidate CI tracked in implementation ledger | ADR/SPEC-0040/0041; agentapi/agenteval/CLI tests | no actual live matrix, authenticated provider provenance, monetary cap, native/product-host compatibility, remote cancellation or exactly-once effects |
+| CLM-AGENT-004 | Evidence publication preserves failures, detects short writes and refuses interrupted-directory reuse | experimental, locally tested; exact-candidate CI tracked in implementation ledger | ADR/SPEC-0042; 22 injected filesystem failures, five subprocess exits, terminal-context and first-cause tests | not SQLite migration evidence, hardware power-loss safety, automatic resume/repair or all-storage compatibility |
+| CLM-AGENT-005 | `eval inspect` diagnoses fixed-name offline/local-API evidence without writes or model calls | experimental, locally tested; exact-candidate CI tracked in implementation ledger | ADR/SPEC-0043; directory consistency, replay, privacy, bounds and CLI tests | trusted quiescent root; not an atomic snapshot, provider provenance, complete-task result or recovery authorization |
+| CLM-SECURITY-003 | Known credential fields in decoded JSON are rejected before Agent artifact writes | verified locally | ADR/SPEC-0044; escaped keys, embedded JSON, resource bounds and Task-rule negative tests | finite pattern policy; not universal DLP, arbitrary PII detection or a provenance certificate |
 
 These rows distinguish offline and opt-in local API lanes and do not promote any live/product
 HostProfile. Complete evidence may prove an unsuccessful task faithfully.

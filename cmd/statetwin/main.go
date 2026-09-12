@@ -149,6 +149,7 @@ Commands:
   statetwin eval mock --root DIR --task tasks/close.json --config runs/baseline.json --responses mock/close.json --out results/baseline
   statetwin eval verify --root DIR --evidence results/baseline/terminal.json
   statetwin eval compare --root DIR --plan comparison.json --format markdown
+  statetwin eval inspect --root DIR --out .statetwin/trial
   statetwin eval live-plan --root DIR --task tasks/close.json --id trial --model MODEL --max-requests N --max-output-tokens N --valid-for 1h
   statetwin eval live-preflight --root DIR --plan reviewed-plan.json
   statetwin eval live --root DIR --plan reviewed-plan.json --allow-live

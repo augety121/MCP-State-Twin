@@ -70,6 +70,23 @@ comparison remain unverified/unimplemented. Other proposed CLI commands are
 not current quickstart commands. Existing Scenario, Bundle, Journal, release
 gates and native-provider security boundaries remain.
 
+The evidence hardening increment accepts three additional bounded contracts:
+
+- [ADR-0042](ADR-0042-EVIDENCE-STORAGE-FAILURE-BOUNDARY.md) /
+  [SPEC-0042](SPEC-0042-EVIDENCE-STORAGE-AND-TERMINAL-FAILURES.md): failure-preserving
+  publication, independent terminal context, 22 filesystem fault cases and five
+  subprocess-exit cut points; not hardware power-loss or all-storage compatibility;
+- [ADR-0043](ADR-0043-READ-ONLY-EVIDENCE-INSPECTION.md) /
+  [SPEC-0043](SPEC-0043-READ-ONLY-EVIDENCE-INSPECTION.md): read-only `eval inspect`,
+  claim/staging consistency and explicit partial/invalid states; never resume or repair;
+- [ADR-0044](ADR-0044-STRUCTURED-CREDENTIAL-ADMISSION.md) /
+  [SPEC-0044](SPEC-0044-STRUCTURED-CREDENTIAL-ADMISSION.md): decoded JSON credential
+  patterns checked before artifact writes, including escaped keys and embedded JSON.
+
+Use the [evidence failure diagnosis guide](guides/EVIDENCE-FAILURE-DIAGNOSIS.md)
+when a run leaves claim/closure/pending files. Inspection is not task success,
+provider provenance, automatic recovery or an atomic directory snapshot.
+
 ## Unified lifecycle adopted on 2026-08-31
 
 ADR-0021 adopts the bounded product definition, independent version dimensions

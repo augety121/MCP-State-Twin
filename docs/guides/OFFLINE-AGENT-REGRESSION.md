@@ -52,7 +52,9 @@ planned/started/terminal/validlyEvaluated 均为 2，并非零退出。`upgradeA
 新输出目录，并在运行前固定比较计划；不要复用旧证据目录。
 
 输出目录只包含合成 claim/terminal 工件，异常中断可能保留 closure/pending 文件。
-这些未完成目录仅供人工检查，不会自动恢复或覆盖。根目录必须可信；未知输入和敏感
+可用 `statetwin eval inspect --root examples/issue-tracker --out .statetwin/baseline`
+只读检查目录，详见 [故障诊断指南](EVIDENCE-FAILURE-DIAGNOSIS.md)。
+这些未完成目录不会自动恢复或覆盖。根目录必须可信；未知输入和敏感
 模式会被拒绝。完整资源、保存和验证限制见 [SPEC-0039](../SPEC-0039-OFFLINE-AGENT-REGRESSION.md)。
 
 从这个演示到真实模型评测，可审阅独立的 [本地 API bridge](LOCAL-API-BRIDGE.md)。

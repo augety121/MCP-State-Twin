@@ -62,6 +62,9 @@ statetwin eval live --root examples/issue-tracker --plan reviewed-plan.json --al
 
 输出位于 `.statetwin/live/<plan-id>/`。相同目录禁止任何复用；缺凭据、崩溃或写盘失败
 也可能留下 claim/staging。先保留并人工检查，新尝试必须有新的审阅与预算。
+可运行 `statetwin eval inspect --root examples/issue-tracker --out .statetwin/live/my-reviewed-close-01`
+只读诊断；它不读 key、不请求模型、不恢复执行。完整解释见
+[故障诊断指南](EVIDENCE-FAILURE-DIAGNOSIS.md)。
 请求次数只是本地单计划 cap，不是账户级货币上限；token usage 缺失和费用保持 unknown。
 
 ## 4. 独立重放（不读密钥、不调用模型）

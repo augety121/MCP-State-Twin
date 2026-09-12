@@ -427,3 +427,18 @@ MCP State Twin은 **MIT License**로 제공됩니다. 전체 라이선스 본문
 수행했으며 실제 API 또는 제품 호스트 호환성은 검증되지 않았습니다.
 [안내](docs/guides/LOCAL-API-BRIDGE.md), [SPEC-0040](docs/SPEC-0040-LIVE-PLAN-AND-APPROVAL.md),
 [SPEC-0041](docs/SPEC-0041-PROVIDER-TRANSPORT-AND-EVIDENCE.md)를 참고하세요.
+
+## 증거 장애 진단 (실험적)
+
+`eval inspect --root DIR --out RELATIVE_DIRECTORY`는 offline/local-API의
+claim, 단계별 파일 및 세계 replay를 읽기 전용으로 검사합니다. 모델 호출, 파일 수정,
+자동 재개는 하지 않습니다. 진단 종료 코드 0은 Task 성공이나 Provider 출처의 증명이 아닙니다.
+[진단 안내](docs/guides/EVIDENCE-FAILURE-DIAGNOSIS.md)를 참고하세요.
+
+파일 시스템 장애 주입 22건과 실제 테스트 자식 프로세스 종료 지점 5곳을 검증했습니다.
+부분 쓰기 누락, 종료 검사에 전달되는 취소, 최초 오류 덮어쓰기와 JSON 자격 증명 탐지
+누락을 수정했습니다. [저장·종료 규약](docs/SPEC-0042-EVIDENCE-STORAGE-AND-TERMINAL-FAILURES.md),
+[검사 규약](docs/SPEC-0043-READ-ONLY-EVIDENCE-INSPECTION.md),
+[개인정보 규약](docs/SPEC-0044-STRUCTURED-CREDENTIAL-ADMISSION.md)을 참고하세요.
+하드웨어 전원 장애 안전성, 모든 저장소 호환성 또는 완전한 DLP를 보장하지 않으며
+SQLite schema는 변경하지 않았습니다.
