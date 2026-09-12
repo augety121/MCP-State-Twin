@@ -166,7 +166,7 @@ func TestReleaseBuildHasNoDestructiveFallback(t *testing.T) {
 			t.Fatal("unsafe packaging operation", bad)
 		}
 	}
-	requireTokens(t, s, "./cmd/releasecheck", `source_status="$(git status --porcelain --untracked-files=normal)"`, `test -z "$source_status"`, `refs/tags/${tag}^{commit}`, "umask 077", "mkdir dist", "go build -p 1", `GOMAXPROCS="${GOMAXPROCS:-1}"`)
+	requireTokens(t, s, "./cmd/releasecheck", `source_status="$(git status --porcelain --untracked-files=normal)"`, `test -z "$source_status"`, `tag_revision="$(git rev-parse --verify "refs/tags/${tag}^{commit}")"`, `test "$tag_revision" = "$revision"`, "umask 077", "mkdir dist", "go build -p 1", `GOMAXPROCS="${GOMAXPROCS:-1}"`)
 	if strings.Index(s, "refs/tags/${tag}^{commit}") > strings.Index(s, "mkdir dist") {
 		t.Fatal("output created before tag admission")
 	}

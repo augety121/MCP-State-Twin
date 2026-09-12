@@ -7,6 +7,8 @@ Status: accepted via [ADR-0047](ADR-0047-NO-CLOBBER-RELEASE-BUILDS.md), 2026-09-
 已准入。只读检查完成前不能创建输出。无任何清理参数、任意输出根或 force 开关。
 `git status` 本身失败也是拒绝；先检查命令退出状态，再检查其输出是否为空，不能将
 失败命令的空 stdout 当作“工作区干净”。
+Git 身份读取也先独立捕获结果再比较，保留命令本身的失败码；不能只保留最外层 shell
+比较失败而丢失原始原因。初次 POSIX CI 的 missing-tag 用例已复现并推动这个修复。
 
 `umask 077` 后用普通 `mkdir dist` 独占新目录；现有目录、文件、symlink 都拒绝。
 不使用 `mkdir -p` 将原目录当作本次产物，不递归删除，失败也不回滚到“空目录”。
