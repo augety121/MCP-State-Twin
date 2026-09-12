@@ -117,6 +117,7 @@ func TestReleaseWorkflowRequiresFullSameCommitGates(t *testing.T) {
 	requireTokens(t, jobScript(ci.Jobs["mcp-conformance"]), "run-conformance.sh")
 	requireTokens(t, jobScript(ci.Jobs["secret-policy"]), "check-sensitive-fixtures.sh")
 	pin := regexp.MustCompile(`@[0-9a-f]{40}$`)
+	checkout := ci.Jobs["test"].Steps[0].Uses
 	for name, j := range w.Jobs {
 		if j.If != "" || j.Continue != nil {
 			t.Fatalf("release job bypass: %s", name)
@@ -130,6 +131,9 @@ func TestReleaseWorkflowRequiresFullSameCommitGates(t *testing.T) {
 			}
 			if strings.HasPrefix(s.Uses, "actions/checkout@") && s.With["ref"] != "${{ github.sha }}" {
 				t.Fatal("checkout not exact candidate")
+			}
+			if strings.HasPrefix(s.Uses, "actions/checkout@") && s.Uses != checkout {
+				t.Fatal("release checkout pin drifted from CI")
 			}
 		}
 	}

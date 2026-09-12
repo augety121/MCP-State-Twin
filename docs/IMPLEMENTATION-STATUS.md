@@ -30,7 +30,21 @@ evidence for that maintenance batch is
 also succeeded on `61aac2d`, explicitly checking `cel.dev/cel-go`. Historical
 failed runs remain unchanged. SQLite PR #5 was refreshed for independent
 [candidate CI](https://github.com/augety121/MCP-State-Twin/actions/runs/33580014685)
-and has not been merged; main remains on SQLite v1.56.0.
+and had not been merged at that verification point; that historical baseline
+used SQLite v1.56.0.
+
+**2026-09-12 upstream main reconciliation:** while release hardening was in
+progress, maintainers merged Dependabot PRs
+[#6](https://github.com/augety121/MCP-State-Twin/pull/6) (protobuf 1.36.12),
+[#2](https://github.com/augety121/MCP-State-Twin/pull/2) (checkout 7.0.1),
+[#5](https://github.com/augety121/MCP-State-Twin/pull/5) (SQLite 1.57.0) and
+[#4](https://github.com/augety121/MCP-State-Twin/pull/4) (setup-node 7.0.0), through
+remote main `dd2267d`. Those changes are preserved, including the new stage's
+checkout pin. The earlier local tests used the old dependency set; merged-
+candidate verification is independent and must not inherit their result.
+The merged SQLite/protobuf candidate subsequently passed local single-core vet,
+full package tests and build. Race and POSIX wrapper execution still require
+the exact merged-candidate CI; no real tag workflow has been triggered.
 
 ## Implemented and tested
 

@@ -7,6 +7,11 @@ alpha prerelease but no stable release yet.
 
 ### Added
 
+- Preserved concurrent maintainer merges of Dependabot PRs #2/#4/#5/#6 (checkout,
+  setup-node, SQLite and protobuf) while integrating release hardening; the new
+  staging job follows the same checkout pin as CI. Merged-candidate validation is
+  separate from the earlier local tests on the old dependency set.
+
 - ADR/SPEC-0045–0047: version-bound reviewed release plans/notes and read-only
   `cmd/releasecheck`; full same-commit reusable CI before draft staging, explicit
   prerelease/not-latest flags and contents:write restricted to the staging job.
