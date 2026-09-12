@@ -6,48 +6,75 @@ on:
       - "v*.*.*"
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  verify-and-stage:
+  admit:
     runs-on: ubuntu-latest
+    outputs:
+      prerelease: ${{ steps.plan.outputs.prerelease }}
+      notes: ${{ steps.plan.outputs.notes }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: "1.26.x"
           cache: true
-      - name: Require a reviewed main ancestor
+      - name: Validate reviewed release declaration
+        id: plan
+        env:
+          GOMAXPROCS: "1"
+        run: go run -p 1 ./cmd/releasecheck --tag "${GITHUB_REF_NAME}" --format github >> "${GITHUB_OUTPUT}"
+      - name: Require exact tag and main ancestry
         run: |
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git rev-parse --verify "refs/tags/${GITHUB_REF_NAME}^{commit}")" = "${GITHUB_SHA}"
           git fetch origin main --no-tags
           git merge-base --is-ancestor "${GITHUB_SHA}" "origin/main"
-      - name: Verify format, vet and tests
+
+  gates:
+    needs: admit
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  stage:
+    needs: [admit, gates]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.26.x"
+          cache: true
+      - name: Refuse a moved or missing remote tag
         run: |
-          test -z "$(gofmt -l .)"
-          go vet ./...
-          go test -race ./...
-      - name: Verify release smoke paths
-        run: |
-          go run ./cmd/statetwin limits
-          go run ./cmd/statetwin scenario --spec examples/issue-tracker/twin.yaml --fixture examples/issue-tracker/state.json --scenario examples/issue-tracker/scenario-close-issue.yaml
-          go run ./cmd/statetwin scenario --spec examples/package-registry/twin.yaml --fixture examples/package-registry/state.json --scenario examples/package-registry/scenario-release-lifecycle.yaml
-          go run ./cmd/statetwin bundle build --manifest examples/issue-tracker/bundle.yaml --out "${RUNNER_TEMP}/issue-tracker.stb"
-          go run ./cmd/statetwin bundle verify --bundle "${RUNNER_TEMP}/issue-tracker.stb"
-          go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/issue-tracker.stb" --id release-issue-tracker --out "${RUNNER_TEMP}/issue-tracker-evidence.json"
-          go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/issue-tracker.stb" --id release-durable --journal "${RUNNER_TEMP}/episodes.db"
-          go run ./cmd/statetwin episode inspect --journal "${RUNNER_TEMP}/episodes.db" --id release-durable
-          go run ./cmd/statetwin bundle build --manifest examples/package-registry/bundle.yaml --out "${RUNNER_TEMP}/package-registry.stb"
-          go run ./cmd/statetwin episode run --bundle "${RUNNER_TEMP}/package-registry.stb" --id release-package-registry --out "${RUNNER_TEMP}/package-registry-evidence.json"
-      - name: Build release artifacts
+          git fetch origin "refs/tags/${GITHUB_REF_NAME}" --no-tags
+          test "$(git rev-parse 'FETCH_HEAD^{commit}')" = "${GITHUB_SHA}"
+      - name: Build release artifacts without overwriting
         run: bash scripts/build-release.sh "${GITHUB_REF_NAME}"
-      - name: Create draft GitHub release
+      - name: Create reviewed draft only
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_PRERELEASE: ${{ needs.admit.outputs.prerelease }}
+          RELEASE_NOTES: ${{ needs.admit.outputs.notes }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" dist/* \
-            --verify-tag \
-            --generate-notes \
-            --draft \
-            --title "MCP State Twin ${GITHUB_REF_NAME}"
+          flags=(--verify-tag --draft --latest=false --notes-file "${RELEASE_NOTES}" --title "MCP State Twin ${GITHUB_REF_NAME}")
+          case "${RELEASE_PRERELEASE}" in
+            true) flags+=(--prerelease) ;;
+            false) ;;
+            *) exit 2 ;;
+          esac
+          gh release create "${GITHUB_REF_NAME}" dist/* "${flags[@]}"

@@ -74,6 +74,13 @@ crash recovery, broad DLP and actual live evidence remain distinct open work.
 | ST-MAINT-001 bounded failure-preserving fuzz | SPEC-0035 | workflow contract + POSIX wrapper exit tests + actual fuzz job | verified CI run 33579877698 |
 | ST-MAINT-002 dependency migration admission | SPEC-0036 | module/import checks, checksum verification and expression vectors | verified CI run 33579877698; updater run 33579893053 |
 | ST-MAINT-003 null/zero distinction | SPEC-0037 | engine null/nested/schema/stored-state regression tests | verified CI run 33579877698 |
+| ST-RELEASE-001 reviewed declaration and channel binding | SPEC-0045 | native releasepolicy/releasecheck strict input and notes tests | implemented maintenance subset; not signed human review |
+| ST-RELEASE-002 complete candidate gates and draft boundary | SPEC-0046 | workflow dependency, permission, action-pin and flag tests; reusable CI source | implemented; exact-candidate CI and real tag execution are distinct |
+| ST-RELEASE-003 preserve owned release output | SPEC-0047 | twelve POSIX fake-command refusal/failure paths; five serial target argument checks | requires Linux/macOS CI; real packaging and publishing not run |
+
+These release-maintenance contracts address the B11/B32 and AE-024 tooling
+subset. They do not close B11 stable qualification, B10 external use, actual
+provider evidence or missing-source audits by themselves.
 
 A release gate is closed only when the evidence passes on the exact release
 candidate revision. `Partial`, `experimental` and `unverified` rows may ship

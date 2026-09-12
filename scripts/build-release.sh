@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-tag="${1:-}"
-if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-  echo "invalid release tag: $tag" >&2
+if [[ $# -ne 1 ]]; then
+  echo "exactly one reviewed release tag is required" >&2
   exit 2
 fi
+tag="$1"
+export GOMAXPROCS="${GOMAXPROCS:-1}"
+go run -p 1 ./cmd/releasecheck --tag "$tag" > /dev/null
 
 version="${tag#v}"
 revision="$(git rev-parse HEAD)"
-rm -rf dist
-mkdir -p dist
+test "$(pwd -P)" = "$(git rev-parse --show-toplevel)"
+source_status="$(git status --porcelain --untracked-files=normal)"
+test -z "$source_status"
+test "$(git rev-parse --verify "refs/tags/${tag}^{commit}")" = "$revision"
+umask 077
+# A pre-existing path belongs to its owner. Never clear it or reuse partial work.
+mkdir dist
 
 targets=(
   "linux amd64"
@@ -29,7 +36,7 @@ for target in "${targets[@]}"; do
   fi
   binary="dist/${name}${suffix}"
   echo "building ${binary}"
-  GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 go build \
+  GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 go build -p 1 \
     -trimpath -ldflags "-s -w -X github.com/augety121/mcp-state-twin/internal/server.Version=${version} -X github.com/augety121/mcp-state-twin/internal/server.Revision=${revision}" \
     -o "$binary" ./cmd/statetwin
 done

@@ -1069,3 +1069,11 @@ OpenAI API endpoint。无默认模型、重试、重定向或 production tool pa
 [只读检查](docs/SPEC-0043-READ-ONLY-EVIDENCE-INSPECTION.md)、
 [结构化隐私](docs/SPEC-0044-STRUCTURED-CREDENTIAL-ADMISSION.md)。
 这些测试不等于硬件断电安全、全部 storage compatibility 或完整 DLP；SQLite schema 不变。
+
+## 发布维护边界
+
+发布前必须有版本绑定的 reviewed plan 和说明，完整 CI 在同一候选提交上通过后才可
+创建 draft。预发布会明确标记为 prerelease，不自动发布或设为 Latest。打包拒绝已有
+`dist`，不再删除旧产物；默认单槽 Go、串行构建。入口与未批准模板见
+[发布声明指南](releases/README.md)，详细契约见 [Spec 索引](docs/README.md)。
+当前验证是代码/工作流合同测试，不代表已执行新的 tag 发布或获得 stable 资格。

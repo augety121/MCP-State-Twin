@@ -46,6 +46,12 @@ HostProfile. Complete evidence may prove an unsuccessful task faithfully.
 
 ## Maintenance
 
+| ID | Bounded public claim | State | Evidence | Exclusions |
+|---|---|---|---|---|
+| CLM-RELEASE-001 | Read-only strict version-bound release plan and notes admission | experimental; native tests | ADR/SPEC-0045; releasepolicy and releasecheck tests | not reviewer attestation, actual CI success, stable qualification or automatic version selection |
+| CLM-RELEASE-002 | Draft staging is wired behind the full same-commit reusable CI with scoped write permission | experimental workflow; source-contract tests; exact CI tracked in ledger | ADR/SPEC-0046; YAML dependency/permission/pin/flag assertions | no real tag workflow or draft publication executed by this increment |
+| CLM-RELEASE-003 | Packaging refuses existing output and source/tag mismatch, builds serially and retains failures | experimental; POSIX fake-command tests require Linux/macOS CI | ADR/SPEC-0047; twelve refusal/failure paths and five-target argument checks | no real release packaging, new checksum generation, ARM runtime test, signing or binary reproducibility claim |
+
 Update this file in the same change as any public claim. A release candidate
 must replace `verified locally` with evidence from the exact candidate CI run or
 leave the claim scoped to local verification. Provider evidence must also obey

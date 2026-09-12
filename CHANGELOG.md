@@ -7,6 +7,14 @@ alpha prerelease but no stable release yet.
 
 ### Added
 
+- ADR/SPEC-0045–0047: version-bound reviewed release plans/notes and read-only
+  `cmd/releasecheck`; full same-commit reusable CI before draft staging, explicit
+  prerelease/not-latest flags and contents:write restricted to the staging job.
+- Replaced unconditional deletion of `dist` with no-clobber packaging admission,
+  clean-source/exact-tag checks and serial builds. Failures preserve partial output.
+  Added native policy/CLI, workflow structure and POSIX synthetic-command tests;
+  no real release artifacts, tag, draft or stable qualification are created by this change.
+
 - ADR/SPEC-0042–0044: evidence storage/terminal-failure contracts, read-only
   `eval inspect` and structured JSON credential admission. Tests cover 22 injected
   filesystem failures and five actual test-subprocess exits without filling a disk.

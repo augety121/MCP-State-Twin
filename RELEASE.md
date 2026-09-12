@@ -16,6 +16,8 @@ proposal text into an implementation claim.
 5. Review changed public claims in all README language variants.
 6. Update CHANGELOG.md with verified behavior and explicit limitations.
 7. Update the relevant ADR/SPEC and implementation status together.
+   Add a reviewed version-bound plan and notes under [releases/](releases/README.md);
+   validate with `go run -p 1 ./cmd/releasecheck --tag <exact-tag>`.
 8. Create a GitHub release only from the reviewed commit.
 9. For stable v0.1, verify that no provider/product compatibility is implied by
    local MCP evidence. Live provider reports are a v0.3 profile gate, not a
@@ -34,11 +36,15 @@ proposal text into an implementation claim.
     reports from the same reviewed revision.
 
 For a tagged release, use a SemVer tag such as `v0.1.0-alpha.1` or `v0.1.1`.
-The tag workflow in `.github/workflows/release.yml` reruns the release gates,
-builds Linux/macOS/Windows binaries, writes `SHA256SUMS`, and creates a draft
-GitHub release only if every step succeeds. A maintainer reviews and publishes
-the draft. Do not create the stable `v0.1.0` tag while an RFC-0002 required gate
-is open.
+The tag workflow in `.github/workflows/release.yml` admits the checked-in plan,
+exact tag and main ancestry, then reuses the full CI at that commit. Only the
+final staging job has contents:write. It rechecks the remote tag, builds into a
+new `dist`, retains the existing release checksum mechanism and creates a draft
+with reviewed notes. Existing output is never deleted or overwritten;
+prereleases use the actual prerelease flag, and Latest is not assigned automatically.
+A maintainer reviews and publishes the draft. Failed uploads may leave partial
+remote draft state; do not assume they had no effect. Do not create stable
+`v0.1.0` while an RFC-0002 required gate is open.
 
 ## Release notes must contain
 

@@ -442,3 +442,11 @@ claim, 단계별 파일 및 세계 replay를 읽기 전용으로 검사합니다
 [개인정보 규약](docs/SPEC-0044-STRUCTURED-CREDENTIAL-ADMISSION.md)을 참고하세요.
 하드웨어 전원 장애 안전성, 모든 저장소 호환성 또는 완전한 DLP를 보장하지 않으며
 SQLite schema는 변경하지 않았습니다.
+
+## 릴리스 운영 경계
+
+버전에 연결된 검토 계획·설명과 동일 커밋의 전체 CI 통과 후에만 draft를 만들도록 했습니다.
+prerelease를 명시하며 실제 공개와 Latest 지정은 수동입니다. 기존 `dist`를 삭제하거나
+덮어쓰지 않고 실패한 부분 산출물을 보존하며, 기본 Go 1슬롯으로 순차 빌드합니다.
+[운영 안내](releases/README.md)와 [Spec 목차](docs/README.md)를 참고하세요.
+코드·workflow 계약 테스트가 실제 tag 릴리스 성공이나 stable 자격을 의미하지는 않습니다.

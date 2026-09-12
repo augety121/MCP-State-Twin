@@ -34,7 +34,7 @@ Before tagging:
 2. `go test ./...` and `go vet ./...` pass locally.
 3. Linux CI passes `go test -race ./...`.
 4. Scenario, TwinBundle/Episode, MCP wire, limits, fuzz, secret-policy and hermetic-egress jobs
-   pass, or the release notes record a precise exception.
+   pass on the exact candidate; required gates cannot be waived by release notes.
 5. README language variants, `CHANGELOG.md`, RFC-0002 and
    `IMPLEMENTATION-STATUS.md` agree.
 6. The release profile, Go version, MCP SDK version, schema/storage version and
@@ -70,6 +70,9 @@ Before tagging:
     authenticated live/ready routes, closed-store readiness failure and MCP
     discovery exclusion. Notes must not call these controls production quotas,
     distributed rate limiting, DDoS protection or upstream health.
+16. Add reviewed `releases/<tag>.json` and `releases/<tag>.md` under
+    [SPEC-0045](SPEC-0045-RELEASE-PLAN-ADMISSION.md). The read-only `releasecheck`
+    command must pass; declarations do not replace actual CI or human review.
 
 The release notes must use the phrase **exactly-once terminal Evidence
 acceptance** for ADR-0020. They must not shorten it to “exactly-once execution”.
@@ -83,15 +86,33 @@ The reviewed maintainer sequence is:
 ```text
 merge green PR
   -> update CHANGELOG and release evidence
-  -> tag vX.Y.Z from the reviewed main commit
-  -> GitHub release workflow runs tests and builds platform binaries
+  -> check version-bound release plan and notes
+  -> separately authorize/tag vX.Y.Z from the reviewed main commit
+  -> GitHub release workflow admits exact tag/main ancestry
+  -> full same-commit reusable CI passes
+  -> build fresh platform artifacts (existing dist is refused)
   -> checksums are attached
-  -> maintainer reviews generated notes and publishes
+  -> create draft with reviewed notes and explicit prerelease flag
+  -> maintainer reviews artifacts/evidence and publishes
   -> announce only verified scope and known limitations
 ```
 
 The repository workflow is intentionally fail-closed: a malformed tag, failed
-test, failed build, or missing artifact stops publication.
+test or failed build stops draft staging. Existing remote releases are not
+overwritten. A failed upload can leave a draft or partial attachments; the
+workflow does not delete, edit or automatically retry them. A successful job
+creates only a draft, never an automatically published/Latest release.
+
+[SPEC-0046](SPEC-0046-CANDIDATE-CI-AND-DRAFT-GATES.md) governs read-only admission,
+full reusable CI and the sole contents:write staging job.
+[SPEC-0047](SPEC-0047-SAFE-RELEASE-ARTIFACT-BUILD.md) replaces destructive `dist`
+cleanup with exclusive creation, clean-source/tag checks and serial builds.
+POSIX wrapper tests use synthetic commands and stop before real packaging or
+checksum generation. These tests do not prove all cross-compiled binaries run,
+nor that a real tag-triggered release workflow has completed.
+
+This maintenance increment has not created an approved release plan or any tag,
+artifact set or draft. The latest public prerelease remains `v0.1.0-alpha.1`.
 
 ## Release notes format
 

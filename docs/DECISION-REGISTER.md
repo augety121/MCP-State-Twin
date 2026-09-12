@@ -42,6 +42,9 @@
 | DEC-036 | Artifact storage failures preserve owned staging; bounded terminal inspection preserves the first execution error | resolved, experimental local subset | ADR-0042 / SPEC-0042 |
 | DEC-037 | Interrupted Agent directories have read-only, non-atomic diagnosis; never automatic resume or repair | resolved, experimental local subset | ADR-0043 / SPEC-0043 |
 | DEC-038 | Decoded JSON credential patterns are checked before persistence; Task authorization rules are not credentials | resolved, finite security-policy correction | ADR-0044 / SPEC-0044 |
+| DEC-039 | Version-bound release plan and reviewed notes are required; declarations are not reviewer attestations | resolved, v0.1 local-core maintenance subset | ADR-0045 / SPEC-0045 |
+| DEC-040 | Full same-commit reusable CI gates draft-only staging; only staging gets write permission | resolved, real tag workflow remains independently verified | ADR-0046 / SPEC-0046 |
+| DEC-041 | Release builds refuse any existing dist and retain partial work rather than recursively deleting it | resolved, bounded trusted-local build contract | ADR-0047 / SPEC-0047 |
 
 Open decisions are roadmap work. They MUST NOT be silently resolved by an
 implementation-only change.

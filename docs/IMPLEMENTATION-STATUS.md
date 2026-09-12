@@ -2,8 +2,8 @@
 
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
 **Last verified committed baseline:** checked 2026-09-12; local single-core suite plus public CI
-[run 34168365247](https://github.com/augety121/MCP-State-Twin/actions/runs/34168365247)
-for implementation commit `31af889` completed successfully, including Linux
+[run 34673403490](https://github.com/augety121/MCP-State-Twin/actions/runs/34673403490)
+for implementation commit `329cddf` completed successfully, including Linux
 race, Windows/macOS, fuzz, secret policy, hermetic egress and MCP conformance
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 is the accepted v0.1 release profile. RFC-0003 is a
@@ -85,9 +85,26 @@ conflicting directories and six-task offline/API-contract regression.
 Local single-core `go vet -p 1 ./...`, full package tests and subsequent changed-
 package/document checks pass. Local `go test -race -p 1 ./...` cannot run because
 CGO is disabled; this is a verification limitation, not a passing race result.
-Exact-candidate CI for this increment is independent of the baseline above.
+Exact-commit CI 34673403490 on `329cddf` passed all seven jobs, including Linux
+race, Windows/macOS, fuzz, secrets, hermetic egress and MCP conformance.
 This is not all-filesystem durability, OS power-loss recovery, automatic cleanup,
 hostile concurrent-writer isolation, universal DLP or actual provider-live evidence.
+
+**2026-09-12 release maintenance increment (ADR/SPEC-0045–0047):** adds bounded
+read-only release-plan/notes admission and explicit channel/review declarations;
+tag releases now depend on the full same-commit reusable CI. Write permission is
+limited to final draft staging, with remote tag recheck and explicit prerelease/
+not-latest flags. The packager refuses existing `dist`, dirty/non-root/mismatched-
+tag sources and preserves partial output rather than deleting it. Native Go
+policy/CLI tests and YAML gate-structure tests accompany POSIX fake-command
+refusal/build-failure tests. The latter deliberately stop before real packaging
+or checksum generation and require Linux/macOS CI, not Windows execution.
+Local single-core vet, full Go suite, subsequent documentation tests, build and
+Bash syntax checks pass. Local race still cannot run because CGO is disabled;
+the twelve POSIX wrapper cases are skipped on Windows and require candidate CI.
+Exact-candidate CI must be checked separately from the earlier baseline.
+No approved real release plan, tag, real artifact set, draft, stable qualification,
+signed reviewer attestation, provider-live evidence or ARM execution is claimed.
 
 | Capability | Evidence |
 |---|---|
@@ -150,7 +167,7 @@ hostile concurrent-writer isolation, universal DLP or actual provider-live evide
 | Conservative local execution profile | `local-v2`: `quiet` applies `GOMAXPROCS=1`, 512 MiB Go heap soft target and four in-flight requests per listener; validated mode/exact overrides, environment/CLI precedence and `statetwin execution-profile`; soft process-local boundary only |
 | HTTP admission/backpressure | independent non-queueing pool per data/control/coordinator listener; typed redacted `503 SERVER_BUSY`, retry header, active/rejected counters and capacity-recovery tests |
 | Operational health/readiness | authenticated control routes `/v1/health/live` and `/v1/health/ready`; readiness uses context-bound store ping and redacts storage details; absent from MCP tools |
-| Maintainer/release automation | release checklist, docs authority map, PR/Issue templates, Dependabot, and tag-driven multi-platform release workflow are present; no stable release has been published |
+| Maintainer/release automation | reviewed plan/notes admission, reusable complete CI, scoped write permission, draft/prerelease labels, no-clobber serial packaging and contract tests; no new tag workflow or stable release is claimed; SPEC-0045–0047 |
 | HTTP server bounds | 1 MiB bodies/headers, read/write/idle timeouts, configuration tests, and a direct slow-header connection test that proves the application handler is not reached |
 | Host compatibility report admission | strict 1 MiB single-document schema, immutable revision/digest checks, bounded profile checks, remote deployment-profile binding, credential/private-key/email pattern rejection, and `statetwin compatibility validate` |
 

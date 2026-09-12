@@ -441,3 +441,11 @@ claim・段階別ファイル・世界 replay を読み取り専用で検査し�
 [検査仕様](docs/SPEC-0043-READ-ONLY-EVIDENCE-INSPECTION.md)、
 [プライバシー仕様](docs/SPEC-0044-STRUCTURED-CREDENTIAL-ADMISSION.md)を参照してください。
 電源断耐性、全ストレージ互換性、万能な DLP は保証しません。SQLite schema は変更していません。
+
+## リリース運用の境界
+
+バージョンに紐づく審査済み計画・説明と、同一コミットの全 CI 成功を draft 作成の前提に
+しました。prerelease を明示し、公開・Latest 指定は手動のままです。既存の `dist` を
+削除・上書きせず、失敗時の部分出力を保持し、既定は Go 1 スロットで逐次ビルドします。
+[運用ガイド](releases/README.md)と [Spec 索引](docs/README.md)を参照してください。
+コード・workflow 契約テストは、実際の tag リリース成功や stable 資格の証明ではありません。

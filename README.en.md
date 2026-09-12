@@ -1036,3 +1036,12 @@ preservation and decoded JSON credential admission. Read the
 [privacy](docs/SPEC-0044-STRUCTURED-CREDENTIAL-ADMISSION.md) contracts.
 This is not hardware power-loss safety, all-storage compatibility or universal
 DLP. SQLite schemas are unchanged.
+
+## Release maintenance boundary
+
+Version-bound reviewed plans and notes precede full same-commit CI and draft-only
+staging. Prereleases are marked explicitly; publication and Latest remain manual.
+Packaging refuses existing `dist`, preserves failures and builds serially with a
+default one-slot Go scheduler. See the [declaration guide](releases/README.md)
+and [Spec index](docs/README.md). Code/workflow contract tests are not a completed
+tag-triggered release or stable qualification.

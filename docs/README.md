@@ -1,5 +1,22 @@
 # MCP State Twin Documentation
 
+## Release engineering contracts — 2026-09-12
+
+The B11/B32 maintenance subset separates declaration, CI and publication:
+
+- [ADR-0045](ADR-0045-REVIEWED-RELEASE-PLAN.md) /
+  [SPEC-0045](SPEC-0045-RELEASE-PLAN-ADMISSION.md): strict version-bound plan,
+  channel/review flags and bounded reviewed notes; read-only `cmd/releasecheck`;
+- [ADR-0046](ADR-0046-FULL-CANDIDATE-RELEASE-GATES.md) /
+  [SPEC-0046](SPEC-0046-CANDIDATE-CI-AND-DRAFT-GATES.md): full same-commit reusable
+  CI, least-privilege jobs and draft-only publication;
+- [ADR-0047](ADR-0047-NO-CLOBBER-RELEASE-BUILDS.md) /
+  [SPEC-0047](SPEC-0047-SAFE-RELEASE-ARTIFACT-BUILD.md): refuse existing `dist`,
+  preserve partial output and build serially without destructive cleanup.
+
+Start with [release declarations](../releases/README.md). Code/contract tests do
+not mean a real tag workflow ran or a new stable release was published.
+
 ## Start here: current project, not the future pack
 
 If you are evaluating or contributing to the current repository, read these in
