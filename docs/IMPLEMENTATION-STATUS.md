@@ -117,6 +117,13 @@ Local single-core vet, full Go suite, subsequent documentation tests, build and
 Bash syntax checks pass. Local race still cannot run because CGO is disabled;
 the twelve POSIX wrapper cases are skipped on Windows and require candidate CI.
 Exact-candidate CI must be checked separately from the earlier baseline.
+The first candidate run
+[34675313996](https://github.com/augety121/MCP-State-Twin/actions/runs/34675313996)
+on `c57bc78` exposed the POSIX `missing-tag` case: an inner Git failure became
+the outer shell comparison's generic exit 1 instead of the original failure.
+The wrapper now captures Git command results before comparing values; the
+original test expectation is preserved. That failed run is not passing evidence;
+the corrective revision requires a fresh CI run.
 No approved real release plan, tag, real artifact set, draft, stable qualification,
 signed reviewer attestation, provider-live evidence or ARM execution is claimed.
 

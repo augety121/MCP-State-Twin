@@ -11,10 +11,12 @@ go run -p 1 ./cmd/releasecheck --tag "$tag" > /dev/null
 
 version="${tag#v}"
 revision="$(git rev-parse HEAD)"
-test "$(pwd -P)" = "$(git rev-parse --show-toplevel)"
+repository_root="$(git rev-parse --show-toplevel)"
+test "$(pwd -P)" = "$repository_root"
 source_status="$(git status --porcelain --untracked-files=normal)"
 test -z "$source_status"
-test "$(git rev-parse --verify "refs/tags/${tag}^{commit}")" = "$revision"
+tag_revision="$(git rev-parse --verify "refs/tags/${tag}^{commit}")"
+test "$tag_revision" = "$revision"
 umask 077
 # A pre-existing path belongs to its owner. Never clear it or reuse partial work.
 mkdir dist
