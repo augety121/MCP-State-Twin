@@ -92,6 +92,8 @@ provider evidence or missing-source audits by themselves.
 |---|---|---|---|
 | ST-HOST-001 internally consistent declarations and decoded privacy | SPEC-0051; I-9/I-15/I-16 | eight reproduced inconsistent admissions; escaped key/value refusal; positive/negative identity tests | experimental structural admission; no source authentication |
 | ST-HOST-002 deterministic temporal assessment without promotion | SPEC-0052; SPEC-0019/0021 | six profiles; fractional/expiry/future/overflow boundaries; CLI gate/write failures; byte equality | bounded B15 prerequisite, not complete freshness or compatibility proof |
+| ST-HOST-003 target and report scalar admission | SPEC-0053; I-10/I-12/I-15 | required-object/limit tests; size/type/privacy rejection; reproduced YAML integer coercion | preview tightening; no outcome fabrication or source rewrite |
+| ST-HOST-004 exact declared scope and combined gate | SPEC-0054; SPEC-0019/0021 | every compared dimension; fixed-order reasons; time vs scope; CLI/current gate; input byte equality | declarations only, not full profile/provenance/live evidence |
 
 A release gate is closed only when the evidence passes on the exact release
 candidate revision. `Partial`, `experimental` and `unverified` rows may ship

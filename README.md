@@ -782,6 +782,11 @@ MCP State Twin 的核心集成对象是 **MCP**，不是某一家 model provider
 具体边界见 [SPEC-0051](docs/SPEC-0051-HOST-REPORT-CONSISTENCY.md) /
 [SPEC-0052](docs/SPEC-0052-HOST-REPORT-FRESHNESS.md)。
 
+继续核对目标配置时，加 `--target target.yaml --require-current`：即使没过期，runtime、
+host/model、协议、工具面、部署或预算不符也会阻断，并列出不一致字段。报告计数和预算
+现在拒绝小数被截成整数或遗漏默认为零；有效期和来源验证仍分开。
+见 [目标核对指南](docs/guides/HOST-REPORT-ASSESSMENT.md)。这是声明比对，不是实时部署认证。
+
 设计参考：
 
 - [MCP Specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)
@@ -810,6 +815,7 @@ statetwin limits      print the versioned resource profile and digest
 statetwin execution-profile  print the applied operational execution policy
 statetwin compatibility validate --report report.yaml
 statetwin compatibility assess --report report.yaml --at <UTC-time> [--require-fresh]
+statetwin compatibility assess --report report.yaml --target target.yaml --at <UTC-time> [--require-current]
 statetwin bundle build --manifest bundle.yaml --out twin.stb
 statetwin bundle verify --bundle twin.stb
 statetwin episode run --bundle twin.stb --id episode-001 --out evidence.json

@@ -159,6 +159,7 @@ Commands:
   statetwin execution-profile
   statetwin compatibility validate --report report.yaml
   statetwin compatibility assess --report report.yaml --at <UTC-time> [--require-fresh]
+  statetwin compatibility assess --report report.yaml --target target.yaml --at <UTC-time> [--require-current]
   statetwin bundle build --manifest bundle.yaml --out twin.stb
   statetwin bundle verify --bundle twin.stb
   statetwin episode run --bundle twin.stb --id episode-001 [--scenario path] [--journal episodes.db]

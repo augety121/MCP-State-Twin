@@ -4,6 +4,10 @@ Status: accepted by [ADR-0052](ADR-0052-DETERMINISTIC-HOST-REPORT-FRESHNESS.md).
 Independent assessment format `statetwin.dev/host-report-assessment/v1alpha1`;
 policy `host-report-time-v1`. Not a replacement for HostProfile v1alpha2.
 
+Amended by [SPEC-0054](SPEC-0054-HOST-REPORT-SCOPE-ASSESSMENT.md) only when an
+explicit target is supplied. Without target, this time-only output/behavior is
+unchanged. SPEC-0053 additionally rejects coerced/omitted report integer fields.
+
 ## 1. Input and deterministic policy
 
 `compatibility assess --report report.yaml --at <RFC3339-UTC-time>` MUST load
@@ -47,7 +51,7 @@ invalid inputs MUST NOT produce a successful assessment.
 
 ## 3. Scope and acceptance
 
-This is read-only, network-free, credential-free, with no external artifacts
+The time-only mode is read-only, network-free, credential-free, with no external artifacts
 fetched or evidence checked. It cannot detect current runtime/surface/host drift,
 adapter changes, revoked evidence, forged dates or missing provider provenance.
 It cannot generate a verified compatibility matrix. Full B15 remains incomplete.

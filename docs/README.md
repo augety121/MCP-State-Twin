@@ -1,5 +1,17 @@
 # MCP State Twin Documentation
 
+## Host report target matching — 2026-09-26
+
+- [ADR-0053](ADR-0053-EXPLICIT-HOST-COMPATIBILITY-TARGET.md) /
+  [SPEC-0053](SPEC-0053-HOST-COMPATIBILITY-TARGET.md): independent target
+  admission and explicit integer budgets/counters without YAML truncation.
+- [ADR-0054](ADR-0054-SCOPED-HOST-REPORT-ASSESSMENT.md) /
+  [SPEC-0054](SPEC-0054-HOST-REPORT-SCOPE-ASSESSMENT.md): exact declared scope
+  matching, ordered differences and combined time/scope gate.
+
+[Operator guide](guides/HOST-REPORT-ASSESSMENT.md): read-only and network-free;
+matching declarations never authenticate the provider or authorize publication.
+
 ## Host report consistency and time policy — 2026-09-26
 
 - [ADR-0051](ADR-0051-CONSISTENT-HOST-REPORT-ADMISSION.md) /

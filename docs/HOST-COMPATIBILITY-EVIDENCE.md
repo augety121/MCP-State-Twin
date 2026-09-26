@@ -47,6 +47,24 @@ time-only check; it is not a complete CI compatibility gate. Source files are
 never rewritten, and this command generates no file hashes. Full contract:
 [SPEC-0052](SPEC-0052-HOST-REPORT-FRESHNESS.md).
 
+### Match an explicitly declared target
+
+```text
+statetwin compatibility assess --report report.yaml --target target.yaml --at 2026-09-26T00:00:00Z --require-current
+```
+
+SPEC-0053/0054 add independent target admission and exact matching for the legacy
+report's runtime, host/model, protocol/surface/deployment and trial identities.
+The new gate requires both time eligibility and matching declarations. The old
+`--require-fresh` remains time-only, even when a target is provided. Neither is
+live verification: a matched target is not authenticated current deployment.
+See the [operator guide](guides/HOST-REPORT-ASSESSMENT.md) for safe usage and a
+synthetic no-network example. Original reports/targets are never rewritten.
+
+Report budget fields, trial index and assertion counts must now be explicit
+integer scalars; fractional/null/omitted counters are rejected rather than
+silently truncated or defaulted. This tightens preview input admission.
+
 ## 2. Live-run prerequisites
 
 Before a provider-hosted run:

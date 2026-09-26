@@ -227,6 +227,21 @@ func TestReportMalformedBoundariesStayContentFree(t *testing.T) {
 	}
 }
 
+func TestReportRejectsNumericCoercion(t *testing.T) {
+	raw, err := yaml.Marshal(validGenericReport())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, pair := range [][2]string{{"failed: 0", "failed: 0.5"}, {"passed: 12", "passed: 12.5"}, {"index: 0", "index: 0.5"}, {"toolCalls: 32", "toolCalls: 32.5"}} {
+		t.Run(pair[1], func(t *testing.T) {
+			input := strings.Replace(string(raw), pair[0], pair[1], 1)
+			if r, err := Decode([]byte(input)); err == nil || r != nil {
+				t.Fatal("fractional report counter/budget silently coerced")
+			}
+		})
+	}
+}
+
 func TestReportLoadRejectsOversizedFileBeforeDecode(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "oversized.yaml")
 	if err := os.WriteFile(path, []byte(strings.Repeat("x", MaxReportBytes+1)), 0o600); err != nil {

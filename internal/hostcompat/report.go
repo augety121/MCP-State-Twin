@@ -150,6 +150,9 @@ func Decode(data []byte) (*Report, error) {
 		// typed-value privacy scan can run. Keep admission failures content-free.
 		return nil, errors.New("HOST_REPORT_DECODE_INVALID")
 	}
+	if !explicitIntegerFields(data, true) {
+		return nil, errors.New("HOST_REPORT_INTEGER_FIELDS_REQUIRED")
+	}
 	if err := report.Validate(); err != nil {
 		return nil, err
 	}
@@ -193,17 +196,10 @@ func (r *Report) Validate() error {
 		}
 	}
 
-	requireIdentity(&problems, "runtime.version", r.Runtime.Version)
-	if r.Claim.Level == "verified" && placeholder(r.Runtime.Version) {
-		problems = append(problems, "runtime.version must identify the observed runtime version")
-	}
-	if !revisionPattern.MatchString(r.Runtime.Revision) {
-		problems = append(problems, "runtime.revision must be an immutable 40- or 64-character lowercase hexadecimal revision")
-	}
+	validateRuntime(&problems, r.Runtime, r.Claim.Level == "verified")
 	for name, value := range map[string]string{
-		"runtime.specDigest": r.Runtime.SpecDigest, "runtime.surfaceDigest": r.Runtime.SurfaceDigest,
-		"runtime.snapshotDigest": r.Runtime.SnapshotDigest, "mcp.observedSurfaceDigest": r.MCP.ObservedSurfaceDigest,
-		"trial.scenarioDigest": r.Trial.ScenarioDigest, "trial.promptDigest": r.Trial.PromptDigest,
+		"mcp.observedSurfaceDigest": r.MCP.ObservedSurfaceDigest,
+		"trial.scenarioDigest":      r.Trial.ScenarioDigest, "trial.promptDigest": r.Trial.PromptDigest,
 		"trial.toolPolicyDigest": r.Trial.ToolPolicyDigest, "evidence.environmentDigest": r.Evidence.EnvironmentDigest,
 		"evidence.terminalStateDigest": r.Evidence.TerminalStateDigest, "evidence.traceDigest": r.Evidence.TraceDigest,
 	} {
@@ -226,6 +222,19 @@ func (r *Report) Validate() error {
 		return errors.New("invalid HostCompatibilityReport: " + strings.Join(problems, "; "))
 	}
 	return nil
+}
+
+func validateRuntime(problems *[]string, r Runtime, verified bool) {
+	requireIdentity(problems, "runtime.version", r.Version)
+	if verified && placeholder(r.Version) {
+		*problems = append(*problems, "runtime.version must identify the observed runtime version")
+	}
+	if !revisionPattern.MatchString(r.Revision) {
+		*problems = append(*problems, "runtime.revision must be an immutable 40- or 64-character lowercase hexadecimal revision")
+	}
+	requireDigest(problems, "runtime.specDigest", r.SpecDigest)
+	requireDigest(problems, "runtime.surfaceDigest", r.SurfaceDigest)
+	requireDigest(problems, "runtime.snapshotDigest", r.SnapshotDigest)
 }
 
 func validateHost(problems *[]string, r *Report) {
@@ -305,19 +314,22 @@ func validateTrial(problems *[]string, r *Report) {
 	if !oneOf(r.Trial.Outcome, "completed", "assertion_failed", "model_stopped", "tool_budget_exceeded", "provider_budget_exceeded", "timeout", "provider_error", "protocol_error", "runtime_error", "cancelled") {
 		*problems = append(*problems, "trial.outcome is not a canonical outcome")
 	}
-	limits := r.Trial.Limits
+	validateLimits(problems, r.Host.Profile, r.Trial.Limits)
+	if r.Claim.Level == "verified" && r.Trial.Outcome != "completed" {
+		*problems = append(*problems, "verified reports require trial.outcome completed")
+	}
+}
+
+func validateLimits(problems *[]string, profile string, limits Limits) {
 	if limits.ToolCalls <= 0 || limits.WallTimeMS <= 0 || limits.MaxTraceBytes <= 0 || limits.RepeatedIdenticalCalls <= 0 {
 		*problems = append(*problems, "trial limits for tool calls, wall time, trace bytes, and repeated calls must be positive")
 	}
 	if limits.ProviderRequests < 0 || limits.RetriesPerProviderRequest < 0 || limits.RetriesPerToolCall < 0 {
 		*problems = append(*problems, "trial provider and retry limits must not be negative")
 	}
-	providerAPI := oneOf(r.Host.Profile, "openai-api-mcp", "anthropic-api-mcp")
+	providerAPI := oneOf(profile, "openai-api-mcp", "anthropic-api-mcp")
 	if providerAPI && limits.ProviderRequests <= 0 {
 		*problems = append(*problems, "API provider profiles require a positive provider request limit")
-	}
-	if r.Claim.Level == "verified" && r.Trial.Outcome != "completed" {
-		*problems = append(*problems, "verified reports require trial.outcome completed")
 	}
 }
 

@@ -13,20 +13,21 @@ const (
 // Assessment is a time-policy assessment of a declaration, not live evidence
 // verification. Time eligibility is necessary but never sufficient to publish.
 type Assessment struct {
-	Format              string `json:"format"`
-	Policy              string `json:"policy"`
-	Profile             string `json:"profile"`
-	DeclaredLevel       string `json:"declaredLevel"`
-	AssessedAt          string `json:"assessedAt"`
-	ObservedAt          string `json:"observedAt"`
-	DeclaredValidUntil  string `json:"declaredValidUntil,omitempty"`
-	EffectiveValidUntil string `json:"effectiveValidUntil"`
-	TTLSeconds          int64  `json:"ttlSeconds"`
-	Freshness           string `json:"freshness"`
-	ClaimTimeEligible   bool   `json:"claimTimeEligible"`
-	ScopeStatus         string `json:"scopeStatus"`
-	Provenance          string `json:"provenance"`
-	PublicationAllowed  bool   `json:"publicationAllowed"`
+	Format              string           `json:"format"`
+	Policy              string           `json:"policy"`
+	Profile             string           `json:"profile"`
+	DeclaredLevel       string           `json:"declaredLevel"`
+	AssessedAt          string           `json:"assessedAt"`
+	ObservedAt          string           `json:"observedAt"`
+	DeclaredValidUntil  string           `json:"declaredValidUntil,omitempty"`
+	EffectiveValidUntil string           `json:"effectiveValidUntil"`
+	TTLSeconds          int64            `json:"ttlSeconds"`
+	Freshness           string           `json:"freshness"`
+	ClaimTimeEligible   bool             `json:"claimTimeEligible"`
+	ScopeStatus         string           `json:"scopeStatus"`
+	Provenance          string           `json:"provenance"`
+	PublicationAllowed  bool             `json:"publicationAllowed"`
+	Scope               *ScopeAssessment `json:"scope,omitempty"`
 }
 
 // Assess never reads the wall clock, discovers credentials, hashes files, checks

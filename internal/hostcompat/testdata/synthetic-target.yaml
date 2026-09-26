@@ -1,0 +1,38 @@
+# Expected declaration for synthetic-report.yaml tests only.
+# These identifiers are placeholders, not observations or compatibility evidence.
+apiVersion: statetwin.dev/v1alpha1
+kind: HostCompatibilityTarget
+format: statetwin.dev/host-compatibility-target/v1alpha1
+runtime:
+  version: synthetic-v1
+  revision: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  specDigest: sha256:2222222222222222222222222222222222222222222222222222222222222222
+  surfaceDigest: sha256:3333333333333333333333333333333333333333333333333333333333333333
+  snapshotDigest: sha256:4444444444444444444444444444444444444444444444444444444444444444
+host:
+  profile: generic-mcp
+  name: synthetic-host
+  version: synthetic-v1
+  provider: none
+  model: none
+mcp:
+  configuredVersion: "2026-07-28"
+  negotiatedVersion: "2026-07-28"
+  transport: streamable-http
+  endpointTrust: loopback
+  observedSurfaceDigest: sha256:3333333333333333333333333333333333333333333333333333333333333333
+  surfaceStatus: exact
+procedureDigest: sha256:1111111111111111111111111111111111111111111111111111111111111111
+trial:
+  scenarioDigest: sha256:5555555555555555555555555555555555555555555555555555555555555555
+  promptDigest: sha256:6666666666666666666666666666666666666666666666666666666666666666
+  toolPolicyDigest: sha256:7777777777777777777777777777777777777777777777777777777777777777
+  limits:
+    providerRequests: 0
+    toolCalls: 32
+    wallTimeMs: 60000
+    maxTraceBytes: 1048576
+    retriesPerProviderRequest: 0
+    retriesPerToolCall: 1
+    repeatedIdenticalCalls: 3
+redactionPolicy: synthetic-only-v1

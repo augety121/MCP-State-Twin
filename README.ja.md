@@ -56,6 +56,9 @@
   矛盾した surface、成功 assertion がゼロの verified 宣言、YAML escape に隠れた既知の
   credential pattern も拒否します。`publicationAllowed` は常に false です。
   [SPEC-0051/0052](docs/README.md)：実行元や現在の構成・製品互換性の証明ではありません。
+- `--target target.yaml --require-current` は期限内でも宣言された構成の違いを拒否し、
+  不一致フィールドを表示します。予算・件数の小数変換や省略も拒否します。
+  [ガイド](docs/guides/HOST-REPORT-ASSESSMENT.md)：実際の稼働構成を認証するものではありません。
 - deterministic TwinBundle `v1alpha1`（厳格な path/type/size/digest/payload 検証、再現可能 ZIP、未署名）
 - local scripted EvaluationEpisode（閉じた lifecycle と evidence digest。provider harness ではない）
 - durable Episode Journal schema v2（v1 fixture migration、kill-point recovery、immutable request、Evidence consistency）
@@ -326,6 +329,7 @@ statetwin protocols   print pinned MCP wire-evidence profiles
 statetwin limits      print the versioned resource profile and digest
 statetwin compatibility validate --report report.yaml
 statetwin compatibility assess --report report.yaml --at <UTC-time> [--require-fresh]
+statetwin compatibility assess --report report.yaml --target target.yaml --at <UTC-time> [--require-current]
 statetwin bundle build --manifest bundle.yaml --out twin.stb
 statetwin bundle verify --bundle twin.stb
 statetwin episode run --bundle twin.stb --id episode-001 --out evidence.json

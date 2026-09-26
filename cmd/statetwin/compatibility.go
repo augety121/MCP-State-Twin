@@ -22,9 +22,13 @@ func runCompatibilityTo(args []string, output io.Writer) error {
 	reportPath := flags.String("report", "", "HostCompatibilityReport YAML path")
 	var at string
 	var requireFresh bool
+	var targetPath string
+	var requireCurrent bool
 	if args[0] == "assess" {
 		flags.StringVar(&at, "at", "", "explicit RFC3339 UTC assessment time ending in Z")
 		flags.BoolVar(&requireFresh, "require-fresh", false, "fail unless declared verified and within time window; NOT proof of compatibility")
+		flags.StringVar(&targetPath, "target", "", "explicit HostCompatibilityTarget YAML/JSON path")
+		flags.BoolVar(&requireCurrent, "require-current", false, "require time eligibility and declared target match; NOT proof of compatibility")
 	}
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
@@ -37,6 +41,9 @@ func runCompatibilityTo(args []string, output io.Writer) error {
 	}
 	if args[0] == "assess" && at == "" {
 		return errors.New("--at is required for assess")
+	}
+	if requireCurrent && targetPath == "" {
+		return errors.New("--target is required for --require-current")
 	}
 	r, err := hostcompat.Load(*reportPath)
 	if err != nil {
@@ -55,12 +62,24 @@ func runCompatibilityTo(args []string, output io.Writer) error {
 			"validationScope": "structure-only", "provenance": "not_verified", "publicationAllowed": false,
 		})
 	}
-	assessment, err := hostcompat.Assess(r, at)
+	var assessment *hostcompat.Assessment
+	if targetPath != "" {
+		target, loadErr := hostcompat.LoadTarget(targetPath)
+		if loadErr != nil {
+			return loadErr
+		}
+		assessment, err = hostcompat.AssessAgainst(r, target, at)
+	} else {
+		assessment, err = hostcompat.Assess(r, at)
+	}
 	if err != nil {
 		return err
 	}
 	if err := encoder.Encode(assessment); err != nil {
 		return err
+	}
+	if requireCurrent && (assessment.Scope == nil || !assessment.Scope.ClaimCurrentEligible) {
+		return errors.New("HOST_REPORT_NOT_CURRENT")
 	}
 	if requireFresh && !assessment.ClaimTimeEligible {
 		return errors.New("HOST_REPORT_NOT_TIME_ELIGIBLE")

@@ -22,3 +22,7 @@ and state transitions follow SPEC-0019 and SPEC-0021.
 `compatibility assess` (SPEC-0052) can check a report's declared time window;
 it does not verify provenance, current scope or referenced evidence and cannot
 promote any row in this matrix. No live status changed in this maintenance batch.
+
+Optional `--target` / `--require-current` (SPEC-0053/0054) additionally checks
+exact declared legacy identity. It still cannot authenticate the target, observe
+the live deployment or grant product compatibility. This matrix is not auto-promoted.

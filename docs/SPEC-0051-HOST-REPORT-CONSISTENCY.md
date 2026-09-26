@@ -4,6 +4,9 @@ Status: accepted by [ADR-0051](ADR-0051-CONSISTENT-HOST-REPORT-ADMISSION.md).
 Amends only the executable report-admission subset of SPEC-0006 / ADR-0017.
 This is part of B15 prerequisites, not full HostProfile v1alpha2 implementation.
 
+SPEC-0053 adds original-scalar integer admission for report limits, trial index
+and assertion counts; omitted/null/coerced values now fail without rewriting files.
+
 ## 1. Admission invariants
 
 1. An `exact` observed tool surface MUST have the same declared digest as the

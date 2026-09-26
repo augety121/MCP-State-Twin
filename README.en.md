@@ -712,6 +712,12 @@ real run nor current scope or product compatibility. See
 [SPEC-0051](docs/SPEC-0051-HOST-REPORT-CONSISTENCY.md) /
 [SPEC-0052](docs/SPEC-0052-HOST-REPORT-FRESHNESS.md).
 
+Add `--target target.yaml --require-current` to also reject declared runtime,
+host/model, protocol, surface, deployment or budget differences, even within the
+time window. Report counters/budgets reject fractional coercion and omitted
+zeros. See the [target assessment guide](docs/guides/HOST-REPORT-ASSESSMENT.md).
+This compares declarations, not authenticated live configuration or provider origin.
+
 Design references:
 
 - [MCP Specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)
@@ -740,6 +746,7 @@ statetwin limits      print the versioned resource profile and digest
 statetwin execution-profile  print the applied operational execution policy
 statetwin compatibility validate --report report.yaml
 statetwin compatibility assess --report report.yaml --at <UTC-time> [--require-fresh]
+statetwin compatibility assess --report report.yaml --target target.yaml --at <UTC-time> [--require-current]
 statetwin bundle build --manifest bundle.yaml --out twin.stb
 statetwin bundle verify --bundle twin.stb
 statetwin episode run --bundle twin.stb --id episode-001 --out evidence.json

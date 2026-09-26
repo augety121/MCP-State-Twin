@@ -2,8 +2,8 @@
 
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
 **Last verified committed baseline:** checked 2026-09-26; public CI
-[run 36205412254](https://github.com/augety121/MCP-State-Twin/actions/runs/36205412254)
-for main `e3f581a` completed successfully, including Linux
+[run 36207098729](https://github.com/augety121/MCP-State-Twin/actions/runs/36207098729)
+for main `f7394c4` completed successfully, including Linux
 race, Windows/macOS, fuzz, secret policy, hermetic egress and MCP conformance
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 is the accepted v0.1 release profile. RFC-0003 is a
@@ -48,6 +48,22 @@ the exact merged-candidate CI; no real tag workflow has been triggered.
 
 ## Implemented and tested
 
+**2026-09-26 scoped-report increment (ADR/SPEC-0053–0054):** an independent
+legacy HostCompatibilityTarget now binds declared runtime/host/model, MCP,
+procedure/trial identities and all budgets. Optional `--require-current` checks
+both exact declaration equality and time eligibility, with ordered field-only
+reasons and no publication authority. Tests cover six profiles, each comparison
+dimension, optional empty values, explicit zero, invalid fields, safe reads,
+gate precedence, deterministic output and unchanged input bytes. Numeric
+regressions first reproduced fractional assertion counts/index/budgets being
+truncated; both decoders now require explicit original integer tokens. Targeted
+tests and single-core full suite, vet and build pass locally; the built CLI also
+matches the guide's synthetic match/expiry behavior. Build emits a nonfatal
+user-module-cache permission warning. Local race was attempted but CGO is
+unavailable; exact-candidate Linux CI must supply that evidence independently.
+This does not discover live configuration or implement full HostProfile identity,
+artifact provenance, revocation, matrix generation or provider compatibility.
+
 **2026-09-26 host-report increment (ADR/SPEC-0051–0052):** regression tests
 first reproduced eight inconsistent admissions plus a YAML-escaped credential
 bypass. The validator now checks cross-field consistency and decoded privacy;
@@ -57,9 +73,10 @@ Targeted tests cover six profiles, creation/expiry/nanosecond/overflow boundarie
 non-verified claims, output errors and unchanged source bytes. Local full-suite
 tests, vet and build pass with one Go execution slot. Build reports a nonfatal
 user-cache permission warning; local race was attempted but requires unavailable
-CGO. Exact-candidate Linux CI is required independently of the baseline above.
-No live provider/profile is promoted. Full B15 identity matching, artifact-backed
-claims, revocation and matrix generation remain unimplemented.
+CGO. Exact-candidate CI 36207098729 on `f7394c4` subsequently passed all seven
+jobs, including Linux race. No live provider/profile was promoted. The later
+SPEC-0053/0054 increment adds legacy declaration matching only; full B15 identity,
+artifact-backed claims, revocation and matrix generation remain incomplete.
 
 **2026-09-26 offline comparison correction (ADR/SPEC-0048–0050):** reproduced
 three false-green comparisons before the fix: replay-valid evaluator errors,
@@ -71,8 +88,8 @@ Targeted synthetic RecordMock/replay, CLI negative gates, byte-budget boundaries
 cohort/determinism and read-only tests pass locally with one Go execution slot.
 The local single-core full suite, vet and build pass; build reported a nonfatal
 Go module stat-cache permission warning in the user cache. The exact candidate
-`e3f581a` subsequently passed all seven jobs in CI 36205412254, now the baseline
-above. The local race command was attempted and refused because CGO is disabled;
+`e3f581a` subsequently passed all seven jobs in CI 36205412254. The local race
+command was attempted and refused because CGO is disabled;
 Linux CI supplies the passing race evidence. Symlink tests may
 skip on Windows without privileges; Linux/macOS must execute them.
 There are no provider requests, changed historical artifacts, new database

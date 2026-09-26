@@ -50,6 +50,8 @@
 | DEC-044 | Comparison uses rooted bounded reads and preserves whole-operation cancellation as failure | resolved, trusted quiescent local root only | ADR-0050 / SPEC-0050 |
 | DEC-045 | Host reports require consistent surface/assertion/identity declarations and decoded-value privacy checks | resolved, structural admission only | ADR-0051 / SPEC-0051 |
 | DEC-046 | Explicit-time host report assessment caps expiry but cannot grant live compatibility or publication | resolved, bounded time-policy subset | ADR-0052 / SPEC-0052 |
+| DEC-047 | An independent legacy target declares expected identity without outcomes; both report and target numbers require explicit integer scalars | resolved, bounded declaration admission | ADR-0053 / SPEC-0053 |
+| DEC-048 | Scope equality and time eligibility jointly gate declared currentness, never provenance or publication | resolved, optional read-only scope assessment | ADR-0054 / SPEC-0054 |
 
 Open decisions are roadmap work. They MUST NOT be silently resolved by an
 implementation-only change.

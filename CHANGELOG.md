@@ -7,6 +7,16 @@ alpha prerelease but no stable release yet.
 
 ### Added
 
+- ADR/SPEC-0053–0054: independent HostCompatibilityTarget admission and optional
+  exact declared-scope assessment. `--require-current` requires both time and
+  target eligibility, reports ordered field-only differences, and never grants
+  provider provenance or publication authority. Existing time-only mode is retained.
+- Reproduced and fixed YAML numeric coercion: fractional report assertion counts,
+  trial index and budgets could be truncated to integers (including failed: 0.5
+  becoming zero). Report/target wire numbers must now be explicit integer scalars;
+  malformed historical inputs are refused, not rewritten. No provider calls,
+  database changes, dependency updates or releases are part of this increment.
+
 - ADR/SPEC-0051–0052: consistent HostCompatibilityReport admission and read-only
   explicit-time `compatibility assess`, with profile TTL caps and an optional
   time-only gate. Assessment never authorizes compatibility publication.
