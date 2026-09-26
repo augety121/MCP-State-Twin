@@ -45,6 +45,32 @@ planned/started/terminal/validlyEvaluated 均为 2，并非零退出。`upgradeA
 如果没跑候选就比较，会得到 `inconclusive`，不会把缺失的一组从分母中删掉。
 需要 JSON 时，将 `--format markdown` 改为 `--format json`。
 
+### 如何读取新版比较报告
+
+报告的 `decisionPolicy` 为 `offline-regression-v2`。它保留旧字段，并新增两侧 model
+标签、`baselineCounts` / `candidateCounts`、每个 pair 的 `reasons` 和
+`newPolicyFailures`。严格读取旧 JSON 字段集的消费者需要升级；计划和原证据格式不变。
+
+| 观察 | 报告 / CLI |
+|---|---|
+| 完整 replay，但 oracle 运行时出错 | `validation:not_evaluated`、`inconclusive`，非零退出 |
+| 候选新增策略失败，哪怕双方本来都失败 | `regression`，列出新失败的策略 ID，非零退出 |
+| 双方同样失败，无新增已定义的风险 | 可为 `no_regression_observed`；不是任务成功，也不授权升级 |
+| 缺失、损坏、部分或身份不符证据 | 保留计划分母，返回证据不足/不可比，非零退出 |
+
+总 `counts` 等于两侧之和；`validlyEvaluated` 不是成功数。报告只证明读取到的已验证
+输入，`planBinding` 不证明计划确实在试验之前注册，也不认证 unsigned 工件来源。
+不要把无回归等同于 PASS 某真实模型；纯 mock 路线的 `upgradeAllowed` 永远 false。
+
+一次 compare 只读已有可信、静止目录，顺序处理最多 32 pairs，累计 terminal 解码预算
+由独立的 `verificationProfile:offline-compare-v1` 标识：
+128 MiB、单文件 32 MiB、整次协作式 verification deadline 120 秒。取消/整次超时/
+累计超限直接失败，不产生一个完成的比较报告；不会恢复、重跑模型或清理原工件。
+这个 deadline 不是对阻塞文件系统的硬实时保证。详细契约见
+[评分资格](../SPEC-0048-COMPARISON-GRADING-ELIGIBILITY.md)、
+[报告核算](../SPEC-0049-COMPARISON-REPORT-ACCOUNTING.md) 和
+[资源/取消](../SPEC-0050-COMPARISON-IO-AND-CANCELLATION.md)。
+
 ## 4. 扩展与边界
 
 `agent-mocks/` 还有读取、新建、已关闭不动作、注入越权提示和提交后确认等合成响应。

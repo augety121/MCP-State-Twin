@@ -44,6 +44,14 @@ merged and its required CI evidence passes on that revision.
 These rows distinguish offline and opt-in local API lanes and do not promote any live/product
 HostProfile. Complete evidence may prove an unsuccessful task faithfully.
 
+### Offline comparison correction (2026-09-26)
+
+| ID | Bounded public claim | State | Evidence | Exclusions |
+|---|---|---|---|---|
+| CLM-AGENT-006 | Replay-valid scoring errors cannot pass the offline gate; newly failed policy IDs are regressions | experimental; regression/CLI tests | ADR/SPEC-0048; `TestComparisonGradingEligibilityAndNewPolicyFailure`, CLI fail-closed tests | no real-model result or arbitrary risk inference |
+| CLM-AGENT-007 | Separate cohort denominators, model labels and ordered comparison reasons are reported deterministically | experimental; accounting/report tests | ADR/SPEC-0049; multi-pair JSON/Markdown equality and unchanged source bytes | no signature, preregistration proof, significance or automatic upgrade |
+| CLM-AGENT-008 | Offline comparison bounds terminal decoding and propagates whole-operation cancellation | experimental; bounded IO/cancellation tests | ADR/SPEC-0050; budget boundary, rooted member and cancellation tests; Linux CI exercises symlinks | not atomic directory snapshots, hard RSS/deadline quotas or hostile-writer isolation |
+
 ## Maintenance
 
 | ID | Bounded public claim | State | Evidence | Exclusions |

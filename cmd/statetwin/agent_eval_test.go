@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/augety121/mcp-state-twin/internal/bundle"
+	"github.com/augety121/mcp-state-twin/internal/task"
 )
 
-func TestOfflineAgentCLIQuickstartAndRegression(t *testing.T) {
+func prepareOfflineCLI(t *testing.T) string {
+	t.Helper()
 	root := t.TempDir()
 	source := filepath.Join("..", "..", "examples", "issue-tracker")
 	if err := os.Mkdir(filepath.Join(root, ".statetwin"), 0700); err != nil {
@@ -32,6 +35,11 @@ func TestOfflineAgentCLIQuickstartAndRegression(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	return root
+}
+
+func TestOfflineAgentCLIQuickstartAndRegression(t *testing.T) {
+	root := prepareOfflineCLI(t)
 	ctx := context.Background()
 	for _, args := range [][]string{
 		{"preflight", "--root", root, "--task", "agent-tasks/close-issue.json", "--config", "agent-runs/baseline.json"},
@@ -66,5 +74,59 @@ func TestOfflineAgentCLIQuickstartAndRegression(t *testing.T) {
 		if err := runAgentEval(ctx, args); err == nil {
 			t.Fatal("unsafe CLI accepted")
 		}
+	}
+}
+
+func TestOfflineComparisonCLIFailsClosedOnGradingAndPolicy(t *testing.T) {
+	for _, mode := range []string{"unscorable", "new-policy-failure"} {
+		t.Run(mode, func(t *testing.T) {
+			root := prepareOfflineCLI(t)
+			name := filepath.Join(root, "agent-tasks", "close-issue.json")
+			raw, err := os.ReadFile(name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ta, err := task.Decode(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ta.Oracle[0].Expr = "false"
+			ta.Oracle[1].Expr = "answer.ok == true"
+			if mode == "unscorable" {
+				ta.Oracle[0].Expr = "answer.missing == true"
+			}
+			raw, err = json.Marshal(ta)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = os.WriteFile(name, raw, 0600); err != nil {
+				t.Fatal(err)
+			}
+			for _, which := range []string{"baseline", "candidate"} {
+				answer := `{"ok":true}`
+				if which == "candidate" {
+					answer = `{"ok":false}`
+				}
+				script := map[string]any{"kind": "MockResponses", "syntheticOnly": true, "responses": []any{map[string]any{"status": "completed", "output": []any{map[string]any{"type": "message", "role": "assistant", "content": []any{map[string]any{"type": "output_text", "text": answer}}}}}}}
+				raw, err = json.Marshal(script)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err = os.WriteFile(filepath.Join(root, "case.json"), raw, 0600); err != nil {
+					t.Fatal(err)
+				}
+				if err = runAgentEval(context.Background(), []string{"mock", "--root", root, "--task", "agent-tasks/close-issue.json", "--config", "agent-runs/" + which + ".json", "--responses", "case.json", "--out", ".statetwin/" + which}); err == nil {
+					t.Fatal("fixture must not pass task grading")
+				}
+				if err = runAgentEval(context.Background(), []string{"verify", "--root", root, "--evidence", ".statetwin/" + which + "/terminal.json"}); err != nil {
+					t.Fatal("fixture must remain replay-valid", err)
+				}
+			}
+			for _, format := range []string{"json", "markdown"} {
+				if err = runAgentEval(context.Background(), []string{"compare", "--root", root, "--plan", "agent-comparison.json", "--format", format}); err == nil {
+					t.Fatal("CLI gate accepted an unscorable/unsafe pair")
+				}
+			}
+		})
 	}
 }

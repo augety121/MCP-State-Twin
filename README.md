@@ -1044,6 +1044,11 @@ README 中对许可证的任何说明仅用于帮助阅读；若存在差异，�
 应被判为回归，而不是得到假成功。此路线仍是 **mock 测试，不是实际模型能力或 live 兼容证据**；
 完整边界见 [SPEC-0039](docs/SPEC-0039-OFFLINE-AGENT-REGRESSION.md)。
 
+比较器使用 `offline-regression-v2`：评分器出错不计作有效评分；新策略违规即使总次数
+不变也会阻断门禁。JSON/Markdown 列出双方分母、trial ID 和回归原因，读取有累计预算，
+取消不会变成完成报告。两边同样失败可以“未观察到回归”，但不是任务成功或升级许可。
+三份详细规范见 [Spec 索引](docs/README.md)。旧 JSON 严格消费者需接受新增报告字段。
+
 ## 可选本地 API bridge（实验性，live 未验证）
 
 新增独立的 `eval live-plan` / `live-preflight` / `live` / `live-verify`：先审阅完整

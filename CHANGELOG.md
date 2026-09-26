@@ -7,6 +7,17 @@ alpha prerelease but no stable release yet.
 
 ### Added
 
+- ADR/SPEC-0048–0050: offline comparison scoring eligibility, policy-failure
+  regression detection, separate cohort denominators and versioned reasons.
+  Reproduced and fixed three false-green cases: replay-valid evaluator errors,
+  task failure becoming a policy violation, and changed failed policy IDs with
+  unchanged attempt counts. New report fields are additive experimental fields.
+- Comparison reads now share one rooted handle, reject observed symlink parents,
+  enforce a 128 MiB aggregate decode budget and propagate whole-operation
+  cancellation/deadline failures. Tests cover actual synthetic replay, CLI gates,
+  accounting/determinism, byte budgets and filesystem refusal. No live runs,
+  evidence rewrites, database migrations or releases are introduced.
+
 - Preserved concurrent maintainer merges of Dependabot PRs #2/#4/#5/#6 (checkout,
   setup-node, SQLite and protobuf) while integrating release hardening; the new
   staging job follows the same checkout pin as CI. Merged-candidate validation is

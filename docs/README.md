@@ -1,5 +1,20 @@
 # MCP State Twin Documentation
 
+## Offline comparison correctness — 2026-09-26
+
+- [ADR-0048](ADR-0048-FAIL-CLOSED-COMPARISON-GRADING.md) /
+  [SPEC-0048](SPEC-0048-COMPARISON-GRADING-ELIGIBILITY.md): scoring errors cannot
+  pass the comparison gate; new policy failures are detected independently of counts.
+- [ADR-0049](ADR-0049-AUDITABLE-COMPARISON-REPORTS.md) /
+  [SPEC-0049](SPEC-0049-COMPARISON-REPORT-ACCOUNTING.md): explicit decision policy,
+  separate cohort denominators, verified risk facts and stable reasons.
+- [ADR-0050](ADR-0050-BOUNDED-COMPARISON-EXECUTION.md) /
+  [SPEC-0050](SPEC-0050-COMPARISON-IO-AND-CANCELLATION.md): rooted bounded reads,
+  whole-comparison budget and cancellation propagation. Read-only, no live calls.
+
+These are B09-offline correctness contracts, not completed live evaluations or
+signed preregistration. See the [offline guide](guides/OFFLINE-AGENT-REGRESSION.md).
+
 ## Release engineering contracts — 2026-09-12
 
 The B11/B32 maintenance subset separates declaration, CI and publication:

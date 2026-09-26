@@ -1007,6 +1007,13 @@ reports. Follow the [offline regression walkthrough](docs/guides/OFFLINE-AGENT-R
 to catch an intentionally omitted action. These are mock host tests, **not live
 model capability or product-host compatibility evidence**. See [SPEC-0039](docs/SPEC-0039-OFFLINE-AGENT-REGRESSION.md).
 
+`offline-regression-v2` excludes scoring errors from valid evaluations and detects
+new policy violations even when attempt counts are unchanged. Reports show both
+cohort denominators, trial IDs and reasons; reading is budgeted and cancellation
+does not become a finished report. Two equally failed tasks can show no observed
+regression without implying success or upgrade permission. Strict JSON consumers
+must accept the added report fields; see [SPEC-0048–0050](docs/README.md).
+
 ## Optional local API bridge (experimental; live unverified)
 
 Separate `eval live-plan`, `live-preflight`, `live` and `live-verify` commands

@@ -45,6 +45,9 @@
 | DEC-039 | Version-bound release plan and reviewed notes are required; declarations are not reviewer attestations | resolved, v0.1 local-core maintenance subset | ADR-0045 / SPEC-0045 |
 | DEC-040 | Full same-commit reusable CI gates draft-only staging; only staging gets write permission | resolved, real tag workflow remains independently verified | ADR-0046 / SPEC-0046 |
 | DEC-041 | Release builds refuse any existing dist and retain partial work rather than recursively deleting it | resolved, bounded trusted-local build contract | ADR-0047 / SPEC-0047 |
+| DEC-042 | Replay validity alone does not qualify scoring; newly failed policy assertions block the offline gate | resolved, experimental offline-regression-v2 | ADR-0048 / SPEC-0048 |
+| DEC-043 | Comparison reports expose separate cohort denominators and stable reasons, never preregistration or provider attestation | resolved, additive experimental report fields | ADR-0049 / SPEC-0049 |
+| DEC-044 | Comparison uses rooted bounded reads and preserves whole-operation cancellation as failure | resolved, trusted quiescent local root only | ADR-0050 / SPEC-0050 |
 
 Open decisions are roadmap work. They MUST NOT be silently resolved by an
 implementation-only change.

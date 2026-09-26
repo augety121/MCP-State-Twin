@@ -1,9 +1,9 @@
 # Implementation Status
 
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
-**Last verified committed baseline:** checked 2026-09-12; local single-core suite plus public CI
-[run 34673403490](https://github.com/augety121/MCP-State-Twin/actions/runs/34673403490)
-for implementation commit `329cddf` completed successfully, including Linux
+**Last verified committed baseline:** checked 2026-09-26; public CI
+[run 34676638084](https://github.com/augety121/MCP-State-Twin/actions/runs/34676638084)
+for merged main `49332c9` completed successfully, including Linux
 race, Windows/macOS, fuzz, secret policy, hermetic egress and MCP conformance
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 is the accepted v0.1 release profile. RFC-0003 is a
@@ -47,6 +47,23 @@ full package tests and build. Race and POSIX wrapper execution still require
 the exact merged-candidate CI; no real tag workflow has been triggered.
 
 ## Implemented and tested
+
+**2026-09-26 offline comparison correction (ADR/SPEC-0048–0050):** reproduced
+three false-green comparisons before the fix: replay-valid evaluator errors,
+new policy violation despite an already failed goal, and different failed policy
+IDs without an attempt-count increase. `offline-regression-v2` checks scoring
+eligibility and these policy risks, exposes separate cohort counts and ordered
+reasons, and uses rooted bounded reads with cancellation-preserving return paths.
+Targeted synthetic RecordMock/replay, CLI negative gates, byte-budget boundaries,
+cohort/determinism and read-only tests pass locally with one Go execution slot.
+The local single-core full suite, vet and build pass; build reports a nonfatal
+Go module stat-cache permission warning in the user cache. Exact candidate CI
+is independent; the baseline above does not verify this increment. The local
+race command was attempted and refused because CGO is disabled; Linux CI must
+provide race evidence. Symlink tests may
+skip on Windows without privileges; Linux/macOS must execute them.
+There are no provider requests, changed historical artifacts, new database
+schemas, automatic upgrades, signed preregistration or release claims.
 
 **2026-09-08 offline Task increment (ADR/SPEC-0038):** independent AgentTask
 strict parsing and surface admission, scalar resource rules, bounded read-only
@@ -123,7 +140,11 @@ on `c57bc78` exposed the POSIX `missing-tag` case: an inner Git failure became
 the outer shell comparison's generic exit 1 instead of the original failure.
 The wrapper now captures Git command results before comparing values; the
 original test expectation is preserved. That failed run is not passing evidence;
-the corrective revision requires a fresh CI run.
+the corrective revision was verified by
+[CI 34675466596](https://github.com/augety121/MCP-State-Twin/actions/runs/34675466596)
+on `c36afa4`. The same fix was synchronized to PR #3 (`adead75`), whose
+[CI 34676350298](https://github.com/augety121/MCP-State-Twin/actions/runs/34676350298)
+passed all seven jobs before the maintainer merged it as `49332c9`.
 No approved real release plan, tag, real artifact set, draft, stable qualification,
 signed reviewer attestation, provider-live evidence or ARM execution is claimed.
 

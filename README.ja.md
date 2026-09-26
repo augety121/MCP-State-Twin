@@ -421,6 +421,11 @@ MCP State Twin は **MIT License** の下で提供されます。完全なライ
 [SPEC-0039](docs/SPEC-0039-OFFLINE-AGENT-REGRESSION.md) を参照してください。
 これは mock テストであり、実モデルや製品ホストの互換性を証明しません。
 
+`offline-regression-v2` は評価器エラーを有効な評価に数えず、件数が同じでも新しい
+ポリシー違反を検出します。両側の分母と理由を表示し、読み取り予算とキャンセルを適用します。
+両側が同様に失敗した場合の「回帰なし」は成功やアップグレード許可ではありません。
+追加 JSON フィールドと [SPEC-0048–0050](docs/README.md) を確認してください。
+
 別の実験的な local API bridge では `eval live-plan` / `live-preflight` / `live` /
 `live-verify` を利用できます。モデル、合成データ、リクエスト上限、有効期限と
 明示的な承認が必要です。料金は unknown、自動 retry はありません。

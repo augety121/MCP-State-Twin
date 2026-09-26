@@ -82,6 +82,12 @@ These release-maintenance contracts address the B11/B32 and AE-024 tooling
 subset. They do not close B11 stable qualification, B10 external use, actual
 provider evidence or missing-source audits by themselves.
 
+| Offline comparison requirement | Authority | Evidence | Status |
+|---|---|---|---|
+| ST-COMPARE-001 grading eligibility and new policy failures | SPEC-0048; AE-021/022 | actual RecordMock/replay counterexamples; CLI negative gates; ordered risk reasons | implemented experimental subset; candidate CI independently required |
+| ST-COMPARE-002 cohort accounting and report identity | SPEC-0049; AE-008/021/022 | mixed multi-pair denominators; deterministic JSON/Markdown; source-file byte equality | no live score, hash manifest or preregistration proof |
+| ST-COMPARE-003 bounded read and cancellation | SPEC-0050; I-10/I-12 | exact/exceeded cumulative byte budgets; cancel inside final replay; root/member/symlink refusal | local cooperative contract; not OS hard isolation or recovery |
+
 A release gate is closed only when the evidence passes on the exact release
 candidate revision. `Partial`, `experimental` and `unverified` rows may ship
 only when excluded from the stable profile and called out in release notes.
