@@ -22,7 +22,6 @@ import (
 	"github.com/augety121/mcp-state-twin/internal/engine"
 	"github.com/augety121/mcp-state-twin/internal/episode"
 	"github.com/augety121/mcp-state-twin/internal/governor"
-	"github.com/augety121/mcp-state-twin/internal/hostcompat"
 	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/logging"
 	"github.com/augety121/mcp-state-twin/internal/provider"
@@ -159,6 +158,7 @@ Commands:
   statetwin limits
   statetwin execution-profile
   statetwin compatibility validate --report report.yaml
+  statetwin compatibility assess --report report.yaml --at <UTC-time> [--require-fresh]
   statetwin bundle build --manifest bundle.yaml --out twin.stb
   statetwin bundle verify --bundle twin.stb
   statetwin episode run --bundle twin.stb --id episode-001 [--scenario path] [--journal episodes.db]
@@ -665,35 +665,6 @@ func executeHermeticClaim(parent context.Context, client *episode.CoordinatorCli
 		return heartbeatErr
 	}
 	return client.Complete(parent, claim, evidence)
-}
-
-func runCompatibility(args []string) error {
-	if len(args) == 0 || args[0] != "validate" {
-		return errors.New("compatibility requires the validate subcommand")
-	}
-	flags := flag.NewFlagSet("compatibility validate", flag.ContinueOnError)
-	reportPath := flags.String("report", "", "HostCompatibilityReport YAML path")
-	if err := flags.Parse(args[1:]); err != nil {
-		return err
-	}
-	if flags.NArg() != 0 {
-		return errors.New("compatibility validate does not accept positional arguments")
-	}
-	if *reportPath == "" {
-		return errors.New("--report is required")
-	}
-	report, err := hostcompat.Load(*reportPath)
-	if err != nil {
-		return err
-	}
-	digest, err := report.Digest()
-	if err != nil {
-		return err
-	}
-	return printJSON(map[string]any{
-		"valid": true, "format": report.Format, "profile": report.Host.Profile,
-		"claimLevel": report.Claim.Level, "reportDigest": digest,
-	})
 }
 
 func runLimits() error {

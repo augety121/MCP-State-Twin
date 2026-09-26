@@ -703,6 +703,15 @@ The automated integration test uses the official Go SDK as server and client ove
 
 `statetwin compatibility validate --report <path>` now performs strict evidence admission; see the [Host Compatibility Evidence Procedure](docs/HOST-COMPATIBILITY-EVIDENCE.md). A validated report format is not a validated provider.
 
+Read-only `compatibility assess --report <path> --at <UTC-time>` evaluates the
+declared time window; optional `--require-fresh` rejects expired, future or
+non-verified declarations. Admission rejects contradictory surfaces, zero passed
+assertions and known credential patterns hidden by YAML escapes. Assessment
+always reports `publicationAllowed: false`: time eligibility proves neither a
+real run nor current scope or product compatibility. See
+[SPEC-0051](docs/SPEC-0051-HOST-REPORT-CONSISTENCY.md) /
+[SPEC-0052](docs/SPEC-0052-HOST-REPORT-FRESHNESS.md).
+
 Design references:
 
 - [MCP Specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)
@@ -730,6 +739,7 @@ statetwin protocols   print pinned MCP wire-evidence profiles
 statetwin limits      print the versioned resource profile and digest
 statetwin execution-profile  print the applied operational execution policy
 statetwin compatibility validate --report report.yaml
+statetwin compatibility assess --report report.yaml --at <UTC-time> [--require-fresh]
 statetwin bundle build --manifest bundle.yaml --out twin.stb
 statetwin bundle verify --bundle twin.stb
 statetwin episode run --bundle twin.stb --id episode-001 --out evidence.json

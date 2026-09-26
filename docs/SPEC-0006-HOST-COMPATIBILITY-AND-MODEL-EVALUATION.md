@@ -3,6 +3,8 @@
 - **Status:** Report-admission subset accepted by ADR-0017; live provider profiles unverified
 - **Scope:** MCP host interoperability and cross-model evaluation evidence
 - **Amended by:** SPEC-0019 for exact HostProfile identity, live evidence and freshness
+- **Report maintenance:** SPEC-0051 tightens structural consistency/privacy;
+  SPEC-0052 adds explicit-time assessment, not live verification
 - **Related:** SPEC-0003, SPEC-0004, SPEC-0005, ADR-0002, ADR-0008
 
 ## 1. Purpose

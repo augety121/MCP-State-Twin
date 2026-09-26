@@ -107,6 +107,11 @@ protocol profile, tool surface or security profile changes.
 
 These TTLs are project claim policy, not a statement about provider stability.
 
+The executable legacy HostCompatibilityReport time-policy subset is now
+specified by [SPEC-0052](SPEC-0052-HOST-REPORT-FRESHNESS.md). It evaluates the
+declared date window only; the full v1alpha2 HostProfile, current identity/drift
+matching and live evidence prerequisites above remain independently required.
+
 ## 7. Profile separation
 
 The following are separate claims and MUST have separate evidence:

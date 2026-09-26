@@ -48,6 +48,8 @@
 | DEC-042 | Replay validity alone does not qualify scoring; newly failed policy assertions block the offline gate | resolved, experimental offline-regression-v2 | ADR-0048 / SPEC-0048 |
 | DEC-043 | Comparison reports expose separate cohort denominators and stable reasons, never preregistration or provider attestation | resolved, additive experimental report fields | ADR-0049 / SPEC-0049 |
 | DEC-044 | Comparison uses rooted bounded reads and preserves whole-operation cancellation as failure | resolved, trusted quiescent local root only | ADR-0050 / SPEC-0050 |
+| DEC-045 | Host reports require consistent surface/assertion/identity declarations and decoded-value privacy checks | resolved, structural admission only | ADR-0051 / SPEC-0051 |
+| DEC-046 | Explicit-time host report assessment caps expiry but cannot grant live compatibility or publication | resolved, bounded time-policy subset | ADR-0052 / SPEC-0052 |
 
 Open decisions are roadmap work. They MUST NOT be silently resolved by an
 implementation-only change.

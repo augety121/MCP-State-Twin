@@ -19,6 +19,34 @@ canonical report digest. Unknown fields, oversized documents, YAML extensions,
 mutable revisions, incomplete evidence checks, unbounded trials, raw
 credential-like data, and invalid remote trust profiles fail closed.
 
+SPEC-0051 also rejects inconsistent `exact` surface declarations, zero passed
+assertions in verified claims, conflicting cancellation checks and decoded YAML
+credential patterns. Output explicitly says `validationScope: structure-only`
+and `publicationAllowed: false`. This remains structural admission, not proof
+that the declared run occurred.
+
+### Time-policy assessment (read-only)
+
+```text
+statetwin compatibility assess --report report.yaml --at 2026-09-26T00:00:00Z
+statetwin compatibility assess --report report.yaml --at 2026-09-26T00:00:00Z --require-fresh
+```
+
+Replace the sample timestamp with the intended audit time. There is no implicit
+clock. The earlier of explicit expiry and the profile cap wins: 14 days for
+ChatGPT / Claude Code report profiles, 30 days for the other admitted profiles.
+Expiry is exclusive. An observation after the audit time is `not_yet_valid`.
+Plain assessment returns diagnostics even when expired; `--require-fresh` then
+returns nonzero unless the declaration is verified and within its window.
+
+This does **not** check bound versions against current configuration, authenticate
+the provider, fetch referenced evidence, or authorize publication. Every assessment
+keeps `scopeStatus: not_checked`, `provenance: not_verified` and
+`publicationAllowed: false`. A fabricated in-window report can satisfy this
+time-only check; it is not a complete CI compatibility gate. Source files are
+never rewritten, and this command generates no file hashes. Full contract:
+[SPEC-0052](SPEC-0052-HOST-REPORT-FRESHNESS.md).
+
 ## 2. Live-run prerequisites
 
 Before a provider-hosted run:

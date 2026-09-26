@@ -45,6 +45,7 @@
 | AE-014/016/018/019/020 的存储/终态/只读诊断增量 | accepted ADR-0042/0043/0044 | implemented bounded subset | 22 个存储注入故障、五个子进程退出点、首因/取消/隐私/诊断测试；CI 34673403490 | experimental, not-released |
 | B11/B32/AE-024 发布工具增量 | accepted ADR-0045/0046/0047 | implemented bounded subset | 原生 plan/notes/CLI、workflow 结构和 POSIX 合成失败测试；候选 CI 独立核验 | 未执行真实 tag workflow、打包或发布；不是 B11 全关闭 |
 | B09-offline / AE-008/021/022 比较正确性 | accepted ADR-0048/0049/0050 | implemented bounded subset | 三类 false-green 复现与修复、实际 mock replay、CLI、双方分母、取消/预算/路径测试；候选 CI 独立核验 | experimental；不等于 B09-live 或完整阶段验收 |
+| B15 / AE-023 的声明一致性与时间窗口 | accepted ADR-0051/0052 | implemented bounded subset | 八类矛盾与 YAML 转义隐私负例；六 profile 时间边界、CLI、输出失败与只读测试；候选 CI 独立核验 | 无真实兼容性晋级；完整身份/工件/撤销链未实现 |
 | 核心/Scenario/Bundle/Journal 继承能力 | 以既有 accepted ADR 为准 | 以现有实现台账为准 | 历史证据；本轮未重跑 | 依既有 preview/stable 支持范围 |
 | B08/B09-live 实际实验 | proposed live gate | readiness 不等于实际运行 | 需账户/model/数据/预算授权及真实报告 | 不可宣称兼容 |
 | B10-external | proposed | not-started | 需真实独立使用反馈 | 不可宣称采用量 |

@@ -51,6 +51,11 @@
 - deterministic environment identity、ordered tool trace、JSON Pointer state assertion、canonical state diff を備えた bounded Scenario `v1alpha1` runner
 - v1/v2/v3 migration、tagged alpha schema-v4 fixture、process-exit recovery を含む local SQLite compatibility evidence
 - strict HostCompatibilityReport admission（live provider compatibility の証明ではない）
+- 読み取り専用 `compatibility assess --report <path> --at <UTC-time>` で期限を判定。
+  `--require-fresh` は期限切れ・未来日時・非 verified 宣言を拒否します。
+  矛盾した surface、成功 assertion がゼロの verified 宣言、YAML escape に隠れた既知の
+  credential pattern も拒否します。`publicationAllowed` は常に false です。
+  [SPEC-0051/0052](docs/README.md)：実行元や現在の構成・製品互換性の証明ではありません。
 - deterministic TwinBundle `v1alpha1`（厳格な path/type/size/digest/payload 検証、再現可能 ZIP、未署名）
 - local scripted EvaluationEpisode（閉じた lifecycle と evidence digest。provider harness ではない）
 - durable Episode Journal schema v2（v1 fixture migration、kill-point recovery、immutable request、Evidence consistency）
@@ -320,6 +325,7 @@ statetwin version    print the development version
 statetwin protocols   print pinned MCP wire-evidence profiles
 statetwin limits      print the versioned resource profile and digest
 statetwin compatibility validate --report report.yaml
+statetwin compatibility assess --report report.yaml --at <UTC-time> [--require-fresh]
 statetwin bundle build --manifest bundle.yaml --out twin.stb
 statetwin bundle verify --bundle twin.stb
 statetwin episode run --bundle twin.stb --id episode-001 --out evidence.json

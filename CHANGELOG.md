@@ -7,6 +7,16 @@ alpha prerelease but no stable release yet.
 
 ### Added
 
+- ADR/SPEC-0051–0052: consistent HostCompatibilityReport admission and read-only
+  explicit-time `compatibility assess`, with profile TTL caps and an optional
+  time-only gate. Assessment never authorizes compatibility publication.
+- Fixed admission of contradictory exact surfaces, empty verified assertion
+  success, conflicting cancellation, invalid calendar dates, incomplete/placeholder
+  identities and backwards experimental expiry. Scan decoded YAML values and
+  keep parser diagnostics content-free. Existing preview reports that violated
+  these rules are now rejected; historical files are not rewritten. Validation
+  output adds structural/provenance boundaries; strict output readers may need updates.
+
 - ADR/SPEC-0048–0050: offline comparison scoring eligibility, policy-failure
   regression detection, separate cohort denominators and versioned reasons.
   Reproduced and fixed three false-green cases: replay-valid evaluator errors,

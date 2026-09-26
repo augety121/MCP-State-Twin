@@ -51,6 +51,11 @@
 - deterministic environment identity, ordered tool trace, JSON Pointer state assertion, canonical state diff를 제공하는 bounded Scenario `v1alpha1` runner
 - v1/v2/v3 migration, tagged alpha schema-v4 fixture, process-exit recovery를 포함한 local SQLite compatibility evidence
 - strict HostCompatibilityReport admission(live provider compatibility 증명은 아님)
+- 읽기 전용 `compatibility assess --report <path> --at <UTC-time>`로 유효 기간을 확인합니다.
+  `--require-fresh`는 만료, 미래 날짜, verified가 아닌 선언을 거부합니다.
+  모순된 surface, 성공 assertion이 없는 verified 선언, YAML escape에 숨긴 알려진
+  credential pattern도 거부합니다. `publicationAllowed`는 항상 false입니다.
+  [SPEC-0051/0052](docs/README.md): 실제 실행 출처나 현재 구성·제품 호환성을 증명하지 않습니다.
 - deterministic TwinBundle `v1alpha1`(엄격한 path/type/size/digest/payload 검증, 재현 가능한 ZIP, 미서명)
 - local scripted EvaluationEpisode(닫힌 lifecycle과 evidence digest, provider harness가 아님)
 - durable Episode Journal schema v2(v1 fixture migration, kill-point recovery, immutable request, Evidence consistency)
@@ -320,6 +325,7 @@ statetwin version    print the development version
 statetwin protocols   print pinned MCP wire-evidence profiles
 statetwin limits      print the versioned resource profile and digest
 statetwin compatibility validate --report report.yaml
+statetwin compatibility assess --report report.yaml --at <UTC-time> [--require-fresh]
 statetwin bundle build --manifest bundle.yaml --out twin.stb
 statetwin bundle verify --bundle twin.stb
 statetwin episode run --bundle twin.stb --id episode-001 --out evidence.json

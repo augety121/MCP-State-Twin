@@ -1,5 +1,18 @@
 # MCP State Twin Documentation
 
+## Host report consistency and time policy — 2026-09-26
+
+- [ADR-0051](ADR-0051-CONSISTENT-HOST-REPORT-ADMISSION.md) /
+  [SPEC-0051](SPEC-0051-HOST-REPORT-CONSISTENCY.md): cross-field contradictions,
+  successful assertion requirements and decoded YAML privacy admission.
+- [ADR-0052](ADR-0052-DETERMINISTIC-HOST-REPORT-FRESHNESS.md) /
+  [SPEC-0052](SPEC-0052-HOST-REPORT-FRESHNESS.md): explicit-time read-only
+  assessment with bounded validity windows and no automatic publication.
+
+These are B15 admission/time-policy prerequisites, not artifact-backed live
+verification or complete claim derivation. See the
+[procedure](HOST-COMPATIBILITY-EVIDENCE.md).
+
 ## Offline comparison correctness — 2026-09-26
 
 - [ADR-0048](ADR-0048-FAIL-CLOSED-COMPARISON-GRADING.md) /

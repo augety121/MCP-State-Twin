@@ -2,8 +2,8 @@
 
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
 **Last verified committed baseline:** checked 2026-09-26; public CI
-[run 34676638084](https://github.com/augety121/MCP-State-Twin/actions/runs/34676638084)
-for merged main `49332c9` completed successfully, including Linux
+[run 36205412254](https://github.com/augety121/MCP-State-Twin/actions/runs/36205412254)
+for main `e3f581a` completed successfully, including Linux
 race, Windows/macOS, fuzz, secret policy, hermetic egress and MCP conformance
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 is the accepted v0.1 release profile. RFC-0003 is a
@@ -48,6 +48,19 @@ the exact merged-candidate CI; no real tag workflow has been triggered.
 
 ## Implemented and tested
 
+**2026-09-26 host-report increment (ADR/SPEC-0051–0052):** regression tests
+first reproduced eight inconsistent admissions plus a YAML-escaped credential
+bypass. The validator now checks cross-field consistency and decoded privacy;
+parser failures cannot echo decoded content. A deterministic, read-only
+`compatibility assess --at` computes bounded validity without granting publication.
+Targeted tests cover six profiles, creation/expiry/nanosecond/overflow boundaries,
+non-verified claims, output errors and unchanged source bytes. Local full-suite
+tests, vet and build pass with one Go execution slot. Build reports a nonfatal
+user-cache permission warning; local race was attempted but requires unavailable
+CGO. Exact-candidate Linux CI is required independently of the baseline above.
+No live provider/profile is promoted. Full B15 identity matching, artifact-backed
+claims, revocation and matrix generation remain unimplemented.
+
 **2026-09-26 offline comparison correction (ADR/SPEC-0048–0050):** reproduced
 three false-green comparisons before the fix: replay-valid evaluator errors,
 new policy violation despite an already failed goal, and different failed policy
@@ -56,11 +69,11 @@ eligibility and these policy risks, exposes separate cohort counts and ordered
 reasons, and uses rooted bounded reads with cancellation-preserving return paths.
 Targeted synthetic RecordMock/replay, CLI negative gates, byte-budget boundaries,
 cohort/determinism and read-only tests pass locally with one Go execution slot.
-The local single-core full suite, vet and build pass; build reports a nonfatal
-Go module stat-cache permission warning in the user cache. Exact candidate CI
-is independent; the baseline above does not verify this increment. The local
-race command was attempted and refused because CGO is disabled; Linux CI must
-provide race evidence. Symlink tests may
+The local single-core full suite, vet and build pass; build reported a nonfatal
+Go module stat-cache permission warning in the user cache. The exact candidate
+`e3f581a` subsequently passed all seven jobs in CI 36205412254, now the baseline
+above. The local race command was attempted and refused because CGO is disabled;
+Linux CI supplies the passing race evidence. Symlink tests may
 skip on Windows without privileges; Linux/macOS must execute them.
 There are no provider requests, changed historical artifacts, new database
 schemas, automatic upgrades, signed preregistration or release claims.

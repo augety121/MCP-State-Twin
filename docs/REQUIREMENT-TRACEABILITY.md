@@ -88,6 +88,11 @@ provider evidence or missing-source audits by themselves.
 | ST-COMPARE-002 cohort accounting and report identity | SPEC-0049; AE-008/021/022 | mixed multi-pair denominators; deterministic JSON/Markdown; source-file byte equality | no live score, hash manifest or preregistration proof |
 | ST-COMPARE-003 bounded read and cancellation | SPEC-0050; I-10/I-12 | exact/exceeded cumulative byte budgets; cancel inside final replay; root/member/symlink refusal | local cooperative contract; not OS hard isolation or recovery |
 
+| Host report requirement | Authority | Evidence | Status |
+|---|---|---|---|
+| ST-HOST-001 internally consistent declarations and decoded privacy | SPEC-0051; I-9/I-15/I-16 | eight reproduced inconsistent admissions; escaped key/value refusal; positive/negative identity tests | experimental structural admission; no source authentication |
+| ST-HOST-002 deterministic temporal assessment without promotion | SPEC-0052; SPEC-0019/0021 | six profiles; fractional/expiry/future/overflow boundaries; CLI gate/write failures; byte equality | bounded B15 prerequisite, not complete freshness or compatibility proof |
+
 A release gate is closed only when the evidence passes on the exact release
 candidate revision. `Partial`, `experimental` and `unverified` rows may ship
 only when excluded from the stable profile and called out in release notes.

@@ -101,8 +101,129 @@ func TestReportDecoderRejectsUnknownFields(t *testing.T) {
 		t.Fatal(err)
 	}
 	encoded = append(encoded, []byte("unknownField: true\n")...)
-	if _, err := Decode(encoded); err == nil || !strings.Contains(err.Error(), "field unknownField not found") {
+	if _, err := Decode(encoded); err == nil || err.Error() != "HOST_REPORT_DECODE_INVALID" {
 		t.Fatalf("unknown field error = %v", err)
+	}
+}
+
+func TestReportCrossFieldAdmission(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(*Report)
+	}{
+		{"exact surface mismatch", func(r *Report) { r.MCP.ObservedSurfaceDigest = digest("f") }},
+		{"zero successful assertions", func(r *Report) { r.Evidence.AssertionSummary.Passed = 0 }},
+		{"contradictory cancellation", func(r *Report) { r.Evidence.Checks = append(r.Evidence.Checks, "cancellation") }},
+		{"invalid calendar version", func(r *Report) { r.MCP.NegotiatedVersion = "2026-02-30" }},
+		{"padded placeholder version", func(r *Report) { r.Host.Version = " unknown " }},
+		{"unknown runtime version", func(r *Report) { r.Runtime.Version = "unknown" }},
+		{"empty custom provider", func(r *Report) { r.Host.Profile = "custom-mcp"; r.Host.Provider = "" }},
+		{"experimental backward expiry", func(r *Report) { r.Claim.Level = "experimental"; r.Claim.ValidUntil = r.Metadata.CreatedAt }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := validGenericReport()
+			tt.mutate(r)
+			if err := r.Validate(); err == nil {
+				t.Fatal("inconsistent report admitted")
+			}
+		})
+	}
+}
+
+func TestReportRejectsDecodedYAMLCredentials(t *testing.T) {
+	r := validGenericReport()
+	r.Host.Name = "synthetic-marker"
+	raw, err := yaml.Marshal(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The YAML spelling is harmless to a raw scan; the decoded value is not.
+	secret := "sk-" + strings.Repeat("a", 24)
+	raw = []byte(strings.Replace(string(raw), "synthetic-marker", `"\x73\x6b-`+strings.Repeat("a", 24)+`"`, 1))
+	if _, err := Decode(raw); err == nil || strings.Contains(err.Error(), secret) {
+		t.Fatal("decoded credential admitted or echoed")
+	}
+	for _, raw := range []string{
+		`"\x73\x6b-` + strings.Repeat("a", 24) + `": true`,
+		"trial:\n  index: \"\\x73\\x6b-" + strings.Repeat("a", 24) + "\"\n",
+	} {
+		if _, err := Decode([]byte(raw)); err == nil || err.Error() != "HOST_REPORT_DECODE_INVALID" {
+			t.Fatal("parser error must not expose a decoded key or value")
+		}
+	}
+}
+
+func TestReportIdentityAndDecodeBounds(t *testing.T) {
+	for _, value := range []string{"", " padded", "padded ", "line\nbreak", "tab\there", strings.Repeat("a", 257)} {
+		r := validGenericReport()
+		r.Host.Name = value
+		if err := r.Validate(); err == nil {
+			t.Fatal("invalid identity accepted")
+		}
+	}
+	r := validGenericReport()
+	r.Host.Name = strings.Repeat("a", 256)
+	if err := r.Validate(); err != nil {
+		t.Fatal("maximum identity rejected", err)
+	}
+	for _, value := range []string{"AUTO", "latest", "unknown", "none"} {
+		r := reportForProfile("openai-api-mcp")
+		r.Host.Model = value
+		if err := r.Validate(); err == nil {
+			t.Fatal("placeholder model accepted")
+		}
+	}
+	for _, identity := range []Host{
+		{Provider: "unknown", Model: "synthetic-v1"},
+		{Provider: "synthetic-provider", Model: "unknown"},
+	} {
+		r := reportForProfile("custom-mcp")
+		r.Host.Provider, r.Host.Model = identity.Provider, identity.Model
+		if err := r.Validate(); err == nil {
+			t.Fatal("custom provider placeholder accepted")
+		}
+	}
+	if _, err := Decode([]byte(strings.Repeat(" ", MaxReportBytes+1))); err == nil {
+		t.Fatal("oversized decode accepted")
+	}
+	r = validGenericReport()
+	r.Host.Name = "sk-" + strings.Repeat("a", 24)
+	if err := r.Validate(); err == nil || strings.Contains(err.Error(), r.Host.Name) {
+		t.Fatal("direct caller privacy bypass")
+	}
+}
+
+func TestReportAllowsExplicitExperimentalDifferences(t *testing.T) {
+	r := validGenericReport()
+	r.Claim.Level, r.Claim.ValidUntil = "experimental", ""
+	r.MCP.SurfaceStatus, r.MCP.ObservedSurfaceDigest = "modified", digest("f")
+	r.MCP.ConfiguredVersion, r.MCP.NegotiatedVersion = "2024-02-29", "2025-11-25"
+	r.Evidence.AssertionSummary = Summary{}
+	r.Evidence.Checks = append(r.Evidence.Checks, "additional-synthetic-check")
+	if err := r.Validate(); err != nil {
+		t.Fatal("explicit experimental difference rejected", err)
+	}
+}
+
+func TestReportMalformedBoundariesStayContentFree(t *testing.T) {
+	for _, input := range []string{"", "null", "[]", "apiVersion: one\napiVersion: two\n", "---\n---\n", "host: &h {}\n", "host: !!map {}\n"} {
+		if r, err := Decode([]byte(input)); err == nil || r != nil {
+			t.Fatal("malformed document admitted")
+		}
+	}
+	r := validGenericReport()
+	r.Evidence.Checks = append(r.Evidence.Checks, "bad check")
+	if err := r.Validate(); err == nil {
+		t.Fatal("non-identifier check admitted")
+	}
+	r.Evidence.Checks[len(r.Evidence.Checks)-1] = strings.Repeat("a", 129)
+	if err := r.Validate(); err == nil {
+		t.Fatal("oversized check admitted")
+	}
+	r.Host.Name = strings.Repeat("a", MaxReportBytes)
+	if err := r.Validate(); err == nil || err.Error() != "HOST_REPORT_RESOURCE_LIMIT" {
+		t.Fatal("oversized typed report admitted", err)
 	}
 }
 

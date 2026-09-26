@@ -1,7 +1,7 @@
 # Public Claim Registry
 
 **Status:** normative evidence ledger under SPEC-0021
-**Candidate reviewed:** 2026-09-12
+**Candidate reviewed:** 2026-09-26
 **Rule:** a candidate worktree is not a published GitHub capability until it is
 merged and its required CI evidence passes on that revision.
 
@@ -12,6 +12,8 @@ merged and its required CI evidence passes on that revision.
 | CLM-CORE-003 | Snapshots are immutable and forks are isolated | verified locally | store isolation/concurrency tests | no COW/GC/HA claim |
 | CLM-MCP-001 | Agent data plane exposes business tools, not control operations | verified locally | server negative discovery tests | data plane is not production-authenticated |
 | CLM-MCP-002 | Modern 2026-07-28 and legacy 2025-11-25 tools-first wire profiles have direct tests | verified locally | `go test ./internal/server` | not every optional MCP feature |
+| CLM-COMPAT-001 | Host report admission rejects contradictory declarations and decoded YAML credential patterns | experimental; locally tested | ADR/SPEC-0051; hostcompat cross-field/privacy tests | not live verification, alias resolution or universal DLP |
+| CLM-COMPAT-002 | Explicit-time assessment applies profile caps and never grants publication authority | experimental; locally tested | ADR/SPEC-0052; six-profile boundaries, CLI refusal, determinism and source preservation tests | no provenance, current scope matching, artifact fetch or complete B15 claim derivation |
 | CLM-STORAGE-001 | World schema v4 accepts documented historical fixtures and refuses foreign/future stores | verified locally | store migration and kill-point tests | no downgrade, backup, replication or disk-full guarantee |
 | CLM-STORAGE-002 | Episode Journal schema v2 migrates the published schema-v1 fixture transactionally | experimental | episode migration and integrity tests | candidate worktree until merged/CI green |
 | CLM-EPISODE-001 | TwinBundle and scripted local Episode produce bounded canonical Evidence | experimental | bundle/episode tests | unsigned; no publisher identity or provider run |

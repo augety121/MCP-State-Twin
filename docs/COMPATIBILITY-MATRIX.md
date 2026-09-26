@@ -18,3 +18,7 @@
 
 An API-family result MUST NOT update a product-profile row. Evidence expiration
 and state transitions follow SPEC-0019 and SPEC-0021.
+
+`compatibility assess` (SPEC-0052) can check a report's declared time window;
+it does not verify provenance, current scope or referenced evidence and cannot
+promote any row in this matrix. No live status changed in this maintenance batch.

@@ -1,6 +1,7 @@
 package hostcompat
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/augety121/mcp-state-twin/internal/canonical"
 	"github.com/augety121/mcp-state-twin/internal/logging"
@@ -136,12 +138,17 @@ func Load(path string) (*Report, error) {
 }
 
 func Decode(data []byte) (*Report, error) {
+	if len(data) > MaxReportBytes {
+		return nil, errors.New("HOST_REPORT_RESOURCE_LIMIT")
+	}
 	if logging.ContainsSensitive(string(data)) {
 		return nil, errors.New("host compatibility report contains a credential-like, private-key, or email pattern")
 	}
 	var report Report
 	if err := strictyaml.DecodeOne(data, MaxReportBytes, "HostCompatibilityReport", &report); err != nil {
-		return nil, err
+		// Parser diagnostics may echo a decoded YAML key or scalar before the
+		// typed-value privacy scan can run. Keep admission failures content-free.
+		return nil, errors.New("HOST_REPORT_DECODE_INVALID")
 	}
 	if err := report.Validate(); err != nil {
 		return nil, err
@@ -157,6 +164,15 @@ func (r *Report) Validate() error {
 	if r == nil {
 		return errors.New("HostCompatibilityReport is required")
 	}
+	// YAML quoted scalars may hide credential patterns from the raw-byte scan.
+	// Check decoded values too; never include those values in the error.
+	encoded, err := json.Marshal(r)
+	if err != nil || len(encoded) > MaxReportBytes {
+		return errors.New("HOST_REPORT_RESOURCE_LIMIT")
+	}
+	if logging.ContainsSensitive(string(encoded)) {
+		return errors.New("HOST_REPORT_SENSITIVE_CONTENT")
+	}
 	var problems []string
 	requireEqual(&problems, "apiVersion", r.APIVersion, APIVersion)
 	requireEqual(&problems, "kind", r.Kind, Kind)
@@ -170,17 +186,16 @@ func (r *Report) Validate() error {
 		problems = append(problems, "claim.level must be experimental, verified, or regressed")
 	}
 	requireDigest(&problems, "claim.procedureDigest", r.Claim.ProcedureDigest)
-	if r.Claim.Level == "verified" {
+	if r.Claim.Level == "verified" || r.Claim.ValidUntil != "" {
 		validUntil, err := requireUTC(&problems, "claim.validUntil", r.Claim.ValidUntil)
 		if err == nil && createdErr == nil && !validUntil.After(createdAt) {
 			problems = append(problems, "claim.validUntil must be after metadata.createdAt")
 		}
-	} else if r.Claim.ValidUntil != "" {
-		_, _ = requireUTC(&problems, "claim.validUntil", r.Claim.ValidUntil)
 	}
 
-	if strings.TrimSpace(r.Runtime.Version) == "" {
-		problems = append(problems, "runtime.version is required")
+	requireIdentity(&problems, "runtime.version", r.Runtime.Version)
+	if r.Claim.Level == "verified" && placeholder(r.Runtime.Version) {
+		problems = append(problems, "runtime.version must identify the observed runtime version")
 	}
 	if !revisionPattern.MatchString(r.Runtime.Revision) {
 		problems = append(problems, "runtime.revision must be an immutable 40- or 64-character lowercase hexadecimal revision")
@@ -222,10 +237,16 @@ func validateHost(problems *[]string, r *Report) {
 	if !valid {
 		*problems = append(*problems, "host.profile is not supported by this report version")
 	}
-	if strings.TrimSpace(r.Host.Name) == "" || strings.TrimSpace(r.Host.Version) == "" {
-		*problems = append(*problems, "host.name and host.version are required")
+	for name, value := range map[string]string{
+		"host.name": r.Host.Name, "host.version": r.Host.Version,
+		"host.provider": r.Host.Provider, "host.model": r.Host.Model,
+	} {
+		requireIdentity(problems, name, value)
 	}
-	if r.Claim.Level == "verified" && oneOf(strings.ToLower(r.Host.Version), "latest", "auto", "unknown") {
+	if r.Host.RequestedModel != "" {
+		requireIdentity(problems, "host.requestedModel", r.Host.RequestedModel)
+	}
+	if r.Claim.Level == "verified" && placeholder(r.Host.Version) {
 		*problems = append(*problems, "host.version must identify the observed host version")
 	}
 	if valid && wantProvider != "" && r.Host.Provider != wantProvider {
@@ -237,15 +258,21 @@ func validateHost(problems *[]string, r *Report) {
 	if oneOf(r.Host.Profile, "openai-api-mcp", "chatgpt-mcp", "anthropic-api-mcp", "claude-code-mcp") {
 		if strings.TrimSpace(r.Host.Model) == "" || strings.EqualFold(r.Host.Model, "none") {
 			*problems = append(*problems, "provider profiles must record a model identifier or unknown")
-		} else if r.Claim.Level == "verified" && oneOf(strings.ToLower(r.Host.Model), "latest", "auto", "unknown") {
+		} else if r.Claim.Level == "verified" && placeholder(r.Host.Model) {
 			*problems = append(*problems, "provider profiles must record the resolved model identifier")
 		}
+	}
+	if r.Host.Profile == "custom-mcp" && r.Claim.Level == "verified" && r.Host.Provider != "none" && (placeholder(r.Host.Provider) || placeholder(r.Host.Model)) {
+		*problems = append(*problems, "verified custom provider reports require non-placeholder provider and model identities")
 	}
 }
 
 func validateMCP(problems *[]string, r *Report) {
-	if !protocolPattern.MatchString(r.MCP.ConfiguredVersion) || !protocolPattern.MatchString(r.MCP.NegotiatedVersion) {
-		*problems = append(*problems, "MCP versions must use YYYY-MM-DD")
+	for _, version := range []string{r.MCP.ConfiguredVersion, r.MCP.NegotiatedVersion} {
+		if _, err := time.Parse(time.DateOnly, version); err != nil || !protocolPattern.MatchString(version) {
+			*problems = append(*problems, "MCP versions must be calendar-valid YYYY-MM-DD dates")
+			break
+		}
 	}
 	if r.MCP.Transport != "streamable-http" {
 		*problems = append(*problems, "mcp.transport must be streamable-http for the current profile")
@@ -265,6 +292,9 @@ func validateMCP(problems *[]string, r *Report) {
 	}
 	if r.Claim.Level == "verified" && r.MCP.SurfaceStatus != "exact" {
 		*problems = append(*problems, "verified reports require an exact observed tool surface")
+	}
+	if r.MCP.SurfaceStatus == "exact" && r.MCP.ObservedSurfaceDigest != r.Runtime.SurfaceDigest {
+		*problems = append(*problems, "exact observed surface must match runtime.surfaceDigest")
 	}
 }
 
@@ -298,6 +328,9 @@ func validateEvidence(problems *[]string, r *Report) {
 	if r.Claim.Level == "verified" && r.Evidence.AssertionSummary.Failed != 0 {
 		*problems = append(*problems, "verified reports cannot contain failed assertions")
 	}
+	if r.Claim.Level == "verified" && r.Evidence.AssertionSummary.Passed == 0 {
+		*problems = append(*problems, "verified reports require successful assertions")
+	}
 	providerAPI := oneOf(r.Host.Profile, "openai-api-mcp", "anthropic-api-mcp")
 	if providerAPI {
 		requireDigest(problems, "evidence.providerRequestIdDigest", r.Evidence.ProviderRequestIDDigest)
@@ -307,10 +340,18 @@ func validateEvidence(problems *[]string, r *Report) {
 
 	seen := make(map[string]struct{}, len(r.Evidence.Checks))
 	for _, check := range r.Evidence.Checks {
+		if len(check) > 128 || !identifierPattern.MatchString(check) {
+			*problems = append(*problems, "evidence.checks must contain bounded identifiers")
+		}
 		if _, exists := seen[check]; exists {
 			*problems = append(*problems, "evidence.checks must not contain duplicates")
 		}
 		seen[check] = struct{}{}
+	}
+	if _, yes := seen["cancellation"]; yes {
+		if _, no := seen["cancellation-unsupported"]; no {
+			*problems = append(*problems, "evidence.checks has contradictory cancellation claims")
+		}
 	}
 	var required []string
 	if r.Host.Profile == "generic-mcp" || r.Host.Profile == "custom-mcp" {
@@ -358,4 +399,14 @@ func oneOf(value string, allowed ...string) bool {
 		}
 	}
 	return false
+}
+
+func requireIdentity(problems *[]string, name, value string) {
+	if value == "" || len(value) > 256 || strings.TrimSpace(value) != value || strings.ContainsFunc(value, unicode.IsControl) {
+		*problems = append(*problems, name+" must be a nonempty, unpadded identity of at most 256 bytes without controls")
+	}
+}
+
+func placeholder(value string) bool {
+	return oneOf(strings.ToLower(strings.TrimSpace(value)), "latest", "auto", "unknown", "none")
 }

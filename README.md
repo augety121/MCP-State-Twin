@@ -775,6 +775,13 @@ MCP State Twin 的核心集成对象是 **MCP**，不是某一家 model provider
 
 `statetwin compatibility validate --report <path>` 已实现严格 evidence admission；详见 [Host Compatibility Evidence Procedure](docs/HOST-COMPATIBILITY-EVIDENCE.md)。验证报告格式不等于验证 provider。
 
+新增只读 `compatibility assess --report <path> --at <UTC-time>`：按明确时间判断声明是否
+处于有效窗口，`--require-fresh` 可阻断过期、未来日期或非 verified 声明。工具面标识矛盾、
+零成功断言和 YAML 转义的已知密钥模式会被拒绝。结果始终保留
+`publicationAllowed: false`：时效合格不证明真实运行、当前配置匹配或产品兼容。
+具体边界见 [SPEC-0051](docs/SPEC-0051-HOST-REPORT-CONSISTENCY.md) /
+[SPEC-0052](docs/SPEC-0052-HOST-REPORT-FRESHNESS.md)。
+
 设计参考：
 
 - [MCP Specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)
@@ -802,6 +809,7 @@ statetwin protocols   print pinned MCP wire-evidence profiles
 statetwin limits      print the versioned resource profile and digest
 statetwin execution-profile  print the applied operational execution policy
 statetwin compatibility validate --report report.yaml
+statetwin compatibility assess --report report.yaml --at <UTC-time> [--require-fresh]
 statetwin bundle build --manifest bundle.yaml --out twin.stb
 statetwin bundle verify --bundle twin.stb
 statetwin episode run --bundle twin.stb --id episode-001 --out evidence.json
