@@ -106,6 +106,9 @@ func TestCompatibilityCLIAdmissionAndOutputFailure(t *testing.T) {
 	for _, args := range [][]string{
 		{"assess"}, {"assess", "--report", file},
 		{"assess", "--report", file, "--at", "now"},
+		{"assess", "--report", file, "--at", "2026-08-24T00:00:00.0000000001Z", "--require-fresh"},
+		{"assess", "--report", file, "--at", "2026-08-24T00:00:00,1Z"},
+		{"assess", "--report", file, "--at", "2026-08-24T0:00:00Z"},
 		{"assess", "--report", file, "--at", r.Metadata.CreatedAt, "extra"},
 		{"validate", "--report", file, "--require-fresh"},
 		{"assess", "--report", file, "--at", r.Metadata.CreatedAt, "--network"},

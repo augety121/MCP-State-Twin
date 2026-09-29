@@ -21,3 +21,14 @@ Full identity matching, artifact-backed claim derivation, automatic matrix
 generation, revocation and native/provider live verification remain separate
 B15 work. A report with plausible declarations can be fabricated; time policy
 cannot fix that. Existing compatibility rows remain unverified/experimental.
+
+## 2026-09-29 timestamp admission correction
+
+Regression tests reproduced Go's permissive acceptance of comma fractions and
+single-digit hours, and silent truncation of more than nine fractional digits.
+Require an explicit fixed-width UTC spelling with at most nanosecond precision
+before parsing calendar values. Apply it to observation, expiry and assessment
+time so unsupported instants cannot gain eligibility by truncation. Existing
+0–9 digit precision, TTLs and inclusive-start/exclusive-end rules are unchanged;
+the time-policy identifier remains `host-report-time-v1`. Previously admitted
+nonconforming or unrepresentable input now fails without source rewriting.

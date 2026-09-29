@@ -30,6 +30,9 @@ and assertion counts; omitted/null/coerced values now fail without rewriting fil
 6. Any declared expiry MUST be later than creation, including non-verified
    reports. Verified reports still require an expiry. Admission is independent
    of today's clock so historical structurally consistent artifacts remain readable.
+   Creation and expiry must use the lossless UTC timestamp subset in SPEC-0052:
+   fixed-width date/time, optional 1–9 fractional digits after a dot, ending in Z.
+   Reject unsupported precision rather than silently truncate it.
 
 ## 2. Decode and privacy boundary
 

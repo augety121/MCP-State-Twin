@@ -27,6 +27,7 @@ var (
 	digestPattern     = regexp.MustCompile(`^sha256:[a-f0-9]{64}$`)
 	revisionPattern   = regexp.MustCompile(`^(?:[a-f0-9]{40}|[a-f0-9]{64})$`)
 	protocolPattern   = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}$`)
+	utcPattern        = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$`)
 )
 
 type Report struct {
@@ -386,9 +387,15 @@ func requireDigest(problems *[]string, name, value string) {
 }
 
 func requireUTC(problems *[]string, name, value string) (time.Time, error) {
-	parsed, err := time.Parse(time.RFC3339, value)
-	if err != nil || !strings.HasSuffix(value, "Z") {
-		*problems = append(*problems, name+" must be an RFC3339 UTC timestamp ending in Z")
+	// time.Parse alone accepts non-RFC3339 spellings and silently truncates
+	// sub-nanosecond precision. Reject them before eligibility comparisons.
+	if !utcPattern.MatchString(value) {
+		*problems = append(*problems, name+" must be an RFC3339 UTC timestamp ending in Z with at most 9 fractional digits")
+		return time.Time{}, errors.New("invalid timestamp")
+	}
+	parsed, err := time.Parse(time.RFC3339Nano, value)
+	if err != nil {
+		*problems = append(*problems, name+" must be a calendar-valid RFC3339 UTC timestamp")
 		return time.Time{}, errors.New("invalid timestamp")
 	}
 	return parsed, nil

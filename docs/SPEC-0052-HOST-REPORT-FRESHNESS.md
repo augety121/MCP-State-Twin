@@ -16,6 +16,13 @@ in `Z`; there is no implicit wall clock, local timezone or timestamp lookup.
 The operator-supplied time is not attested. Same input and time give identical
 JSON; source bytes and the declared claim level/expiry MUST remain unchanged.
 
+Assessment and report timestamps use the lossless nanosecond subset:
+`YYYY-MM-DDTHH:MM:SS[.fraction]Z`, with exactly two digits per clock component
+and 1–9 decimal fractional digits when present. Calendar validity is checked
+separately. Comma fractions, single-digit hours and precision beyond nanoseconds
+MUST fail; the implementation cannot silently truncate a supplied instant into
+an eligible one. This is an admission correction, not a TTL-policy change.
+
 | Report profile | Maximum window from metadata.createdAt |
 |---|---|
 | generic-mcp, custom-mcp, openai-api-mcp, anthropic-api-mcp | 30 × 24 hours |

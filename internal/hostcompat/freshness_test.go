@@ -118,6 +118,58 @@ func TestAssessmentInvalidInputAndOverflow(t *testing.T) {
 	}
 }
 
+func TestAssessmentRejectsLossyOrNonRFC3339Times(t *testing.T) {
+	for _, value := range []string{
+		"2026-08-24T00:00:00.0000000001Z",
+		"2026-08-24T00:00:00.1234567890Z",
+		"2026-08-24T00:00:00,1Z",
+		"2026-08-24T0:00:00Z",
+	} {
+		t.Run(value, func(t *testing.T) {
+			if a, err := Assess(validGenericReport(), value); err == nil || a != nil {
+				t.Error("unsupported assessment time admitted")
+			}
+			r := validGenericReport()
+			r.Metadata.CreatedAt = value
+			if a, err := Assess(r, "2026-08-24T00:00:00Z"); err == nil || a != nil {
+				t.Error("invalid or sub-nanosecond future observation admitted")
+			}
+			r = validGenericReport()
+			r.Metadata.CreatedAt = "2026-08-23T00:00:00Z"
+			r.Claim.ValidUntil = value
+			if err := r.Validate(); err == nil {
+				t.Error("unsupported expiry admitted")
+			}
+		})
+	}
+}
+
+func TestAssessmentPreservesSupportedFractionalPrecision(t *testing.T) {
+	for digits := 0; digits <= 9; digits++ {
+		suffix := "Z"
+		if digits > 0 {
+			suffix = "." + strings.Repeat("1", digits) + "Z"
+		}
+		r := validGenericReport()
+		r.Metadata.CreatedAt = "2026-08-24T00:00:00" + suffix
+		r.Claim.ValidUntil = "2026-08-25T00:00:00" + suffix
+		a, err := Assess(r, r.Metadata.CreatedAt)
+		if err != nil || a == nil {
+			t.Fatal(err)
+		}
+		if a.ObservedAt != r.Metadata.CreatedAt || a.AssessedAt != r.Metadata.CreatedAt || !a.ClaimTimeEligible {
+			t.Fatal("supported observation precision changed", digits)
+		}
+		a, err = Assess(r, r.Claim.ValidUntil)
+		if err != nil || a == nil {
+			t.Fatal(err)
+		}
+		if a.EffectiveValidUntil != r.Claim.ValidUntil || a.Freshness != "expired" || a.ClaimTimeEligible {
+			t.Fatal("supported expiry precision changed", digits)
+		}
+	}
+}
+
 func TestAssessmentIsReadOnlyDeterministicAndMinimal(t *testing.T) {
 	r := validGenericReport()
 	r.Host.Name = "do-not-echo-host"

@@ -48,6 +48,16 @@ the exact merged-candidate CI; no real tag workflow has been triggered.
 
 ## Implemented and tested
 
+**2026-09-29 timestamp admission correction (ADR/SPEC-0052):** tests reproduced
+non-RFC3339 spellings and sub-nanosecond truncation passing admission. Observation,
+expiry and assessment now require fixed-width UTC and at most nine fractional
+digits before calendar parsing. Targeted tests cover each invalid input location,
+all supported precisions, exclusive expiry and CLI refusal before output. Local
+single-core full tests, vet and build passed; local race requires unavailable
+CGO and remains subject to exact-candidate Linux CI. Build emitted the existing
+nonfatal user-module-cache permission warning. TTLs, time policy and provenance
+limits are unchanged.
+
 **2026-09-29 report admission maintenance (ADR/SPEC-0051):** regression tests
 reproduced absent/null and YAML 1.1 string redaction flags being treated as false,
 and file errors exposing input paths. Serialized reports now require an explicit

@@ -39,6 +39,10 @@ statetwin compatibility assess --report report.yaml --target target.yaml --at 20
 诊断结果仍为零退出。第二条要求 declared verified、时间合格、目标声明完全匹配；
 否则先输出诊断，再以 `HOST_REPORT_NOT_CURRENT` 非零退出。无 target 会在文件读取前失败。
 
+报告的创建/过期时间及 `--at` 都使用 `YYYY-MM-DDTHH:MM:SS[.fraction]Z`；小数秒
+可省略，填写时只接受 1–9 位。逗号小数、单数字小时和超过纳秒的精度会直接拒绝，
+不会截断后再判断生效或过期。
+
 `--require-fresh` 仍是**仅时间**门槛；即使与 target 不符也可能零退出。
 要在 CI 阻断配置变化，使用 `--require-current`。两者同时指定时 current 门槛优先。
 

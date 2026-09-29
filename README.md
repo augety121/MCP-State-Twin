@@ -778,6 +778,8 @@ MCP State Twin 的核心集成对象是 **MCP**，不是某一家 model provider
 报告须显式声明布尔值 `redaction.secretsDetected: false`，遗漏、null、`no`/`off`
 均不能代替检查结果。报告和目标文件均限制为不超过 1 MiB 的普通文件，拒绝观察到的
 symlink 和特殊文件；读取错误不回显本地路径。输入应来自可信、静止的本地目录。
+报告时间与 `--at` 使用固定宽度 UTC 时间，点号后可有 1–9 位小数秒；超出纳秒精度
+或非标准拼写直接拒绝，避免截断时间后误判有效期。
 
 新增只读 `compatibility assess --report <path> --at <UTC-time>`：按明确时间判断声明是否
 处于有效窗口，`--require-fresh` 可阻断过期、未来日期或非 verified 声明。工具面标识矛盾、
