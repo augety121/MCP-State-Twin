@@ -1,5 +1,26 @@
 # MCP State Twin Documentation
 
+## Next offline delivery: 11 proposed contracts
+
+The [delivery map](planning/agent-evaluation/NEXT-OFFLINE-DELIVERY.md) organizes
+SPEC-0066–0076 into independent Task binding, executable task quality, and
+bounded evidence portability. All remain **Proposal, not implemented**.
+
+- [ADR-0069](ADR-0069-TASK-QUALITY-PROPOSAL.md):
+  [case manifest](SPEC-0069-TASK-CASE-MANIFEST.md),
+  [isolated runner](SPEC-0070-TASK-CASE-RUNNER.md),
+  [oracle coverage](SPEC-0071-ORACLE-CASE-COVERAGE.md), and
+  [package-registry task kit](SPEC-0072-PACKAGE-REGISTRY-TASK-KIT.md).
+- [ADR-0073](ADR-0073-OFFLINE-EVIDENCE-PORTABILITY-PROPOSAL.md):
+  [inventory](SPEC-0073-SUITE-INVENTORY.md),
+  [export](SPEC-0074-SUITE-EXPORT.md),
+  [import](SPEC-0075-SUITE-IMPORT.md), and
+  [retention preview](SPEC-0076-RETENTION-PREVIEW.md).
+
+Proposed examples describe future interfaces, not currently runnable commands.
+No provider, automatic deletion, production writes or claim of trusted provenance
+is introduced by this design batch.
+
 ## Proposed next step: independently supplied Task binding
 
 [ADR-0066 proposal](ADR-0066-REVIEWED-TASK-BINDING-PROPOSAL.md) describes three
