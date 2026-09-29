@@ -45,6 +45,10 @@ func InspectSuite(ctx context.Context, root, out string) (*SuiteInspection, erro
 }
 
 func inspectSuite(parent context.Context, root, out string, sizeLimit int64) (*SuiteInspection, error) {
+	return inspectSuiteObserved(parent, root, out, sizeLimit, nil, nil)
+}
+
+func inspectSuiteObserved(parent context.Context, root, out string, sizeLimit int64, planObserver func(ComparePlan), observe definitionObserver) (*SuiteInspection, error) {
 	if task.PortablePath(out) != nil {
 		return nil, errors.New("SUITE_INSPECT_PATH_INVALID")
 	}
@@ -128,6 +132,9 @@ func inspectSuite(parent context.Context, root, out string, sizeLimit int64) (*S
 	var plan ComparePlan
 	if readMeta("plan.json", &plan) != nil || validateSuiteComparisonPlan(&plan) != nil || !same(plan, claim.Plan) {
 		return invalid("plan_missing_or_invalid")
+	}
+	if planObserver != nil {
+		planObserver(plan)
 	}
 	// Inspect the complete inventory before any replay work. Enumeration is
 	// bounded, and file-size admission never opens an unexpected FIFO/device.
@@ -222,8 +229,11 @@ func inspectSuite(parent context.Context, root, out string, sizeLimit int64) (*S
 			}
 		}
 	}
-	r.Comparison, err = Compare(ctx, filepath.Join(root, filepath.FromSlash(out)), &plan)
+	r.Comparison, err = compareObserved(ctx, filepath.Join(root, filepath.FromSlash(out)), &plan, VerifyEvidence, maxCompareEvidenceBytes, observe)
 	if err != nil {
+		if errors.Is(err, errAssessmentResourceLimit) {
+			return nil, err
+		}
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}

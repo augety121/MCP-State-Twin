@@ -21,6 +21,14 @@ func TestSuiteCLIOutputFailure(t *testing.T) {
 	if err = os.WriteFile(filepath.Join(root, "suite.json"), raw, 0600); err != nil {
 		t.Fatal(err)
 	}
+	expect := agenteval.SuiteExpectation{Format: agenteval.ExpectationFormat, Profile: agenteval.SuiteProfile, MaxOutputTokens: 1024, Plan: agenteval.ComparePlan{Format: agenteval.CompareFormat, BaselineModel: p.BaselineModel, CandidateModel: p.CandidateModel, AllowedDifferences: []string{"model"}, Pairs: []agenteval.PlannedPair{{TaskID: "close-issue", Repeat: 1, Baseline: agenteval.PlannedTrial{TrialID: "baseline-01", Artifact: "baseline-01/terminal.json"}, Candidate: agenteval.PlannedTrial{TrialID: "candidate-01", Artifact: "candidate-01/terminal.json"}}}}}
+	expectRaw, err := json.Marshal(expect)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(filepath.Join(root, "expected.json"), expectRaw, 0600); err != nil {
+		t.Fatal(err)
+	}
 	out, err := os.Create(filepath.Join(t.TempDir(), "closed-output"))
 	if err != nil {
 		t.Fatal(err)
@@ -47,6 +55,11 @@ func TestSuiteCLIOutputFailure(t *testing.T) {
 			}
 		}
 	}
+	for _, format := range []string{"json", "markdown"} {
+		if err := runAgentEval(context.Background(), []string{"suite-assess", "--root", root, "--out", ".statetwin/output-failure", "--expect", "expected.json", "--policy", "both-pass-v1", "--format", format}); err == nil || err.Error() == "ASSESSMENT_GATE_NOT_SATISFIED" {
+			t.Fatal("assessment stdout failure swallowed", err)
+		}
+	}
 }
 
 func TestOfflineSuiteCLI(t *testing.T) {
@@ -63,6 +76,7 @@ func TestOfflineSuiteCLI(t *testing.T) {
 		}
 	}
 	copyFile("agent-suite.json")
+	copyFile("agent-expectation.json")
 	for _, id := range []string{"read-issue", "close-issue", "create-issue", "already-closed", "scope-protection", "after-commit-confirm"} {
 		copyFile("agent-tasks/" + id + ".json")
 		copyFile("agent-mocks/" + id + ".json")
@@ -88,6 +102,22 @@ func TestOfflineSuiteCLI(t *testing.T) {
 		t.Fatalf("report: %s", raw)
 	}
 	suiteRoot := filepath.Join(root, ".statetwin", "suite")
+	for _, policy := range []string{"candidate-pass-v1", "both-pass-v1"} {
+		for _, format := range []string{"json", "markdown"} {
+			data, err := captureAgentEval(t, []string{"suite-assess", "--root", root, "--out", ".statetwin/suite", "--expect", "agent-expectation.json", "--policy", policy, "--format", format})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if format == "json" {
+				var r agenteval.SuiteAssessment
+				if json.Unmarshal(data, &r) != nil || r.Decision != "passed" || r.Expectation.Coverage.VerifiedTrials != 12 || len(r.Consistency) != 6 {
+					t.Fatalf("assessment: %s", data)
+				}
+			} else if !strings.Contains(string(data), "Decision: `passed`") || !strings.Contains(string(data), "single_pair") {
+				t.Fatal("missing markdown assessment")
+			}
+		}
+	}
 	checkSuiteAuditCLI(t, root, ".statetwin/suite", true)
 	for _, row := range report.Trials {
 		if row.State != "completed" {

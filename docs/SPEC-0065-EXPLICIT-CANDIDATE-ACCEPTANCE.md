@@ -1,6 +1,6 @@
 # SPEC-0065: Explicit Offline Candidate Acceptance
 
-Status: **Proposed — not implemented**, under
+Status: **Accepted**, under
 [ADR-0063](ADR-0063-OFFLINE-ASSESSMENT-PROPOSAL.md).
 Depends on [expectations](SPEC-0063-INDEPENDENT-SUITE-EXPECTATIONS.md) and
 [repeat consistency](SPEC-0064-REPEAT-DEFINITION-CONSISTENCY.md).
@@ -17,7 +17,7 @@ No provider/live traffic, ranking, automatic upgrade, statistical significance,
 custom script policy, threshold expression, retry, subset selection or best-repeat
 selection. All planned trials count. No writes to audited directories.
 
-## 2. Proposed CLI
+## 2. CLI
 
 ```text
 statetwin eval suite-assess --root ROOT --out RESULT_DIR --expect EXPECTATION.json --policy POLICY --format json|markdown
@@ -25,7 +25,7 @@ statetwin eval suite-assess --root ROOT --out RESULT_DIR --expect EXPECTATION.js
 
 `--out`, `--expect` and `--policy` are required; no inferred expectation or default
 policy. JSON is default. Reject unknown options/formats/positional arguments and
-invalid expectation before evidence work. This is a future command, not part of
+invalid expectation before evidence work. This command is part of
 the implemented CLI. Existing suite-inspect/suite-verify commands are unchanged.
 
 One shared cooperative 120-second context covers expectation, audit, collector
@@ -81,7 +81,7 @@ failure takes precedence over policy success/failure. Markdown shows chosen
 policy, expected/observed coverage, consistency, ordered failures and underlying
 audit verdict. Do not render Task/oracle text or arbitrary saved diagnostics.
 
-## 5. Required future test matrix
+## 5. Required test matrix
 
 | Baseline / candidate | Other checks | candidate-pass-v1 | both-pass-v1 |
 |---|---|---|---|
@@ -99,4 +99,4 @@ Implement unit and real CLI integration tests for both policies/formats, unknown
 policy, missing required flags, canceled execution, failed stdout, deterministic
 reasons, unchanged evidence and old CLI/serialization compatibility. Include a
 bounded six-task example and a repeat-definition negative example. Run repository
-gofmt, vet, tests, race and exact-candidate CI only when implementation is authorized.
+gofmt, vet, tests, race and exact-candidate CI for implementation changes.

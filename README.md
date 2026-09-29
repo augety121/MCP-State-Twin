@@ -1064,6 +1064,10 @@ README 中对许可证的任何说明仅用于帮助阅读；若存在差异，�
 证据；`eval suite-verify` 会重放核对保存报告，并要求无残留、报告一致且未观察到回归。
 缺失、篡改或中断证据不会因汇总报告写着成功而通过。
 
+需要判断候选是否真正达标时，使用 `eval suite-assess`，显式提供独立的 `--expect`
+和 `--policy candidate-pass-v1` 或 `both-pass-v1`。它还会核对跨重复的定义一致性，
+拒绝“两边同样失败但无回归”的假达标。见 [候选达标指南](docs/guides/OFFLINE-CANDIDATE-ASSESSMENT.md)。
+
 新增独立任务准入、只读目标/策略评分和六个合成 witness。`task validate` 仅检查结构与工具面；`task witness` 经过 MCP 执行已知轨迹，再独立评分，明确标为 `scripted-witness`。它不是自主模型运行、provider live 或完整证据 replay。命令与限制见 [SPEC-0038](docs/SPEC-0038-AGENT-TASK-OFFLINE-ADMISSION.md)。
 
 进一步的 `eval mock` 已支持合成 Responses 循环、独立世界、预算停止、证据保存与

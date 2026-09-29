@@ -146,6 +146,14 @@ func Compare(ctx context.Context, root string, p *ComparePlan) (*Comparison, err
 // The private verifier/budget seam permits deterministic interruption tests.
 // Public callers always use full replay and the fixed production budget.
 func compareWith(ctx context.Context, root string, p *ComparePlan, verify func(context.Context, *AgentEvidence) error, byteLimit int) (*Comparison, error) {
+	return compareObserved(ctx, root, p, verify, byteLimit, nil)
+}
+
+// Observers receive only identity-bound, replay-verified definitions, including
+// unscorable results. They must not mutate evidence and never change old reports.
+type definitionObserver func(taskID, trialID string, definition RunDefinition) error
+
+func compareObserved(ctx context.Context, root string, p *ComparePlan, verify func(context.Context, *AgentEvidence) error, byteLimit int, observe definitionObserver) (*Comparison, error) {
 	if err := p.Validate(); err != nil {
 		return nil, err
 	}
@@ -177,6 +185,18 @@ func compareWith(ctx context.Context, root string, p *ComparePlan, verify func(c
 		candidate, c, err := inspectTrial(ctx, fs, pair.Candidate, pair.TaskID, p.CandidateModel, verify, &byteLimit)
 		if err != nil {
 			return nil, err
+		}
+		if observe != nil {
+			for _, sample := range []struct {
+				row      TrialResult
+				evidence *AgentEvidence
+			}{{base, b}, {candidate, c}} {
+				if sample.evidence != nil && oneOf(sample.row.Validation, "valid", "not_evaluated") {
+					if err := observe(pair.TaskID, sample.row.TrialID, sample.evidence.Episode.Definition); err != nil {
+						return nil, err
+					}
+				}
+			}
 		}
 		row := PairResult{
 			TaskID: pair.TaskID, Repeat: pair.Repeat, Baseline: base, Candidate: candidate,
