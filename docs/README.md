@@ -1,5 +1,16 @@
 # MCP State Twin Documentation
 
+## Replay-backed suite audits — 2026-09-29
+
+[ADR-0059](ADR-0059-SUITE-EVIDENCE-AUDIT.md) accepts four contracts:
+[metadata admission](SPEC-0059-SUITE-METADATA-ADMISSION.md),
+[directory inspection](SPEC-0060-SUITE-DIRECTORY-INSPECTION.md),
+[report verification](SPEC-0061-SUITE-REPORT-REPLAY-VERIFICATION.md), and
+[CLI diagnostics/gates](SPEC-0062-SUITE-AUDIT-CLI.md).
+`eval suite-inspect` diagnoses the whole directory; `eval suite-verify` additionally
+requires a clean publication, independently matched report and no observed
+regression. See the [suite guide](guides/OFFLINE-SUITE.md).
+
 ## Bounded offline suites — 2026-09-29
 
 [ADR-0056](ADR-0056-BOUNDED-OFFLINE-SUITES.md) accepts

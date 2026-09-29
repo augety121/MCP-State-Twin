@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/augety121/mcp-state-twin/internal/agenteval"
@@ -37,6 +38,13 @@ func TestSuiteCLIOutputFailure(t *testing.T) {
 		}
 		if err = runAgentEval(context.Background(), args); err == nil {
 			t.Fatal("stdout failure swallowed", command)
+		}
+	}
+	for _, command := range []string{"suite-inspect", "suite-verify"} {
+		for _, format := range []string{"json", "markdown"} {
+			if err := runAgentEval(context.Background(), []string{command, "--root", root, "--out", ".statetwin/output-failure", "--format", format}); err == nil || err.Error() == "SUITE_GATE_NOT_SATISFIED" {
+				t.Fatal("audit stdout failure swallowed", command, format, err)
+			}
 		}
 	}
 }
@@ -80,6 +88,7 @@ func TestOfflineSuiteCLI(t *testing.T) {
 		t.Fatalf("report: %s", raw)
 	}
 	suiteRoot := filepath.Join(root, ".statetwin", "suite")
+	checkSuiteAuditCLI(t, root, ".statetwin/suite", true)
 	for _, row := range report.Trials {
 		if row.State != "completed" {
 			t.Fatal(row)
@@ -126,11 +135,78 @@ func TestOfflineSuiteCLI(t *testing.T) {
 		}
 	}
 	plan.Pairs[5].CandidateResponses = "missing.json"
+	checkSuiteAuditCLI(t, root, ".statetwin/regression", false)
 	writePlan()
 	if raw, err = captureAgentEval(t, []string{"suite", "--root", root, "--suite", "agent-suite.json", "--out", ".statetwin/invalid"}); err == nil || len(raw) != 0 {
 		t.Fatal("late invalid input admitted")
 	}
 	if _, err = os.Stat(filepath.Join(root, ".statetwin", "invalid")); !os.IsNotExist(err) {
 		t.Fatal("late rejection wrote evidence")
+	}
+	cleanReport, err := os.ReadFile(filepath.Join(suiteRoot, "report.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(suiteRoot, "report.pending.json"), cleanReport, 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, command := range []string{"suite-inspect", "suite-verify"} {
+		data, err := captureAgentEval(t, []string{command, "--root", root, "--out", ".statetwin/suite"})
+		if (err == nil) != (command == "suite-inspect") || !strings.Contains(string(data), "published_with_residue") {
+			t.Fatal("residue gate", command, err, string(data))
+		}
+	}
+	// A saved plausible verdict must not bypass replay-backed verification.
+	file := filepath.Join(root, ".statetwin", "regression", "report.json")
+	report.Comparison.Decision = "no_regression_observed"
+	data, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(file, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, command := range []string{"suite-inspect", "suite-verify"} {
+		data, err := captureAgentEval(t, []string{command, "--root", root, "--out", ".statetwin/regression"})
+		if err == nil || err.Error() != "SUITE_DIRECTORY_INVALID" || !strings.Contains(string(data), "report_comparison_mismatch") {
+			t.Fatal("tampered report admitted", err, string(data))
+		}
+	}
+}
+
+func checkSuiteAuditCLI(t *testing.T, root, out string, pass bool) {
+	t.Helper()
+	for _, command := range []string{"suite-inspect", "suite-verify"} {
+		for _, format := range []string{"json", "markdown"} {
+			data, err := captureAgentEval(t, []string{command, "--root", root, "--out", out, "--format", format})
+			wantOK := command == "suite-inspect" || pass
+			if (err == nil) != wantOK {
+				t.Fatal(command, format, err)
+			}
+			if format == "json" {
+				var r agenteval.SuiteInspection
+				if json.Unmarshal(data, &r) != nil || r.ReportVerification != "matched" || r.CompleteTrials != 12 || r.RegressionGatePassed != pass {
+					t.Fatalf("CLI audit: %s", data)
+				}
+			} else if !strings.Contains(string(data), "| baseline-06 | published | true | false |") || !strings.Contains(string(data), "# Offline Agent comparison") {
+				t.Fatalf("markdown missing evidence: %s", data)
+			}
+		}
+	}
+}
+
+func TestSuiteAuditCLIArgumentsAndMissing(t *testing.T) {
+	root := t.TempDir()
+	for _, command := range []string{"suite-inspect", "suite-verify"} {
+		data, err := captureAgentEval(t, []string{command, "--root", root, "--out", "missing"})
+		if (err == nil) != (command == "suite-inspect") || !strings.Contains(string(data), "not_started") {
+			t.Fatal(command, err, string(data))
+		}
+		for _, args := range [][]string{{command}, {command, "--out", "missing", "--format", "html"}, {command, "--out", "missing", "positional"}, {command, "--endpoint", "https://example.invalid"}} {
+			data, err := captureAgentEval(t, args)
+			if err == nil || len(data) != 0 {
+				t.Fatal("invalid CLI reached inspection", args, err)
+			}
+		}
 	}
 }
