@@ -1,5 +1,15 @@
 # MCP State Twin Documentation
 
+## Proposed next step: independently supplied Task binding
+
+[ADR-0066 proposal](ADR-0066-REVIEWED-TASK-BINDING-PROPOSAL.md) describes three
+unimplemented contracts: [Task catalog](SPEC-0066-INDEPENDENT-TASK-CATALOG.md),
+[pre-run suite review](SPEC-0067-OFFLINE-SUITE-REVIEW.md), and
+[replay-backed reviewed assessment](SPEC-0068-REVIEWED-TASK-ASSESSMENT.md).
+They address coherent replacement of every trial's Task/oracle, which current
+cross-repeat equality alone does not detect. The proposed commands are not
+available; document review/merge does not authorize implementation.
+
 ## Independent offline candidate assessment
 
 [ADR-0063](ADR-0063-OFFLINE-ASSESSMENT-PROPOSAL.md) accepts three contracts:
