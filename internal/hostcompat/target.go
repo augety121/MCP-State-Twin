@@ -3,8 +3,6 @@ package hostcompat
 import (
 	"encoding/json"
 	"errors"
-	"io"
-	"os"
 
 	"github.com/augety121/mcp-state-twin/internal/logging"
 	"github.com/augety121/mcp-state-twin/internal/strictyaml"
@@ -61,22 +59,9 @@ func (l *TargetLimits) values() (Limits, error) {
 }
 
 func LoadTarget(path string) (*Target, error) {
-	info, err := os.Lstat(path)
-	if err != nil || !info.Mode().IsRegular() || info.Size() > MaxTargetBytes {
-		return nil, errors.New("HOST_TARGET_FILE_INVALID")
-	}
-	f, err := os.Open(path)
+	raw, err := readDeclaration(path, MaxTargetBytes, "HOST_TARGET")
 	if err != nil {
-		return nil, errors.New("HOST_TARGET_FILE_INVALID")
-	}
-	defer f.Close()
-	info, err = f.Stat()
-	if err != nil || !info.Mode().IsRegular() || info.Size() > MaxTargetBytes {
-		return nil, errors.New("HOST_TARGET_FILE_INVALID")
-	}
-	raw, err := io.ReadAll(io.LimitReader(f, MaxTargetBytes+1))
-	if err != nil {
-		return nil, errors.New("HOST_TARGET_FILE_INVALID")
+		return nil, err
 	}
 	return DecodeTarget(raw)
 }
@@ -92,8 +77,8 @@ func DecodeTarget(raw []byte) (*Target, error) {
 	if err := strictyaml.DecodeOne(raw, MaxTargetBytes, TargetKind, &target); err != nil {
 		return nil, errors.New("HOST_TARGET_DECODE_INVALID")
 	}
-	if !explicitIntegerFields(raw, false) {
-		return nil, errors.New("HOST_TARGET_INTEGER_FIELDS_REQUIRED")
+	if err := explicitScalarFields(raw, false); err != nil {
+		return nil, err
 	}
 	if err := target.Validate(); err != nil {
 		return nil, err

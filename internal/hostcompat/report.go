@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -122,17 +120,9 @@ type Redaction struct {
 }
 
 func Load(path string) (*Report, error) {
-	file, err := os.Open(path)
+	data, err := readDeclaration(path, MaxReportBytes, "HOST_REPORT")
 	if err != nil {
-		return nil, fmt.Errorf("read host compatibility report: %w", err)
-	}
-	defer file.Close()
-	data, err := io.ReadAll(io.LimitReader(file, MaxReportBytes+1))
-	if err != nil {
-		return nil, fmt.Errorf("read host compatibility report: %w", err)
-	}
-	if len(data) > MaxReportBytes {
-		return nil, fmt.Errorf("read host compatibility report: document exceeds %d bytes", MaxReportBytes)
+		return nil, err
 	}
 	return Decode(data)
 }
@@ -150,8 +140,8 @@ func Decode(data []byte) (*Report, error) {
 		// typed-value privacy scan can run. Keep admission failures content-free.
 		return nil, errors.New("HOST_REPORT_DECODE_INVALID")
 	}
-	if !explicitIntegerFields(data, true) {
-		return nil, errors.New("HOST_REPORT_INTEGER_FIELDS_REQUIRED")
+	if err := explicitScalarFields(data, true); err != nil {
+		return nil, err
 	}
 	if err := report.Validate(); err != nil {
 		return nil, err

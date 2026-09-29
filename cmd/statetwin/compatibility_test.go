@@ -7,10 +7,39 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/augety121/mcp-state-twin/internal/hostcompat"
 )
+
+func TestCompatibilityRejectsUnknownRedactionBeforeOutput(t *testing.T) {
+	r, file := compatibilityFixture(t)
+	raw, err := json.Marshal(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, replacement := range []string{`"secretsDetected":null`, `"secretsDetected":"off"`} {
+		input := strings.Replace(string(raw), `"secretsDetected":false`, replacement, 1)
+		if err := os.WriteFile(file, []byte(input), 0600); err != nil {
+			t.Fatal(err)
+		}
+		for _, command := range []string{"validate", "assess"} {
+			args := []string{command, "--report", file}
+			if command == "assess" {
+				args = append(args, "--at", r.Metadata.CreatedAt, "--target", filepath.Join("..", "..", "internal", "hostcompat", "testdata", "synthetic-target.yaml"), "--require-current")
+			}
+			var output bytes.Buffer
+			if err := runCompatibilityTo(args, &output); err == nil || output.Len() != 0 {
+				t.Fatal("unknown redaction produced successful CLI output", command)
+			}
+		}
+		after, err := os.ReadFile(file)
+		if err != nil || string(after) != input {
+			t.Fatal("rejected input modified", err)
+		}
+	}
+}
 
 func compatibilityFixture(t *testing.T) (*hostcompat.Report, string) {
 	t.Helper()

@@ -41,6 +41,22 @@ This catches credential-like quoted YAML escapes and applies to direct Validate
 callers too. Error messages MUST NOT echo sensitive decoded values. It is not
 general-purpose DLP, a raw transcript parser or hostile-filesystem isolation.
 
+The serialized `redaction.secretsDetected` field MUST be explicitly present as
+a boolean scalar. Missing/null values and YAML 1.1 string spellings such as
+`no`/`off` MUST NOT be converted into a clean declaration. A true boolean still
+fails semantic validation; only an explicit false boolean is admitted. This
+applies to every claim level and JSON input too. Direct typed Go callers already
+provide a boolean; presence checks apply to serialized inputs, not struct values.
+Rejection does not rewrite old artifacts or attest that a secret scan occurred.
+
+Report file loading uses the same bounded admission as SPEC-0053 targets:
+reject observed symlinks, non-regular files and files larger than 1 MiB before
+opening; recheck the opened file's type/size and read at most limit+1 bytes.
+File failures use `HOST_REPORT_FILE_INVALID`; growth beyond the read budget
+uses `HOST_REPORT_RESOURCE_LIMIT`. Neither includes the supplied path. This is
+for trusted, quiescent local directories, not protection against parent symlinks,
+concurrent replacement or all OS blocking. No network access or writes occur.
+
 ## 3. Compatibility and verification
 
 Report format remains v1alpha1; new admission is intentionally stricter.

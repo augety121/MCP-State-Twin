@@ -1,9 +1,9 @@
 # Implementation Status
 
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
-**Last verified committed baseline:** checked 2026-09-26; public CI
-[run 36207098729](https://github.com/augety121/MCP-State-Twin/actions/runs/36207098729)
-for main `f7394c4` completed successfully, including Linux
+**Last verified committed baseline:** checked 2026-09-29; public CI
+[run 36208855947](https://github.com/augety121/MCP-State-Twin/actions/runs/36208855947)
+for main `1a642d1` completed successfully, including Linux
 race, Windows/macOS, fuzz, secret policy, hermetic egress and MCP conformance
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 is the accepted v0.1 release profile. RFC-0003 is a
@@ -47,6 +47,17 @@ full package tests and build. Race and POSIX wrapper execution still require
 the exact merged-candidate CI; no real tag workflow has been triggered.
 
 ## Implemented and tested
+
+**2026-09-29 report admission maintenance (ADR/SPEC-0051):** regression tests
+reproduced absent/null and YAML 1.1 string redaction flags being treated as false,
+and file errors exposing input paths. Serialized reports now require an explicit
+boolean declaration; reports and targets share bounded regular-file reads with
+content-free errors. Tests cover all three claim levels, YAML/JSON negatives,
+CLI refusal before output, unchanged input, symlinks and bounded Unix FIFO
+subprocesses. Single-core local full tests, vet and build passed. Build emitted
+a nonfatal user-module-cache permission warning. Local race was attempted but
+CGO is unavailable; Unix FIFO and race require this candidate's platform CI.
+This entry does not inherit historical CI results or claim live provenance.
 
 **2026-09-26 scoped-report increment (ADR/SPEC-0053–0054):** an independent
 legacy HostCompatibilityTarget now binds declared runtime/host/model, MCP,

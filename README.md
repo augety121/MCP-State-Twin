@@ -775,6 +775,10 @@ MCP State Twin 的核心集成对象是 **MCP**，不是某一家 model provider
 
 `statetwin compatibility validate --report <path>` 已实现严格 evidence admission；详见 [Host Compatibility Evidence Procedure](docs/HOST-COMPATIBILITY-EVIDENCE.md)。验证报告格式不等于验证 provider。
 
+报告须显式声明布尔值 `redaction.secretsDetected: false`，遗漏、null、`no`/`off`
+均不能代替检查结果。报告和目标文件均限制为不超过 1 MiB 的普通文件，拒绝观察到的
+symlink 和特殊文件；读取错误不回显本地路径。输入应来自可信、静止的本地目录。
+
 新增只读 `compatibility assess --report <path> --at <UTC-time>`：按明确时间判断声明是否
 处于有效窗口，`--require-fresh` 可阻断过期、未来日期或非 verified 声明。工具面标识矛盾、
 零成功断言和 YAML 转义的已知密钥模式会被拒绝。结果始终保留

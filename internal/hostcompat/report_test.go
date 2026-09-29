@@ -247,7 +247,7 @@ func TestReportLoadRejectsOversizedFileBeforeDecode(t *testing.T) {
 	if err := os.WriteFile(path, []byte(strings.Repeat("x", MaxReportBytes+1)), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Load(path); err == nil || !strings.Contains(err.Error(), "exceeds") {
+	if _, err := Load(path); err == nil || err.Error() != "HOST_REPORT_FILE_INVALID" {
 		t.Fatalf("oversized report error = %v", err)
 	}
 }

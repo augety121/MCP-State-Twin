@@ -25,3 +25,13 @@ made by its author, not a verification performed by this program.
 No provider, model, SDK, MCP surface, database, or evidence writer changes.
 No credential lookup, external execution, file hashing or release promotion.
 Secret scanning remains a finite-pattern policy, not general PII detection.
+
+## 2026-09-29 admission maintenance
+
+Regression tests additionally reproduced missing/null redaction declarations and
+YAML `no`/`off` coercing to false, plus file errors exposing local paths. Require
+an explicit original boolean scalar on serialized input, and share the target's
+bounded regular-file admission with reports. This tightens the existing
+fail-closed contract without changing the format or typed Go boolean values.
+Historical incomplete reports remain rejected; no missing declaration is inferred.
+Unix FIFO regression coverage uses a bounded subprocess to detect blocking reads.

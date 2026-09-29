@@ -1,6 +1,10 @@
 package hostcompat
 
-import "gopkg.in/yaml.v3"
+import (
+	"errors"
+
+	"gopkg.in/yaml.v3"
+)
 
 var limitFields = []string{
 	"providerRequests", "toolCalls", "wallTimeMs", "maxTraceBytes",
@@ -10,23 +14,37 @@ var limitFields = []string{
 // Called only AFTER bounded strict decoding has rejected unknown fields,
 // aliases, duplicates and excessive depth. yaml.v3 can truncate a YAML float
 // into a Go int; inspect the original scalar tags rather than the coerced value.
-func explicitIntegerFields(raw []byte, report bool) bool {
+func explicitScalarFields(raw []byte, report bool) error {
+	prefix := "HOST_TARGET"
+	if report {
+		prefix = "HOST_REPORT"
+	}
 	var doc yaml.Node
 	if yaml.Unmarshal(raw, &doc) != nil || len(doc.Content) != 1 {
-		return false
+		return errors.New(prefix + "_DECODE_INVALID")
 	}
 	root := doc.Content[0]
 	for _, field := range limitFields {
-		if !integerAt(root, "trial", "limits", field) {
-			return false
+		if !scalarAt(root, "!!int", "trial", "limits", field) {
+			return errors.New(prefix + "_INTEGER_FIELDS_REQUIRED")
 		}
 	}
-	return !report || (integerAt(root, "trial", "index") &&
-		integerAt(root, "evidence", "assertionSummary", "passed") &&
-		integerAt(root, "evidence", "assertionSummary", "failed"))
+	if report {
+		if !scalarAt(root, "!!int", "trial", "index") ||
+			!scalarAt(root, "!!int", "evidence", "assertionSummary", "passed") ||
+			!scalarAt(root, "!!int", "evidence", "assertionSummary", "failed") {
+			return errors.New(prefix + "_INTEGER_FIELDS_REQUIRED")
+		}
+		// Missing/null values become false in Go; YAML 1.1 no/off spellings
+		// also coerce to false. Neither is an explicit YAML boolean declaration.
+		if !scalarAt(root, "!!bool", "redaction", "secretsDetected") {
+			return errors.New("HOST_REPORT_REDACTION_BOOLEAN_REQUIRED")
+		}
+	}
+	return nil
 }
 
-func integerAt(n *yaml.Node, path ...string) bool {
+func scalarAt(n *yaml.Node, tag string, path ...string) bool {
 	for _, key := range path {
 		if n == nil || n.Kind != yaml.MappingNode {
 			return false
@@ -40,5 +58,5 @@ func integerAt(n *yaml.Node, path ...string) bool {
 		}
 		n = next
 	}
-	return n != nil && n.Kind == yaml.ScalarNode && n.Tag == "!!int"
+	return n != nil && n.Kind == yaml.ScalarNode && n.Tag == tag
 }

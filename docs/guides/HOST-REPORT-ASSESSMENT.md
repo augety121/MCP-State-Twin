@@ -77,6 +77,10 @@ go run ./cmd/statetwin compatibility assess --report internal/hostcompat/testdat
 不会悄悄取整或改写旧文件。YAML 整数拼写沿用解析库，数值必须可表示为 Go int。
 
 文件来自操作者选择的可信、静止本地目录；报告与 target 读取不是原子快照。
-target 拒绝观察到的 symlink/非普通文件和超过 1 MiB 的内容；父路径并非完整沙箱。
+两者均拒绝观察到的 symlink/非普通文件和超过 1 MiB 的内容；文件错误不回显路径。
+父路径和并发替换并非完整沙箱。
+报告必须显式填写布尔值 `redaction.secretsDetected: false`；遗漏、null、字符串和
+YAML 的 `no`/`off` 均拒绝。`true` 也会拒绝，不能将“未提供检查结果”当成“检查通过”。
+这些只是声明准入规则，不证明秘密扫描真实执行过，也不会自动修补旧报告。
 当前性结果不检查撤销列表、真实上游变化、独立签名或所引用工件的存在与真实性。
 这些仍是完整 B15 和 live 验收的前置条件。
