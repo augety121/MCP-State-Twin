@@ -62,6 +62,34 @@ planned/started/terminal/validlyEvaluated 均为 2，并非零退出。`upgradeA
 输入，`planBinding` 不证明计划确实在试验之前注册，也不认证 unsigned 工件来源。
 不要把无回归等同于 PASS 某真实模型；纯 mock 路线的 `upgradeAllowed` 永远 false。
 
+### 按任务看结果
+
+`summaryPolicy: planned-task-counts-v1` 的 `taskSummaries` 按计划中 Task ID 首次出现的
+顺序分组，交错排列的重复试验也会归入同一组。每组保留 `plannedPairs`、最严重的
+`decision`、四种 `decisionCounts`，以及 baseline/candidate 的生命周期和结果计数。
+
+结果桶在顶层是 `baselineOutcomes` / `candidateOutcomes`，在每个任务内是
+`baseline.outcomes` / `candidate.outcomes`：
+
+| 字段 | 如何理解 |
+|---|---|
+| `success` | 证据重放及评分通过的成功任务数 |
+| `expectedAbstention` | 任务要求的不操作/拒绝结果，独立于 success |
+| `taskFailed` | 证据有效，但任务目标未完成 |
+| `policyViolation` | 证据有效且评分为策略违规 |
+| `unscored` | 其余全部计划样本，包括未启动、未完成、损坏、身份不符和评分器出错 |
+
+前四项相加等于 `validlyEvaluated`，再加 `unscored` 等于 `planned`；各任务的两侧
+统计分别加总到顶层。上面的演示会看到 close-issue 的 baseline success=1，candidate
+taskFailed=1，任务决策 regression。没跑候选时，其 unscored=1，决策 inconclusive。
+
+Markdown 展示同样的任务决策、生命周期和结果表，后面仍保留全部 pair 原因。
+Task ID 分组不证明不同重复的 Task revision/oracle/budget 相同，不能据此宣称统计
+显著性或统一的模型成功率；逐对的不可比/回归判定继续生效。严格 JSON 消费者需要
+接受这些新增字段。计划的 `repeat` 必须明确为 1–16 的整数；`1.5`、`1.0`、`1e0`、
+字符串和 null 都拒绝，避免 YAML 自动取整改变计划。详见
+[SPEC-0055](../SPEC-0055-TASK-COMPARISON-SUMMARIES.md)。
+
 一次 compare 只读已有可信、静止目录，顺序处理最多 32 pairs，累计 terminal 解码预算
 由独立的 `verificationProfile:offline-compare-v1` 标识：
 128 MiB、单文件 32 MiB、整次协作式 verification deadline 120 秒。取消/整次超时/

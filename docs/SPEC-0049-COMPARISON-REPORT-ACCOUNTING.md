@@ -2,6 +2,9 @@
 
 Status: accepted by [ADR-0049](ADR-0049-AUDITABLE-COMPARISON-REPORTS.md).
 
+[SPEC-0055](SPEC-0055-TASK-COMPARISON-SUMMARIES.md) adds per-task summaries and
+global outcome buckets without changing these decision or denominator rules.
+
 保留 ComparePlan v1alpha1、最多 32 pairs、每 pair repeat 1–16、唯一 trial/path 的规则。
 不改变既有报告 format 或删除字段；新增字段为实验性扩展，严格旧 reader 应显式升级：
 

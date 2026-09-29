@@ -12,6 +12,7 @@ import (
 	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/strictyaml"
 	"github.com/augety121/mcp-state-twin/internal/task"
+	"gopkg.in/yaml.v3"
 )
 
 const CompareFormat = "statetwin.dev/agent-compare-offline/v1alpha1"
@@ -66,26 +67,45 @@ type Denominators struct {
 	ValidlyEvaluated int `json:"validlyEvaluated"`
 }
 type Comparison struct {
-	Format              string       `json:"format"`
-	Source              string       `json:"source"`
-	Decision            string       `json:"decision"`
-	UpgradeAllowed      bool         `json:"upgradeAllowed"`
-	Counts              Denominators `json:"counts"`
-	Pairs               []PairResult `json:"pairs"`
-	Cost                string       `json:"cost"`
-	DecisionPolicy      string       `json:"decisionPolicy"`
-	VerificationProfile string       `json:"verificationProfile"`
-	BaselineModel       string       `json:"baselineModel"`
-	CandidateModel      string       `json:"candidateModel"`
-	PlanBinding         string       `json:"planBinding"`
-	BaselineCounts      Denominators `json:"baselineCounts"`
-	CandidateCounts     Denominators `json:"candidateCounts"`
+	Format              string        `json:"format"`
+	Source              string        `json:"source"`
+	Decision            string        `json:"decision"`
+	UpgradeAllowed      bool          `json:"upgradeAllowed"`
+	Counts              Denominators  `json:"counts"`
+	Pairs               []PairResult  `json:"pairs"`
+	Cost                string        `json:"cost"`
+	DecisionPolicy      string        `json:"decisionPolicy"`
+	VerificationProfile string        `json:"verificationProfile"`
+	BaselineModel       string        `json:"baselineModel"`
+	CandidateModel      string        `json:"candidateModel"`
+	PlanBinding         string        `json:"planBinding"`
+	BaselineCounts      Denominators  `json:"baselineCounts"`
+	CandidateCounts     Denominators  `json:"candidateCounts"`
+	SummaryPolicy       string        `json:"summaryPolicy"`
+	BaselineOutcomes    OutcomeCounts `json:"baselineOutcomes"`
+	CandidateOutcomes   OutcomeCounts `json:"candidateOutcomes"`
+	TaskSummaries       []TaskSummary `json:"taskSummaries"`
 }
 
 func DecodeCompare(data []byte) (*ComparePlan, error) {
 	var p ComparePlan
 	if strictyaml.DecodeOneWithDepth(data, 64<<10, 16, "ComparePlan", &p) != nil {
 		return nil, errors.New("COMPARE_PLAN_INVALID")
+	}
+	// Inspect original tokens only after bounded strict decoding. yaml.v3 can
+	// otherwise truncate 1.5 into repeat 1, silently changing the fixed plan.
+	var tokens struct {
+		Pairs []struct {
+			Repeat yaml.Node `yaml:"repeat"`
+		} `yaml:"pairs"`
+	}
+	if yaml.Unmarshal(data, &tokens) != nil || len(tokens.Pairs) != len(p.Pairs) {
+		return nil, errors.New("COMPARE_PLAN_INVALID")
+	}
+	for _, pair := range tokens.Pairs {
+		if pair.Repeat.Kind != yaml.ScalarNode || pair.Repeat.Tag != "!!int" {
+			return nil, errors.New("COMPARE_PLAN_INVALID")
+		}
 	}
 	if err := p.Validate(); err != nil {
 		return nil, err
@@ -195,6 +215,9 @@ func compareWith(ctx context.Context, root string, p *ComparePlan, verify func(c
 		}
 	}
 	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if err := r.summarizeTasks(); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -348,6 +371,7 @@ func (r *Comparison) Markdown() string {
 		c := side.counts
 		fmt.Fprintf(&out, "| %s | %d | %d | %d | %d | %d | %d |\n", side.name, c.Planned, c.NotStarted, c.Started, c.Incomplete, c.Terminal, c.ValidlyEvaluated)
 	}
+	r.writeTaskSummaries(&out)
 	out.WriteString("\n| Task / repeat | Baseline trial / validation / outcome | Candidate trial / validation / outcome | Decision | Reasons | New policy failures |\n|---|---|---|---|---|---|\n")
 	for _, p := range r.Pairs {
 		fmt.Fprintf(&out, "| %s / %d | %s / %s / %s | %s / %s / %s | %s | %s | %s |\n", p.TaskID, p.Repeat, p.Baseline.TrialID, p.Baseline.Validation, p.Baseline.Outcome, p.Candidate.TrialID, p.Candidate.Validation, p.Candidate.Outcome, p.Decision, strings.Join(p.Reasons, ", "), strings.Join(p.NewPolicyFailures, ", "))

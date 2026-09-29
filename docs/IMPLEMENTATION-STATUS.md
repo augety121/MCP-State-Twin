@@ -2,8 +2,8 @@
 
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
 **Last verified committed baseline:** checked 2026-09-29; public CI
-[run 36208855947](https://github.com/augety121/MCP-State-Twin/actions/runs/36208855947)
-for main `1a642d1` completed successfully, including Linux
+[run 36567243863](https://github.com/augety121/MCP-State-Twin/actions/runs/36567243863)
+for main `9386211` completed successfully, including Linux
 race, Windows/macOS, fuzz, secret policy, hermetic egress and MCP conformance
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 is the accepted v0.1 release profile. RFC-0003 is a
@@ -47,6 +47,19 @@ full package tests and build. Race and POSIX wrapper execution still require
 the exact merged-candidate CI; no real tag workflow has been triggered.
 
 ## Implemented and tested
+
+**2026-09-29 task comparison summaries (ADR/SPEC-0055):** deterministic per-task
+decision/lifecycle/outcome counts and global outcome buckets retain every planned
+sample. Missing, incomplete, invalid, partial, identity-mismatched and unscorable
+trials cannot enter successful/scored buckets. Tests cover real synthetic replay,
+interleaved tasks/repeats, abstention, complete failure, policy failure, count
+equalities, maximum plans, deterministic output, unchanged evidence and CLI
+JSON/Markdown with nonzero regression gates. A regression test reproduced YAML
+and JSON repeat float truncation; serialized plans now require integer tokens.
+Task ID grouping is descriptive, not homogeneous-cohort or real-model evidence.
+Single-core local full tests, vet and build passed; build retained the nonfatal
+module-cache permission warning. Local race was attempted but CGO is unavailable.
+PR race/platform verification is independent of the main baseline cited above.
 
 **2026-09-29 timestamp admission correction (ADR/SPEC-0052):** tests reproduced
 non-RFC3339 spellings and sub-nanosecond truncation passing admission. Observation,

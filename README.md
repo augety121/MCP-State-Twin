@@ -1067,7 +1067,12 @@ README 中对许可证的任何说明仅用于帮助阅读；若存在差异，�
 比较器使用 `offline-regression-v2`：评分器出错不计作有效评分；新策略违规即使总次数
 不变也会阻断门禁。JSON/Markdown 列出双方分母、trial ID 和回归原因，读取有累计预算，
 取消不会变成完成报告。两边同样失败可以“未观察到回归”，但不是任务成功或升级许可。
-三份详细规范见 [Spec 索引](docs/README.md)。旧 JSON 严格消费者需接受新增报告字段。
+详细规范见 [Spec 索引](docs/README.md)。旧 JSON 严格消费者需接受新增报告字段。
+
+按任务汇总 `taskSummaries` 进一步列出各任务的回归/不可比/证据不足次数，以及双方
+成功、预期不操作、任务失败、策略违规、未评分数量。缺失和损坏的证据仍计入计划总数，
+不会被当成成功或从分母移除。JSON 和 Markdown 都保留逐次详情；相同 Task ID 仅用于
+分组，不证明不同重复使用了相同 oracle。规则见 [SPEC-0055](docs/SPEC-0055-TASK-COMPARISON-SUMMARIES.md)。
 
 ## 可选本地 API bridge（实验性，live 未验证）
 
