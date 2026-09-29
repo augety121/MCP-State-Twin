@@ -52,6 +52,10 @@ func TestComparisonDecisionsAndDenominators(t *testing.T) {
 			if !strings.Contains(r.Markdown(), tc.want) {
 				t.Fatal("markdown omitted decision")
 			}
+			if len(r.TaskSummaries) != 1 || r.TaskSummaries[0].Decision != tc.want {
+				t.Fatal("task summary changed pair decision")
+			}
+			assertSummaryAccounting(t, r)
 		})
 	}
 }
@@ -146,6 +150,13 @@ func TestComparisonGradingEligibilityAndNewPolicyFailure(t *testing.T) {
 			if tc.name == "unscorable" && r.Counts.ValidlyEvaluated != 0 {
 				t.Fatalf("unscorable evidence counted as evaluated: %+v", r.Counts)
 			}
+			if tc.name == "unscorable" && (r.BaselineOutcomes != (OutcomeCounts{Unscored: 1}) || r.CandidateOutcomes != (OutcomeCounts{Unscored: 1})) {
+				t.Fatal("evaluator errors counted as scored outcomes")
+			}
+			if tc.name != "unscorable" && r.CandidateOutcomes.PolicyViolation != 1 {
+				t.Fatal("policy failure omitted from outcome summary")
+			}
+			assertSummaryAccounting(t, r)
 		})
 	}
 }
@@ -231,6 +242,7 @@ func TestComparisonCohortAccountingDeterminismAndReadOnly(t *testing.T) {
 	if string(one) != string(two) || r.Markdown() != again.Markdown() {
 		t.Fatal("comparison report not deterministic")
 	}
+	assertSummaryAccounting(t, r)
 	for _, text := range []string{r.DecisionPolicy, r.VerificationProfile, p.BaselineModel, p.CandidateModel, "base-a", "cand-b", "task_success_lost", "inconclusive", "not a success count"} {
 		if !strings.Contains(r.Markdown(), text) {
 			t.Fatalf("missing %q", text)

@@ -5,11 +5,34 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/augety121/mcp-state-twin/internal/agenteval"
 	"github.com/augety121/mcp-state-twin/internal/bundle"
 	"github.com/augety121/mcp-state-twin/internal/task"
 )
+
+func captureAgentEval(t *testing.T, args []string) ([]byte, error) {
+	t.Helper()
+	name := filepath.Join(t.TempDir(), "output.txt")
+	out, err := os.Create(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := os.Stdout
+	os.Stdout = out
+	defer func() { os.Stdout = old }()
+	err = runAgentEval(context.Background(), args)
+	if closeErr := out.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+	data, readErr := os.ReadFile(name)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	return data, err
+}
 
 func prepareOfflineCLI(t *testing.T) string {
 	t.Helper()
@@ -60,8 +83,20 @@ func TestOfflineAgentCLIQuickstartAndRegression(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, format := range []string{"json", "markdown"} {
-		if err := runAgentEval(ctx, []string{"compare", "--root", root, "--plan", "agent-comparison.json", "--format", format}); err == nil {
+		data, err := captureAgentEval(t, []string{"compare", "--root", root, "--plan", "agent-comparison.json", "--format", format})
+		if err == nil {
 			t.Fatal("regression exit code")
+		}
+		if format == "json" {
+			var r agenteval.Comparison
+			if err := json.Unmarshal(data, &r); err != nil {
+				t.Fatal(err)
+			}
+			if r.SummaryPolicy != agenteval.CompareSummaryPolicy || len(r.TaskSummaries) != 1 || r.BaselineOutcomes.Success != 1 || r.CandidateOutcomes.TaskFailed != 1 || r.TaskSummaries[0].Decision != "regression" {
+				t.Fatalf("CLI summary missing: %s", data)
+			}
+		} else if !strings.Contains(string(data), "| close-issue | Candidate | 0 | 0 | 1 | 0 | 0 |") || !strings.Contains(string(data), "## Pair details") {
+			t.Fatal("CLI markdown omitted summary or pair details")
 		}
 	}
 	if err := os.WriteFile(filepath.Join(root, ".statetwin", "baseline", "closure.json"), []byte(`{"broken":`), 0600); err != nil {
@@ -74,6 +109,18 @@ func TestOfflineAgentCLIQuickstartAndRegression(t *testing.T) {
 		if err := runAgentEval(ctx, args); err == nil {
 			t.Fatal("unsafe CLI accepted")
 		}
+	}
+}
+
+func TestCompareCLIRejectsFractionalRepeatBeforeEvidence(t *testing.T) {
+	root := t.TempDir()
+	raw := `{"format":"statetwin.dev/agent-compare-offline/v1alpha1","baselineModel":"mock-base","candidateModel":"mock-cand","allowedDifferences":["model"],"pairs":[{"taskId":"close-issue","repeat":1.5,"baseline":{"trialId":"base","artifact":"missing-base/terminal.json"},"candidate":{"trialId":"cand","artifact":"missing-cand/terminal.json"}}]}`
+	if err := os.WriteFile(filepath.Join(root, "plan.json"), []byte(raw), 0600); err != nil {
+		t.Fatal(err)
+	}
+	data, err := captureAgentEval(t, []string{"compare", "--root", root, "--plan", "plan.json"})
+	if err == nil || err.Error() != "COMPARE_PLAN_INVALID" || len(data) != 0 {
+		t.Fatal("invalid plan reached comparison", err, string(data))
 	}
 }
 

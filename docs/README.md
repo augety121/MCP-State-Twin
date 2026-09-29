@@ -1,5 +1,13 @@
 # MCP State Twin Documentation
 
+## Task-level offline comparison — 2026-09-29
+
+[ADR-0055](ADR-0055-TASK-COMPARISON-SUMMARIES.md) /
+[SPEC-0055](SPEC-0055-TASK-COMPARISON-SUMMARIES.md) add deterministic task
+decision/lifecycle/outcome summaries and original-integer repeat admission.
+All planned samples stay visible, including missing and unscorable trials.
+See the [offline guide](guides/OFFLINE-AGENT-REGRESSION.md) for interpretation.
+
 ## Host report target matching — 2026-09-26
 
 - [ADR-0053](ADR-0053-EXPLICIT-HOST-COMPATIBILITY-TARGET.md) /

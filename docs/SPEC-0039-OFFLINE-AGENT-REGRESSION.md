@@ -193,6 +193,10 @@ cross-platform safety) and Task/repeat pairs are rejected. No retry selector.
 The only accepted `allowedDifferences` is `["model"]`, with distinct `mock-`
 labels fixed before invoking the two runs.
 
+[SPEC-0055](SPEC-0055-TASK-COMPARISON-SUMMARIES.md) additionally requires original
+integer repeat tokens and adds deterministic per-task and outcome summaries.
+No planned sample is omitted or reinterpreted by that projection.
+
 After verifying both artifacts, comparison removes only per-trial ID and the
 declared model-label variable from the complete definitions and compares their
 canonical values. Oracle, Bundle, policy, budgets, projection, output-token
