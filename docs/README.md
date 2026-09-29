@@ -1,5 +1,14 @@
 # MCP State Twin Documentation
 
+## Proposed next offline assessment batch — not implemented
+
+[ADR-0063 proposal](ADR-0063-OFFLINE-ASSESSMENT-PROPOSAL.md) links three design-only
+Specs: [independent expectations](SPEC-0063-INDEPENDENT-SUITE-EXPECTATIONS.md),
+[repeat definition consistency](SPEC-0064-REPEAT-DEFINITION-CONSISTENCY.md), and
+[explicit candidate acceptance](SPEC-0065-EXPLICIT-CANDIDATE-ACCEPTANCE.md).
+They require acceptance and implementation authorization. `suite-assess` is not
+an available command; current suite audit behavior remains unchanged.
+
 ## Replay-backed suite audits — 2026-09-29
 
 [ADR-0059](ADR-0059-SUITE-EVIDENCE-AUDIT.md) accepts four contracts:
