@@ -1,10 +1,10 @@
 # SPEC-0076: Explicit Retention Preview Without Deletion
 
-Status: **Proposal — not accepted or implemented**；依赖 [0073](SPEC-0073-SUITE-INVENTORY.md)。
+Status: **Accepted — implemented in the bounded offline subset**；依赖 [0073](SPEC-0073-SUITE-INVENTORY.md)。
 
 ## 1. 只读范围
 
-拟议 `statetwin eval retention-preview --root ROOT --registry FILE --policy FILE
+命令 `statetwin eval retention-preview --root ROOT --registry FILE --policy FILE
 --format json|markdown`。root/format 默认同 inventory，另两个文件必填。
 不提供 apply、delete、force、prune 或后台周期任务；既有 world/Journal/suite 原样保留。
 目标是让用户看见显式注册范围里哪些需要保护、哪些信息不足，而非自动判断可删除。

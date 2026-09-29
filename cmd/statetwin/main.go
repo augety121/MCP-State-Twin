@@ -144,6 +144,8 @@ Commands:
   statetwin scenario --spec twin.yaml --fixture state.json --scenario scenario.yaml
   statetwin task validate --root DIR --task tasks/close.json
   statetwin task witness --root DIR --task tasks/close.json --witness witnesses/close.json
+  statetwin task cases --root DIR --cases cases.json
+  statetwin task qualify --root DIR --cases cases.json --format markdown
   statetwin eval preflight --root DIR --task tasks/close.json --config runs/baseline.json
   statetwin eval mock --root DIR --task tasks/close.json --config runs/baseline.json --responses mock/close.json --out results/baseline
   statetwin eval verify --root DIR --evidence results/baseline/terminal.json
@@ -153,6 +155,12 @@ Commands:
   statetwin eval suite-inspect --root DIR --out results/suite --format markdown
   statetwin eval suite-verify --root DIR --out results/suite
   statetwin eval suite-assess --root DIR --out results/suite --expect expected.json --policy candidate-pass-v1
+  statetwin eval suite-review --root DIR --suite suite.json --out results/suite --expect expected.json --tasks reviewed/catalog.json
+  statetwin eval suite-assess-reviewed --root DIR --out results/suite --expect expected.json --tasks reviewed/catalog.json --policy both-pass-v1
+  statetwin eval inventory --root DIR --registry registry.json --mode metadata
+  statetwin eval suite-export --root DIR --out results/suite --archive suite.tar
+  statetwin eval suite-import --root DIR --archive suite.tar --out results/restored
+  statetwin eval retention-preview --root DIR --registry registry.json --policy retention.json
   statetwin eval inspect --root DIR --out .statetwin/trial
   statetwin eval live-plan --root DIR --task tasks/close.json --id trial --model MODEL --max-requests N --max-output-tokens N --valid-for 1h
   statetwin eval live-preflight --root DIR --plan reviewed-plan.json

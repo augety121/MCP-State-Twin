@@ -1,0 +1,17 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-advisory-abstain",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "check_advisories",
+      "input": {
+        "name": "acme/cli",
+        "version": "1.0.0"
+      }
+    }
+  ],
+  "answer": {
+    "abstained": true
+  }
+}

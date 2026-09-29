@@ -1,6 +1,6 @@
 # SPEC-0072: Package Registry Agent Task Kit
 
-Status: **Proposal — not accepted or implemented**；[ADR-0069](ADR-0069-TASK-QUALITY-PROPOSAL.md)。
+Status: **Accepted — implemented in the bounded offline subset**；[ADR-0069](ADR-0069-TASK-QUALITY-PROPOSAL.md)。
 
 ## 1. 当前基础与交付目标
 
@@ -39,7 +39,7 @@ Agent 提示。若 0066–0068 尚未实现，本组可交付旧 suite/assessmen
 reviewed binding；若已实现，还需独立 Task 目录及新命令验收，不从结果目录反推。
 
 指南从干净检出开始说明 bundle build、task cases/qualify、suite、suite-assess，
-覆盖工作目录、无覆盖输出路径、预期失败退出以及排障。提案期不把这些命令写作现成教程。
+覆盖工作目录、无覆盖输出路径、预期失败退出以及排障。当前指南提供可运行的命令及明确的预期失败。
 
 ## 4. 验收与范围
 

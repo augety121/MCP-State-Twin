@@ -1,5 +1,29 @@
 # Implementation Status
 
+ADR-0066, ADR-0069 and ADR-0073 accept SPEC-0066–0076 after the maintainer's
+2026-09-30 instruction to implement the whole batch. The bounded offline subset
+has code, CLI integration and executable validation:
+
+| Contracts | Implemented behavior | Evidence |
+|---|---|---|
+| 0066–0068 | Frozen independent Task catalog, zero-execution suite review, full Task binding during replay-backed assessment | `reviewed_delivery_test.go`: coherent oracle substitution without revision change, missing samples, closed admission, old assessment equality, frozen input and one verification per stable trial |
+| 0069–0071 | Closed case manifest, isolated serial witness cases, exact expected outcomes/checks, per-assertion negative coverage | `case_delivery_test.go`: isolated positive/omission cases, mismatch continuation, infrastructure-stop denominators, cancellation, error-score distinction and missing policy coverage |
+| 0072 | Six package-registry Tasks, independent reviewed copies, 18 positive/negative witnesses, two labeled mock cohorts and fixed expectation | `offline_delivery_test.go`: qualify all 18 cases, pre-run review, twelve-trial suite and both reviewed acceptance policies |
+| 0073/0076 | Explicit bounded metadata/replay inventory and read-only transitive retention preview | `inventory_delivery_test.go`: missing/invalid sources, fixed coverage, metadata non-verification, protected references/cycles and cumulative byte/entry refusal |
+| 0074/0075 | Frozen-view clean-suite USTAR export, prevalidated no-clobber import, original-byte preservation and report-last publication | `archive_delivery_test.go`: real roundtrip and negative results, malformed containers, no overwrite, storage fault matrix and process exits before publication |
+
+The shared audit retains at most one pair's verified terminals, compares complete
+semantic evidence before reuse, and re-verifies changed input. It does not retain
+every trial's raw trace or add file hashes. Format/policy compatibility is covered
+by the previous suite/assessment tests. CLI tests cover all new dispatch paths,
+JSON/Markdown, rejected flags, cancellation and stdout failure. See the
+[offline delivery guide](guides/OFFLINE-DELIVERY.md).
+
+Local tests are implementation evidence; they do not assert a future PR CI run
+has passed. Live provider validation, trusted provenance, independent world-content
+approval, automatic deletion, generic backup/restore and database migration remain
+outside this subset. Existing business digests are unchanged.
+
 ADR-0063 / SPEC-0063–0065 implement independent expectation matching, replay-bound
 repeat-definition consistency and explicit candidate-pass-v1 / both-pass-v1
 acceptance. `eval suite-assess` emits a separate JSON/Markdown envelope and never

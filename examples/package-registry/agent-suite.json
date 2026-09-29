@@ -1,0 +1,50 @@
+{
+  "format": "statetwin.dev/agent-suite-offline/v1alpha1",
+  "baselineModel": "mock-baseline",
+  "candidateModel": "mock-candidate",
+  "maxOutputTokens": 1024,
+  "pairs": [
+    {
+      "taskId": "pkg-read-release",
+      "task": "agent-tasks/pkg-read-release.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/pkg-read-release-baseline.json",
+      "candidateResponses": "agent-mocks/pkg-read-release-candidate.json"
+    },
+    {
+      "taskId": "pkg-publish-release",
+      "task": "agent-tasks/pkg-publish-release.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/pkg-publish-release-baseline.json",
+      "candidateResponses": "agent-mocks/pkg-publish-release-candidate.json"
+    },
+    {
+      "taskId": "pkg-yank-release",
+      "task": "agent-tasks/pkg-yank-release.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/pkg-yank-release-baseline.json",
+      "candidateResponses": "agent-mocks/pkg-yank-release-candidate.json"
+    },
+    {
+      "taskId": "pkg-install-release",
+      "task": "agent-tasks/pkg-install-release.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/pkg-install-release-baseline.json",
+      "candidateResponses": "agent-mocks/pkg-install-release-candidate.json"
+    },
+    {
+      "taskId": "pkg-advisory-abstain",
+      "task": "agent-tasks/pkg-advisory-abstain.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/pkg-advisory-abstain-baseline.json",
+      "candidateResponses": "agent-mocks/pkg-advisory-abstain-candidate.json"
+    },
+    {
+      "taskId": "pkg-scope-protection",
+      "task": "agent-tasks/pkg-scope-protection.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/pkg-scope-protection-baseline.json",
+      "candidateResponses": "agent-mocks/pkg-scope-protection-candidate.json"
+    }
+  ]
+}

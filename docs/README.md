@@ -1,10 +1,10 @@
 # MCP State Twin Documentation
 
-## Next offline delivery: 11 proposed contracts
+## Offline task quality and evidence delivery
 
 The [delivery map](planning/agent-evaluation/NEXT-OFFLINE-DELIVERY.md) organizes
 SPEC-0066–0076 into independent Task binding, executable task quality, and
-bounded evidence portability. All remain **Proposal, not implemented**.
+bounded evidence portability. The bounded offline subset is accepted and implemented.
 
 - [ADR-0069](ADR-0069-TASK-QUALITY-PROPOSAL.md):
   [case manifest](SPEC-0069-TASK-CASE-MANIFEST.md),
@@ -17,19 +17,19 @@ bounded evidence portability. All remain **Proposal, not implemented**.
   [import](SPEC-0075-SUITE-IMPORT.md), and
   [retention preview](SPEC-0076-RETENTION-PREVIEW.md).
 
-Proposed examples describe future interfaces, not currently runnable commands.
+Start with the [complete offline delivery guide](guides/OFFLINE-DELIVERY.md).
 No provider, automatic deletion, production writes or claim of trusted provenance
-is introduced by this design batch.
+is introduced by this implementation.
 
-## Proposed next step: independently supplied Task binding
+## Independently supplied Task binding
 
-[ADR-0066 proposal](ADR-0066-REVIEWED-TASK-BINDING-PROPOSAL.md) describes three
-unimplemented contracts: [Task catalog](SPEC-0066-INDEPENDENT-TASK-CATALOG.md),
+[ADR-0066](ADR-0066-REVIEWED-TASK-BINDING-PROPOSAL.md) accepts three
+implemented contracts: [Task catalog](SPEC-0066-INDEPENDENT-TASK-CATALOG.md),
 [pre-run suite review](SPEC-0067-OFFLINE-SUITE-REVIEW.md), and
 [replay-backed reviewed assessment](SPEC-0068-REVIEWED-TASK-ASSESSMENT.md).
 They address coherent replacement of every trial's Task/oracle, which current
-cross-repeat equality alone does not detect. The proposed commands are not
-available; document review/merge does not authorize implementation.
+cross-repeat equality alone does not detect. `suite-review` and
+`suite-assess-reviewed` retain the old assessment's separate scope and formats.
 
 ## Independent offline candidate assessment
 
