@@ -12,6 +12,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -23,7 +24,10 @@ jobs:
       - name: Vet
         run: go vet ./...
       - name: Test
-        run: go test -race -coverprofile=coverage.out ./...
+        # Replay-heavy packages under race + atomic coverage exceed Go's
+        # default aggregate 10m package limit on shared runners. Individual
+        # execution and assessment deadlines remain enforced by the code.
+        run: go test -race -timeout=20m -coverprofile=coverage.out ./...
       - name: Documentation authority and link integrity
         run: go test ./internal/doccheck -count=1
       - name: Scenario smoke

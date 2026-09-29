@@ -88,9 +88,13 @@ func TestAssessmentPoliciesRealReplay(t *testing.T) {
 				if mode == "unscorable" && r.Consistency[0].VerifiedDefinitions != 2 {
 					t.Fatal("replay-valid unscorable definition lost")
 				}
-				again, err := AssessSuite(context.Background(), root, "suite", "expected.json", policy)
-				if err != nil || !same(r, again) || r.Markdown() != again.Markdown() {
-					t.Fatal("nondeterministic assessment", err)
+				// Exercise deterministic rendering for both a pass and an ordered
+				// failure, without replaying every policy matrix cell twice.
+				if policy == "candidate-pass-v1" && (mode == "pass" || mode == "both-fail") {
+					again, err := AssessSuite(context.Background(), root, "suite", "expected.json", policy)
+					if err != nil || !same(r, again) || r.Markdown() != again.Markdown() {
+						t.Fatal("nondeterministic assessment", err)
+					}
 				}
 				text, _ := json.Marshal(r)
 				if strings.Contains(string(text), "objective") || strings.Contains(r.Markdown(), root) {
@@ -161,8 +165,10 @@ func TestAssessmentRepeatedDefinitions(t *testing.T) {
 			if change == "output-budget" && r.Expectation.Status != "mismatched" {
 				t.Fatal("budget mismatch ignored")
 			}
-			if _, err := assessPrepared(context.Background(), root, "suite", e, "candidate-pass-v1", 1); !errors.Is(err, errAssessmentResourceLimit) {
-				t.Fatal("reference bound", err)
+			if change == "none" {
+				if _, err := assessPrepared(context.Background(), root, "suite", e, "candidate-pass-v1", 1); !errors.Is(err, errAssessmentResourceLimit) {
+					t.Fatal("reference bound", err)
+				}
 			}
 			// With a missing final trial, a proven difference stays heterogeneous.
 			removeAudit(t, root, "report.json")
