@@ -1,0 +1,22 @@
+{
+  "format": "statetwin.dev/agent-suite-offline/v1alpha1",
+  "baselineModel": "mock-baseline",
+  "candidateModel": "mock-candidate",
+  "maxOutputTokens": 1024,
+  "pairs": [
+    {
+      "taskId": "close-issue",
+      "task": "agent-tasks/close-issue.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/close-issue.json",
+      "candidateResponses": "agent-mocks/close-issue.json"
+    },
+    {
+      "taskId": "close-issue",
+      "task": "agent-tasks/close-issue-revised.json",
+      "repeat": 2,
+      "baselineResponses": "agent-mocks/close-issue.json",
+      "candidateResponses": "agent-mocks/close-issue.json"
+    }
+  ]
+}

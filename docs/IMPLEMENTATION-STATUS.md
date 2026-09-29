@@ -1,5 +1,16 @@
 # Implementation Status
 
+ADR-0063 / SPEC-0063–0065 implement independent expectation matching, replay-bound
+repeat-definition consistency and explicit candidate-pass-v1 / both-pass-v1
+acceptance. `eval suite-assess` emits a separate JSON/Markdown envelope and never
+changes old audit/comparison serialization. Tests in `assessment_test.go` cover
+equal failure, candidate-only improvement, expected abstention, policy failure,
+unscorable replay, definition changes, unavailable/tampered evidence, cumulative
+reference bounds, cancellation, admission and unchanged artifacts. CLI tests
+exercise the shipped six-task expectation and the repeat-revision negative example.
+Runtime identity tampering is rejected by existing replay; collector tests also
+prove those fields remain in normalized identity. No provenance or live claim.
+
 ADR-0059 / SPEC-0059–0062 add strict stored suite metadata admission, bounded
 read-only directory inventory, replay-backed report agreement and JSON/Markdown
 inspection/verification CLI. `suite_inspect_test.go` covers real successful,

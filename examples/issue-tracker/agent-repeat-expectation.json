@@ -1,0 +1,39 @@
+{
+  "format": "statetwin.dev/agent-suite-expectation/v1alpha1",
+  "profile": "offline-suite-v1",
+  "maxOutputTokens": 1024,
+  "plan": {
+    "format": "statetwin.dev/agent-compare-offline/v1alpha1",
+    "baselineModel": "mock-baseline",
+    "candidateModel": "mock-candidate",
+    "allowedDifferences": [
+      "model"
+    ],
+    "pairs": [
+      {
+        "taskId": "close-issue",
+        "repeat": 1,
+        "baseline": {
+          "trialId": "baseline-01",
+          "artifact": "baseline-01/terminal.json"
+        },
+        "candidate": {
+          "trialId": "candidate-01",
+          "artifact": "candidate-01/terminal.json"
+        }
+      },
+      {
+        "taskId": "close-issue",
+        "repeat": 2,
+        "baseline": {
+          "trialId": "baseline-02",
+          "artifact": "baseline-02/terminal.json"
+        },
+        "candidate": {
+          "trialId": "candidate-02",
+          "artifact": "candidate-02/terminal.json"
+        }
+      }
+    ]
+  }
+}

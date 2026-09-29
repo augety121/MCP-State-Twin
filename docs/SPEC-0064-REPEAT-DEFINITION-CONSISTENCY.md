@@ -1,6 +1,6 @@
 # SPEC-0064: Replay-verified Repeat Definition Consistency
 
-Status: **Proposed — not implemented**, under
+Status: **Accepted**, under
 [ADR-0063](ADR-0063-OFFLINE-ASSESSMENT-PROPOSAL.md).
 
 ## 1. Existing behavior
@@ -71,7 +71,7 @@ before retaining a reference that would exceed that allowance. Existing per-Task
 bounds apply to transient encoding; this is not a hard process RSS guarantee.
 On exhaustion return a finite assessment resource error, not a partial success.
 
-## 5. Required future acceptance
+## 5. Required acceptance
 
 Use real replay-valid fixtures with equal definitions across multiple repeats.
 Then vary oracle, Task revision, authority, task budget, output-token budget,
@@ -84,3 +84,9 @@ missing first/middle/last evidence, all missing, unscorable replay-valid evidenc
 known mismatch plus missing evidence, maximum admitted pairs, byte budget,
 cancellation, deterministic ordering and unchanged old comparison serialization.
 Assert no retained or rendered raw task/trace content and no filesystem writes.
+
+Current replay accepts only the running build's runtime identity and fixed mock
+snapshot/profile. Tampering those fields must therefore be tested as unavailable
+invalid evidence, not falsely presented as another replay-valid build. Collector
+unit tests separately establish that every such field participates in identity;
+real replay fixtures exercise the admitted Task/oracle/authority/budget changes.

@@ -1,6 +1,6 @@
 # SPEC-0063: Independent Suite Expectations
 
-Status: **Proposed — not implemented**. Decision proposal:
+Status: **Accepted**, under:
 [ADR-0063](ADR-0063-OFFLINE-ASSESSMENT-PROPOSAL.md).
 
 ## 1. Current gap and intended result
@@ -34,7 +34,7 @@ IDs are positional `baseline-01`/`candidate-01`, with direct `<id>/terminal.json
 paths. Order is part of intent. Repeats retain current 1–16 original-integer
 semantics; they are identifiers, not automatic expansion counts.
 
-Minimal example (future authoring format, not currently accepted by a command):
+Minimal independently authored expectation:
 
 ```json
 {
@@ -91,7 +91,7 @@ trusting report fields. Public Compare/InspectSuite and their output stay unchan
 The assessment envelope and CLI are specified by SPEC-0065; do not write a new
 expectation into old result directories or silently generate one from their plan.
 
-## 5. Required future acceptance
+## 5. Required acceptance
 
 Positive: independent matching plan, multiple tasks/repeats, equivalent JSON
 whitespace/key order, exact integer boundaries and unchanged input bytes.

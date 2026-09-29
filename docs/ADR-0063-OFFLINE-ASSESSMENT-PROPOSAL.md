@@ -1,9 +1,9 @@
-# ADR-0063: Independent Offline Assessment — Proposal
+# ADR-0063: Independent Offline Assessment
 
-- Status: Proposed; not accepted and not implemented
+- Status: Accepted for the bounded offline assessment subset
 - Date: 2026-09-29
-- Proposed contracts: SPEC-0063, SPEC-0064, SPEC-0065
-- Requires: explicit implementation authorization and acceptance before code changes
+- Contracts: SPEC-0063, SPEC-0064, SPEC-0065
+- Authorization: maintainer explicitly requested implementation of all three Specs
 
 ## Evidence and problem
 
@@ -14,13 +14,13 @@ Task ID but explicitly does not establish uniform definitions across repeats.
 `regressionReasons` permits equally failing baseline/candidate outcomes to have
 no observed regression. These are documented boundaries, not failed tests.
 
-Propose three complementary layers: an independent expected-plan contract,
+Accept three complementary layers: an independent expected-plan contract,
 replay-verified repeat-definition consistency, and a named absolute candidate
 acceptance policy. Keep existing comparison decisions, suite artifact formats,
 oracle semantics and CLI defaults unchanged. Put new results in a separate
 assessment envelope, so old suite reports remain verifiable.
 
-## Proposed delivery and limits
+## Delivery and limits
 
 1. SPEC-0063: admit an external expectation and match plan plus trial budgets.
 2. SPEC-0064: assess full normalized definitions across all planned repeats.
@@ -32,7 +32,6 @@ statistical significance, model ranking, provider calls, resume/repair, hashes
 or signatures. Existing business digests remain part of definition identity.
 An independent local file is not proof of preregistration or trusted provenance.
 
-This document only proposes a B09/B10-offline increment. The acceptance tests in
-the linked Specs are future obligations, not executed verification. No new
-command is advertised as available. Business code and runtime remain unchanged
-during this design stage.
+This accepts only the B09/B10-offline increment described above. Implementation
+evidence is recorded separately in IMPLEMENTATION-STATUS.md. It does not accept
+live evaluation, external-user qualification or automatic model upgrades.
