@@ -24,6 +24,36 @@ statetwin eval suite --root examples/issue-tracker --suite agent-suite.json --ou
 
 ## 重新核查证据
 
+先对整套目录诊断，再执行严格门禁：
+
+```powershell
+statetwin eval suite-inspect --root examples/issue-tracker --out .statetwin/suite-01 --format markdown
+statetwin eval suite-verify --root examples/issue-tracker --out .statetwin/suite-01
+```
+
+两条命令都只读，核查 claim、计划、报告、所有计划内 trial，以及重放生成的比较。
+默认输出 JSON；两者均支持 `--format markdown`。没有报告或中断后也可 inspect，
+但诊断成功不等于门禁通过。状态含义：
+
+| 状态 | 含义 | inspect 退出码 | verify 退出码 |
+|---|---|---|---|
+| not_started | 目录尚不存在 | 0 | 非零 |
+| incomplete_or_running | 无已发布报告，或仅有部分产物；不证明进程仍在运行 | 0 | 非零 |
+| published_unverified | 已发布但未完成的执行，无法核验历史停止原因 | 0 | 非零 |
+| published | 完整报告与重放证据一致 | 0 | 仅未观察到回归时为 0 |
+| published_with_residue | 报告一致但仍有 staging 残留 | 0 | 非零 |
+| invalid | 目录、元数据、报告或底层证据冲突/损坏 | 非零 | 非零 |
+
+`reportVerification: matched` 不等于任务全部成功。合法回归报告同样可以 matched，
+但不能通过 verify。门禁要求干净发布、报告一致和 `no_regression_observed`；
+`upgradeAllowed` 始终 false。读取或取消错误不会被包装成成功诊断。
+
+检查器先限制目录成员和证据尺寸，再重放；总 trial 产物尺寸上限 128 MiB，报告每份
+512 KiB，claim/plan 每份 64 KiB，外层期限 120 秒。尺寸上限不是多次读取的总 IO
+或进程内存配额。根目录应可信且停止并发写入，检查不保证原子快照或来源真实性。
+
+也可以保留原来的单项复核方式：
+
 ```powershell
 statetwin eval compare --root examples/issue-tracker/.statetwin/suite-01 --plan plan.json --format markdown
 statetwin eval verify --root examples/issue-tracker/.statetwin/suite-01 --evidence baseline-01/terminal.json
@@ -59,5 +89,6 @@ Task ID/repeat 不得重复。trial ID 按计划位置生成，例如 `baseline-
 
 输出目录必须全新，父目录须已存在。冲突或中断后不覆盖、不续跑、不自动修复。
 保留失败目录，使用 `eval inspect --root SUITE_DIR --out baseline-01` 等检查单个
-trial；修复输入后选择新的 `--out` 再运行。没有完整报告时也不要删除已有失败证据。
-此批次未提供 suite 级恢复、live provider、并行执行或正式模型升级许可。
+trial，或用 `eval suite-inspect` 诊断整套目录；修复输入后选择新的 `--out` 再运行。
+没有完整报告时也不要删除已有失败证据。检查器不会清理残留、提升 pending 文件或
+修改已保存的结果；这不是 suite 恢复、live provider、并行执行或正式模型升级许可。

@@ -1060,6 +1060,10 @@ README 中对许可证的任何说明仅用于帮助阅读；若存在差异，�
 两组 mock 配置并保存比较报告。支持独立世界、累计预算、取消和失败证据保留。
 命令与回归演示见 [批量离线指南](docs/guides/OFFLINE-SUITE.md)。
 
+运行后可用 `eval suite-inspect --root DIR --out SUITE --format markdown` 查看整套
+证据；`eval suite-verify` 会重放核对保存报告，并要求无残留、报告一致且未观察到回归。
+缺失、篡改或中断证据不会因汇总报告写着成功而通过。
+
 新增独立任务准入、只读目标/策略评分和六个合成 witness。`task validate` 仅检查结构与工具面；`task witness` 经过 MCP 执行已知轨迹，再独立评分，明确标为 `scripted-witness`。它不是自主模型运行、provider live 或完整证据 replay。命令与限制见 [SPEC-0038](docs/SPEC-0038-AGENT-TASK-OFFLINE-ADMISSION.md)。
 
 进一步的 `eval mock` 已支持合成 Responses 循环、独立世界、预算停止、证据保存与

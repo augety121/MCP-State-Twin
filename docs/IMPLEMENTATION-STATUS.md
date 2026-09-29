@@ -1,5 +1,14 @@
 # Implementation Status
 
+ADR-0059 / SPEC-0059–0062 add strict stored suite metadata admission, bounded
+read-only directory inventory, replay-backed report agreement and JSON/Markdown
+inspection/verification CLI. `suite_inspect_test.go` covers real successful,
+regressed and interrupted runs, tampering, missing evidence, residual staging,
+path/size admission, cancellation and unchanged fixture bytes. CLI coverage in
+`agent_suite_test.go` exercises all six tasks and both report formats/gates.
+Unverified interrupted reports do not prove their historical stop cause; no
+repair/resume, signed provenance, live evaluation or stable qualification is added.
+
 The bounded offline suite subset (ADR-0056, SPEC-0056–0058) adds all-input
 preflight, frozen input bytes, serial isolated trials, cumulative input/write
 budgets and an exclusively published report. Executable coverage lives in
@@ -10,8 +19,8 @@ offline infrastructure; B09-live/B10-external and stable qualification remain op
 
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
 **Last verified committed baseline:** checked 2026-09-29; public CI
-[run 36567243863](https://github.com/augety121/MCP-State-Twin/actions/runs/36567243863)
-for main `9386211` completed successfully, including Linux
+[run 36574005168](https://github.com/augety121/MCP-State-Twin/actions/runs/36574005168)
+for main `449a96f` (including merged PR #8) completed successfully, including Linux
 race, Windows/macOS, fuzz, secret policy, hermetic egress and MCP conformance
 **Authority:** this file reports implementation evidence. RFC-0001 is the
 umbrella design; RFC-0002 is the accepted v0.1 release profile. RFC-0003 is a
