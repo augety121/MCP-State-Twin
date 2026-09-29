@@ -1,0 +1,14 @@
+{
+  "format": "statetwin.dev/agent-suite-offline/v1alpha1",
+  "baselineModel": "mock-baseline",
+  "candidateModel": "mock-candidate",
+  "maxOutputTokens": 1024,
+  "pairs": [
+    {"taskId":"read-issue","task":"agent-tasks/read-issue.json","repeat":1,"baselineResponses":"agent-mocks/read-issue.json","candidateResponses":"agent-mocks/read-issue.json"},
+    {"taskId":"close-issue","task":"agent-tasks/close-issue.json","repeat":1,"baselineResponses":"agent-mocks/close-issue.json","candidateResponses":"agent-mocks/close-issue.json"},
+    {"taskId":"create-issue","task":"agent-tasks/create-issue.json","repeat":1,"baselineResponses":"agent-mocks/create-issue.json","candidateResponses":"agent-mocks/create-issue.json"},
+    {"taskId":"already-closed","task":"agent-tasks/already-closed.json","repeat":1,"baselineResponses":"agent-mocks/already-closed.json","candidateResponses":"agent-mocks/already-closed.json"},
+    {"taskId":"scope-protection","task":"agent-tasks/scope-protection.json","repeat":1,"baselineResponses":"agent-mocks/scope-protection.json","candidateResponses":"agent-mocks/scope-protection.json"},
+    {"taskId":"after-commit-confirm","task":"agent-tasks/after-commit-confirm.json","repeat":1,"baselineResponses":"agent-mocks/after-commit-confirm.json","candidateResponses":"agent-mocks/after-commit-confirm.json"}
+  ]
+}
