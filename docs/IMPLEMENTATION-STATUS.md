@@ -1,5 +1,13 @@
 # Implementation Status
 
+The bounded offline suite subset (ADR-0056, SPEC-0056–0058) adds all-input
+preflight, frozen input bytes, serial isolated trials, cumulative input/write
+budgets and an exclusively published report. Executable coverage lives in
+`internal/agenteval/suite_test.go` and `cmd/statetwin/agent_suite_test.go`, including
+six shipped tasks, twelve independently replayed trial artifacts, regression,
+partial execution, cancellation and injected storage failures. This is synthetic
+offline infrastructure; B09-live/B10-external and stable qualification remain open.
+
 **Build status:** development preview; latest public prerelease `v0.1.0-alpha.1`; no stable release
 **Last verified committed baseline:** checked 2026-09-29; public CI
 [run 36567243863](https://github.com/augety121/MCP-State-Twin/actions/runs/36567243863)

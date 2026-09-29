@@ -111,7 +111,11 @@ func (w *evidenceWriter) writeBytes(name string, raw []byte) error {
 	if name != "claim.json" && name != "closure.json" && name != "terminal.pending.json" {
 		return errors.New("EVIDENCE_WRITE_FAILED")
 	}
-	f, err := w.fs.CreateExclusive(path.Join(w.out, name))
+	return writeExclusiveBytes(w.fs, path.Join(w.out, name), raw)
+}
+
+func writeExclusiveBytes(fs evidenceFS, name string, raw []byte) error {
+	f, err := fs.CreateExclusive(name)
 	if err != nil {
 		return errors.New("EVIDENCE_WRITE_FAILED")
 	}

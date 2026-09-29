@@ -1,5 +1,13 @@
 # MCP State Twin Documentation
 
+## Bounded offline suites — 2026-09-29
+
+[ADR-0056](ADR-0056-BOUNDED-OFFLINE-SUITES.md) accepts
+[preflight and frozen inputs](SPEC-0056-OFFLINE-SUITE-PREFLIGHT.md),
+[serial execution and budgets](SPEC-0057-OFFLINE-SUITE-EXECUTION.md), and
+[reports and CLI](SPEC-0058-SUITE-REPORTS-AND-QUICKSTART.md).
+Start with the [six-task suite guide](guides/OFFLINE-SUITE.md).
+
 ## Task-level offline comparison — 2026-09-29
 
 [ADR-0055](ADR-0055-TASK-COMPARISON-SUMMARIES.md) /
