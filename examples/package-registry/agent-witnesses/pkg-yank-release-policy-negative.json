@@ -1,0 +1,22 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-yank-release",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "yank_release",
+      "input": {
+        "name": "acme/cli",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "tool": "yank_release",
+      "input": {
+        "name": "acme/other",
+        "version": "1.0.0"
+      }
+    }
+  ],
+  "answer": null
+}

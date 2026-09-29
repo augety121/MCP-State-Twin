@@ -1,6 +1,6 @@
 # SPEC-0071: Declared Oracle Case Coverage
 
-Status: **Proposal — not accepted or implemented**；依赖 [0070](SPEC-0070-TASK-CASE-RUNNER.md)。
+Status: **Accepted — implemented in the bounded offline subset**；依赖 [0070](SPEC-0070-TASK-CASE-RUNNER.md)。
 
 ## 1. 门槛目的
 

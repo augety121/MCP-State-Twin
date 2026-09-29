@@ -1,8 +1,8 @@
 # SPEC-0067: Offline Suite Review Before Execution
 
-Status: **Proposal — not accepted or implemented**，依赖
+Status: **Accepted — implemented in the bounded offline subset**，依赖
 [SPEC-0066](SPEC-0066-INDEPENDENT-TASK-CATALOG.md) 和
-[ADR-0066](ADR-0066-REVIEWED-TASK-BINDING-PROPOSAL.md)。下述命令当前不存在。
+[ADR-0066](ADR-0066-REVIEWED-TASK-BINDING-PROPOSAL.md)。下述命令已接入 CLI。
 
 ## 1. 用户结果
 
@@ -10,7 +10,7 @@ Status: **Proposal — not accepted or implemented**，依赖
 提议在运行前一次性审阅：执行计划、output-token 上限以及每个 repeat 的完整 Task
 是否匹配外部输入。审阅通过只表示此刻冻结输入的静态匹配，不表示模型能完成任务。
 
-拟议语法：
+命令语法：
 
 ```text
 statetwin eval suite-review --root ROOT --suite SUITE --out OUT --expect EXPECT --tasks CATALOG --format json|markdown
@@ -39,7 +39,7 @@ suite 的 64 MiB 输入/提取预算与目录预算分别生效；输出上限 1
 
 ## 3. 结果格式
 
-提议 format `statetwin.dev/agent-suite-review/v1alpha1`，profile
+采用 format `statetwin.dev/agent-suite-review/v1alpha1`，profile
 `offline-task-review-v1`，顶层字段全部存在：
 
 | 字段 | 规则 |
@@ -80,7 +80,7 @@ stdout 失败优先于 matched；结构化不匹配输出后返回 `SUITE_REVIEW
 共享 prepared 内部数据时只能加只读内部访问/观察点，不能导出可变 bytes 或把目录
 Task 替换进实际计划。发现差异必须报告，不能“修复”目标、oracle、预算或 mock 响应。
 
-## 5. 后续实施验收
+## 5. 实施验收
 
 - 使用六任务计划证明 expectation、目录及不同 task 文件路径的合法副本能匹配；
   用两次 close-issue repeat，其中第二次修改 oracle/revision，证明在零执行下拒绝。
@@ -95,4 +95,4 @@ Task 替换进实际计划。发现差异必须报告，不能“修复”目标
   单元测试；不为每个文本排版样本重复运行昂贵的真实回放。
 
 建议落点为 `internal/agenteval/suite_review.go`、`cmd/statetwin/agent_review.go` 及
-测试。实施必须执行 gofmt、vet、必要测试、race 和对应提交的 CI；本 Spec 只定义验收。
+测试。实施必须执行 gofmt、vet、必要测试、race 和对应提交的 CI；验收证据见实现台账。

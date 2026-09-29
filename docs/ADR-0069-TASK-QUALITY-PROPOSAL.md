@@ -1,7 +1,8 @@
 # ADR-0069: Executable Task Quality Cases
 
-- Status: **Proposal — not accepted or implemented**
+- Status: **Accepted for the bounded offline subset**
 - Date: 2026-09-29
+- Accepted: 2026-09-30; maintainer explicitly requested implementation of SPEC-0066–0076
 - Scope: B02/B03/B14 的有限合成任务质量子集；不关闭整个工作包。
 - Contracts: [0069](SPEC-0069-TASK-CASE-MANIFEST.md)、[0070](SPEC-0070-TASK-CASE-RUNNER.md)、
   [0071](SPEC-0071-ORACLE-CASE-COVERAGE.md)、[0072](SPEC-0072-PACKAGE-REGISTRY-TASK-KIT.md)。
@@ -25,8 +26,8 @@
 ## 实施与退出
 
 先做 0069 严格准入，接 0070 执行，再做 0071 同次运行覆盖计算；0072 使用三者
-交付具体领域资产。0069–0071 不依赖尚未实现的 0066，接受时可单独排期。
+交付具体领域资产。0069–0071 与 0066 无直接依赖；本批分别实现并共同验收。
 禁止通过读取别人保存的质量报告来跳过本次执行；不改变旧 witness 格式和退出行为。
 
 执行代码、正反真实测试、CLI、指南与对应提交 CI 都完成后才更新实现台账。
-当前仅提案，无执行授权，无代码变更。
+本受限子集已获实施授权；代码、CLI 和可执行验收见实现台账。

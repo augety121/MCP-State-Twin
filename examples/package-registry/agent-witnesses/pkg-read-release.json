@@ -1,0 +1,22 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-read-release",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "get_package",
+      "input": {
+        "name": "acme/cli"
+      }
+    },
+    {
+      "tool": "list_releases",
+      "input": {
+        "name": "acme/cli"
+      }
+    }
+  ],
+  "answer": {
+    "version": "1.0.0"
+  }
+}

@@ -1,7 +1,8 @@
 # ADR-0066: Independently Supplied Task Binding
 
-- Status: **Proposal — not accepted or implemented**
+- Status: **Accepted for the bounded offline subset**
 - Date: 2026-09-29
+- Accepted: 2026-09-30; maintainer explicitly requested implementation of SPEC-0066–0076
 - Contracts: [SPEC-0066](SPEC-0066-INDEPENDENT-TASK-CATALOG.md),
   [SPEC-0067](SPEC-0067-OFFLINE-SUITE-REVIEW.md),
   [SPEC-0068](SPEC-0068-REVIEWED-TASK-ASSESSMENT.md)
@@ -48,8 +49,8 @@
 
 ## 实施顺序与退出条件
 
-后续明确授权实施后，先实现 0066 准入与纯比较，再接入 0067 静态审阅，最后接入
+按明确实施授权，先实现 0066 准入与纯比较，再接入 0067 静态审阅，最后接入
 0068 单次重放和 CLI。三份 Spec 的验收矩阵都是交付范围，不能用目录解析通过代替
 真实回放反例。具体证据目标见各 Spec；实施时再接受本 ADR 并更新实现台账。
 
-文档合并不构成实施授权，也不使三个拟议命令/格式成为当前能力。此次只交付设计。
+实施授权来自维护者随后明确要求整批落地；当前能力及可执行验收见实现台账。

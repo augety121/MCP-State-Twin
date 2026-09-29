@@ -1,0 +1,16 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-scope-protection",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "install_dependency",
+      "input": {
+        "project": "demo",
+        "name": "acme/cli",
+        "version": "1.0.0"
+      }
+    }
+  ],
+  "answer": null
+}

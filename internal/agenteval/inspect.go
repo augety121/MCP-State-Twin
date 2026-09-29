@@ -49,17 +49,29 @@ func InspectDirectory(ctx context.Context, root, out string) (*Inspection, error
 	if task.PortablePath(out) != nil {
 		return nil, errors.New("EVIDENCE_INSPECT_PATH_INVALID")
 	}
+	if ctx.Err() != nil {
+		return nil, errors.New("EVIDENCE_INSPECT_CANCELED_OR_TIMED_OUT")
+	}
+	fs, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, errors.New("EVIDENCE_INSPECT_ROOT_UNAVAILABLE")
+	}
+	defer fs.Close()
+	return inspectDirectoryView(ctx, diskReadRoot{fs}, out)
+}
+func inspectDirectoryView(ctx context.Context, fs evidenceReadRoot, out string) (*Inspection, error) {
+	return inspectDirectoryObserved(ctx, fs, out, nil, replay)
+}
+func inspectDirectoryObserved(ctx context.Context, fs evidenceReadRoot, out string, verified func(*AgentEvidence, error), verifyOffline func(context.Context, *AgentEvidence, bool) error) (*Inspection, error) {
+	if task.PortablePath(out) != nil {
+		return nil, errors.New("EVIDENCE_INSPECT_PATH_INVALID")
+	}
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	if ctx.Err() != nil {
 		return nil, errors.New("EVIDENCE_INSPECT_CANCELED_OR_TIMED_OUT")
 	}
 	r := &Inspection{Format: InspectionFormat, State: "incomplete_or_running", ProviderProvenance: "not-proven", Files: []ArtifactInspection{}}
-	fs, err := os.OpenRoot(root)
-	if err != nil {
-		return nil, errors.New("EVIDENCE_INSPECT_ROOT_UNAVAILABLE")
-	}
-	defer fs.Close()
 	parts := strings.Split(out, "/")
 	for i := range parts {
 		info, err := fs.Lstat(strings.Join(parts[:i+1], "/"))
@@ -160,7 +172,17 @@ func InspectDirectory(ctx context.Context, root, out string) (*Inspection, error
 		a.name = name
 		previous = a
 		terminal := name != "closure.json"
-		err := a.verify(ctx, terminal)
+		var err error
+		if e, ok := a.value.(*AgentEvidence); ok {
+			err = verifyOffline(ctx, e, terminal)
+		} else {
+			err = a.verify(ctx, terminal)
+		}
+		if verified != nil && name == "terminal.json" {
+			if e, ok := a.value.(*AgentEvidence); ok {
+				verified(e, err)
+			}
+		}
 		item.State = "invalid"
 		if err == nil {
 			item.State = "verified"
@@ -203,7 +225,7 @@ func InspectDirectory(ctx context.Context, root, out string) (*Inspection, error
 	return r, nil
 }
 
-func readArtifact(fs *os.Root, name string, max int) ([]byte, error) {
+func readArtifact(fs evidenceReadRoot, name string, max int) ([]byte, error) {
 	info, err := fs.Lstat(name)
 	if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || info.Size() > int64(max) {
 		return nil, errors.New("EVIDENCE_MEMBER_INVALID")
