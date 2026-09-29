@@ -14,9 +14,12 @@ import (
 
 func runAgentEval(ctx context.Context, args []string) error {
 	if len(args) == 0 {
-		return errors.New("eval requires preflight, mock, verify, inspect, compare, live-plan, live-preflight, live, or live-verify")
+		return errors.New("eval requires preflight, mock, verify, inspect, compare, suite-preflight, suite, live-plan, live-preflight, live, or live-verify")
 	}
 	command := args[0]
+	if command == "suite-preflight" || command == "suite" {
+		return runAgentSuite(ctx, args)
+	}
 	if command == "live-plan" || command == "live-preflight" || command == "live" || command == "live-verify" {
 		return runAgentLive(ctx, args)
 	}

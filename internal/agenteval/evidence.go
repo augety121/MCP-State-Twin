@@ -162,6 +162,10 @@ func VerifyEvidence(ctx context.Context, e *AgentEvidence) error { return replay
 // A verified replay closure is synced before the execution world is closed.
 // Interrupted directories are inspect-only: no automatic resume or overwrite.
 func RecordMock(ctx context.Context, root, out string, t *task.Task, bundleBytes []byte, c *RunConfig, m *agenthost.MockScript) (*AgentEpisode, error) {
+	return recordMockWithStorage(ctx, root, out, t, bundleBytes, c, m, openRootedEvidenceFS)
+}
+
+func recordMockWithStorage(ctx context.Context, root, out string, t *task.Task, bundleBytes []byte, c *RunConfig, m *agenthost.MockScript, open openEvidenceFS) (*AgentEpisode, error) {
 	if err := task.PortablePath(out); err != nil {
 		return nil, err
 	}
@@ -169,9 +173,9 @@ func RecordMock(ctx context.Context, root, out string, t *task.Task, bundleBytes
 		return nil, err
 	}
 	e := &AgentEvidence{Format: EvidenceFormat, Bundle: base64.StdEncoding.EncodeToString(bundleBytes)}
-	return recordEpisode(ctx, root, out, t, bundleBytes, c, func(b *bundle.Artifact, stage stageEpisode) (*AgentEpisode, error) {
+	return recordWithStorage(ctx, root, out, t, bundleBytes, c, func(b *bundle.Artifact, stage stageEpisode) (*AgentEpisode, error) {
 		return runMock(ctx, t, b, c, m, stage)
-	}, func(r *AgentEpisode) any { e.Episode = r; return e }, func(ctx context.Context, r *AgentEpisode) error { e.Episode = r; return replay(ctx, e, false) })
+	}, func(r *AgentEpisode) any { e.Episode = r; return e }, func(ctx context.Context, r *AgentEpisode) error { e.Episode = r; return replay(ctx, e, false) }, open)
 }
 
 type episodeRunner func(*bundle.Artifact, stageEpisode) (*AgentEpisode, error)
