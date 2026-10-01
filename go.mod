@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	cel.dev/cel-go v0.32.0
-	github.com/modelcontextprotocol/go-sdk v1.7.0
+	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/yaml.v3 v3.0.1
