@@ -1,0 +1,1588 @@
+{
+  "environment": {
+    "go": "go1.26.5",
+    "os": "windows",
+    "arch": "amd64",
+    "GOMAXPROCS": 1,
+    "cpu": "AMD Ryzen 7 5700X3D",
+    "samplesPerCell": 5,
+    "scope": "development benchmark, synthetic inputs, no race or coverage"
+  },
+  "samples": {
+    "BenchmarkProjectPrepare/pairs6/small/distinctfalse/cachefalse": [
+      {
+        "ns/op": 420827700.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 51654480.0,
+        "allocs/op": 902625.0
+      },
+      {
+        "ns/op": 430797300.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 50174568.0,
+        "allocs/op": 884962.0
+      },
+      {
+        "ns/op": 414903200.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 50179368.0,
+        "allocs/op": 884964.0
+      },
+      {
+        "ns/op": 420596800.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 50171680.0,
+        "allocs/op": 884921.0
+      },
+      {
+        "ns/op": 398171800.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 50171816.0,
+        "allocs/op": 884920.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs6/small/distinctfalse/cachetrue": [
+      {
+        "ns/op": 311401900.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 40810800.0,
+        "allocs/op": 728226.0
+      },
+      {
+        "ns/op": 302293400.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 40808760.0,
+        "allocs/op": 728209.0
+      },
+      {
+        "ns/op": 297511300.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 40809872.0,
+        "allocs/op": 728218.0
+      },
+      {
+        "ns/op": 299131000.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 40813720.0,
+        "allocs/op": 728252.0
+      },
+      {
+        "ns/op": 307064700.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 40809256.0,
+        "allocs/op": 728205.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs6/small/distincttrue/cachefalse": [
+      {
+        "ns/op": 415684400.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 50194632.0,
+        "allocs/op": 884576.0
+      },
+      {
+        "ns/op": 402915700.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 50156936.0,
+        "allocs/op": 884563.0
+      },
+      {
+        "ns/op": 396262900.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 50149640.0,
+        "allocs/op": 884526.0
+      },
+      {
+        "ns/op": 403356100.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 50149432.0,
+        "allocs/op": 884524.0
+      },
+      {
+        "ns/op": 396457300.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 50150784.0,
+        "allocs/op": 884535.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs6/small/distincttrue/cachetrue": [
+      {
+        "ns/op": 310436600.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 40968320.0,
+        "allocs/op": 732765.0
+      },
+      {
+        "ns/op": 317501600.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 40970256.0,
+        "allocs/op": 732784.0
+      },
+      {
+        "ns/op": 317437800.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 40968688.0,
+        "allocs/op": 732764.0
+      },
+      {
+        "ns/op": 316077300.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 40969456.0,
+        "allocs/op": 732771.0
+      },
+      {
+        "ns/op": 320540800.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 41014152.0,
+        "allocs/op": 732812.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs6/medium/distinctfalse/cachefalse": [
+      {
+        "ns/op": 1078981000.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 71050800.0,
+        "allocs/op": 885513.0
+      },
+      {
+        "ns/op": 1006786200.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 71006664.0,
+        "allocs/op": 885476.0
+      },
+      {
+        "ns/op": 994847200.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 71006296.0,
+        "allocs/op": 885476.0
+      },
+      {
+        "ns/op": 970255300.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 71007320.0,
+        "allocs/op": 885489.0
+      },
+      {
+        "ns/op": 995048100.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 71013464.0,
+        "allocs/op": 885512.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs6/medium/distinctfalse/cachetrue": [
+      {
+        "ns/op": 654322000.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 51013312.0,
+        "allocs/op": 728517.0
+      },
+      {
+        "ns/op": 638450200.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 51002600.0,
+        "allocs/op": 728447.0
+      },
+      {
+        "ns/op": 642329100.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 51011536.0,
+        "allocs/op": 728496.0
+      },
+      {
+        "ns/op": 642584200.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 51004952.0,
+        "allocs/op": 728473.0
+      },
+      {
+        "ns/op": 642066600.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 51010624.0,
+        "allocs/op": 728492.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs6/medium/distincttrue/cachefalse": [
+      {
+        "ns/op": 974633500.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 71040776.0,
+        "allocs/op": 885174.0
+      },
+      {
+        "ns/op": 990390500.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 70994120.0,
+        "allocs/op": 885124.0
+      },
+      {
+        "ns/op": 982818900.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 71032608.0,
+        "allocs/op": 885142.0
+      },
+      {
+        "ns/op": 971965200.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 70988848.0,
+        "allocs/op": 885106.0
+      },
+      {
+        "ns/op": 963722300.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 70994176.0,
+        "allocs/op": 885123.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs6/medium/distincttrue/cachetrue": [
+      {
+        "ns/op": 650707900.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 51167640.0,
+        "allocs/op": 733024.0
+      },
+      {
+        "ns/op": 632678500.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 51212408.0,
+        "allocs/op": 733080.0
+      },
+      {
+        "ns/op": 619547300.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 51176536.0,
+        "allocs/op": 733077.0
+      },
+      {
+        "ns/op": 635839500.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 51173976.0,
+        "allocs/op": 733057.0
+      },
+      {
+        "ns/op": 648825500.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 51165536.0,
+        "allocs/op": 733018.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs6/near-suite-limit/distinctfalse/cachefalse": [
+      {
+        "ns/op": 25874258100.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 821368400.0,
+        "allocs/op": 886194.0
+      },
+      {
+        "ns/op": 25676344800.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 821327152.0,
+        "allocs/op": 886201.0
+      },
+      {
+        "ns/op": 28417278500.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 821282376.0,
+        "allocs/op": 886167.0
+      },
+      {
+        "ns/op": 26869208800.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 821320640.0,
+        "allocs/op": 886179.0
+      },
+      {
+        "ns/op": 25959632200.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 821362488.0,
+        "allocs/op": 886196.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs6/near-suite-limit/distinctfalse/cachetrue": [
+      {
+        "ns/op": 16196909700.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 403612808.0,
+        "allocs/op": 728929.0
+      },
+      {
+        "ns/op": 15239144100.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 403610256.0,
+        "allocs/op": 728933.0
+      },
+      {
+        "ns/op": 14981487300.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 403622112.0,
+        "allocs/op": 728940.0
+      },
+      {
+        "ns/op": 15221269600.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 403625384.0,
+        "allocs/op": 728962.0
+      },
+      {
+        "ns/op": 14825068000.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 403625864.0,
+        "allocs/op": 728962.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs6/near-suite-limit/distincttrue/cachefalse": [
+      {
+        "ns/op": 26821886200.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 821340888.0,
+        "allocs/op": 885808.0
+      },
+      {
+        "ns/op": 26519385200.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 821309424.0,
+        "allocs/op": 885829.0
+      },
+      {
+        "ns/op": 26286789600.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 821302168.0,
+        "allocs/op": 885796.0
+      },
+      {
+        "ns/op": 26106267500.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 821302200.0,
+        "allocs/op": 885797.0
+      },
+      {
+        "ns/op": 26652706600.0,
+        "decodes/op": 13.0,
+        "reads/op": 77.0,
+        "B/op": 821301576.0,
+        "allocs/op": 885795.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs6/near-suite-limit/distincttrue/cachetrue": [
+      {
+        "ns/op": 14933246500.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 403795704.0,
+        "allocs/op": 733566.0
+      },
+      {
+        "ns/op": 15005610900.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 403800128.0,
+        "allocs/op": 733577.0
+      },
+      {
+        "ns/op": 15119358500.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 403788368.0,
+        "allocs/op": 733528.0
+      },
+      {
+        "ns/op": 15092953500.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 403775008.0,
+        "allocs/op": 733494.0
+      },
+      {
+        "ns/op": 15002092900.0,
+        "decodes/op": 2.0,
+        "reads/op": 66.0,
+        "B/op": 403797784.0,
+        "allocs/op": 733560.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs12/small/distinctfalse/cachefalse": [
+      {
+        "ns/op": 651219800.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 82591096.0,
+        "allocs/op": 1453884.0
+      },
+      {
+        "ns/op": 647768100.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 81159880.0,
+        "allocs/op": 1436220.0
+      },
+      {
+        "ns/op": 645353300.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 81194216.0,
+        "allocs/op": 1436184.0
+      },
+      {
+        "ns/op": 632710300.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 81149016.0,
+        "allocs/op": 1436130.0
+      },
+      {
+        "ns/op": 636994800.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 81155600.0,
+        "allocs/op": 1436164.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs12/small/distinctfalse/cachetrue": [
+      {
+        "ns/op": 447473700.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 66337456.0,
+        "allocs/op": 1185893.0
+      },
+      {
+        "ns/op": 461182200.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 66382752.0,
+        "allocs/op": 1185951.0
+      },
+      {
+        "ns/op": 480527900.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 66339400.0,
+        "allocs/op": 1185911.0
+      },
+      {
+        "ns/op": 447745500.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 66346328.0,
+        "allocs/op": 1185939.0
+      },
+      {
+        "ns/op": 479197000.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 66390440.0,
+        "allocs/op": 1185991.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs12/small/distincttrue/cachefalse": [
+      {
+        "ns/op": 622729800.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 81126832.0,
+        "allocs/op": 1435454.0
+      },
+      {
+        "ns/op": 625637000.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 81120000.0,
+        "allocs/op": 1435415.0
+      },
+      {
+        "ns/op": 621022200.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 81120536.0,
+        "allocs/op": 1435415.0
+      },
+      {
+        "ns/op": 620972600.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 81119664.0,
+        "allocs/op": 1435411.0
+      },
+      {
+        "ns/op": 614150600.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 81120800.0,
+        "allocs/op": 1435415.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs12/small/distincttrue/cachetrue": [
+      {
+        "ns/op": 464725400.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 66923424.0,
+        "allocs/op": 1200832.0
+      },
+      {
+        "ns/op": 473704800.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 66924512.0,
+        "allocs/op": 1200843.0
+      },
+      {
+        "ns/op": 452820600.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 66975720.0,
+        "allocs/op": 1200927.0
+      },
+      {
+        "ns/op": 469526300.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 66926736.0,
+        "allocs/op": 1200868.0
+      },
+      {
+        "ns/op": 461149600.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 66932088.0,
+        "allocs/op": 1200894.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs12/medium/distinctfalse/cachefalse": [
+      {
+        "ns/op": 1540647100.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 113740944.0,
+        "allocs/op": 1437037.0
+      },
+      {
+        "ns/op": 1535898600.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 113740208.0,
+        "allocs/op": 1437016.0
+      },
+      {
+        "ns/op": 1556331000.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 113731144.0,
+        "allocs/op": 1436968.0
+      },
+      {
+        "ns/op": 1615961300.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 113739504.0,
+        "allocs/op": 1437011.0
+      },
+      {
+        "ns/op": 1578507100.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 113730896.0,
+        "allocs/op": 1436967.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs12/medium/distinctfalse/cachetrue": [
+      {
+        "ns/op": 985836900.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 82480672.0,
+        "allocs/op": 1186295.0
+      },
+      {
+        "ns/op": 983355300.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 82482120.0,
+        "allocs/op": 1186292.0
+      },
+      {
+        "ns/op": 1003398600.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 82480752.0,
+        "allocs/op": 1186287.0
+      },
+      {
+        "ns/op": 1021826800.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 82487072.0,
+        "allocs/op": 1186324.0
+      },
+      {
+        "ns/op": 1014091600.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 82487760.0,
+        "allocs/op": 1186329.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs12/medium/distincttrue/cachefalse": [
+      {
+        "ns/op": 1534698100.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 113711576.0,
+        "allocs/op": 1436306.0
+      },
+      {
+        "ns/op": 1526796100.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 113698208.0,
+        "allocs/op": 1436236.0
+      },
+      {
+        "ns/op": 1632802300.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 113696168.0,
+        "allocs/op": 1436220.0
+      },
+      {
+        "ns/op": 2230704300.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 113697096.0,
+        "allocs/op": 1436222.0
+      },
+      {
+        "ns/op": 1620302700.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 113696296.0,
+        "allocs/op": 1436219.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs12/medium/distincttrue/cachetrue": [
+      {
+        "ns/op": 1058265800.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 83081936.0,
+        "allocs/op": 1201323.0
+      },
+      {
+        "ns/op": 1057384900.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 83072800.0,
+        "allocs/op": 1201279.0
+      },
+      {
+        "ns/op": 1044200000.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 83074368.0,
+        "allocs/op": 1201282.0
+      },
+      {
+        "ns/op": 1027995700.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 83073680.0,
+        "allocs/op": 1201276.0
+      },
+      {
+        "ns/op": 1036954000.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 83117192.0,
+        "allocs/op": 1201324.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs12/near-suite-limit/distinctfalse/cachefalse": [
+      {
+        "ns/op": 43238934000.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 1282689336.0,
+        "allocs/op": 1437945.0
+      },
+      {
+        "ns/op": 44599359200.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 1282694848.0,
+        "allocs/op": 1437949.0
+      },
+      {
+        "ns/op": 46034441500.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 1282655920.0,
+        "allocs/op": 1437941.0
+      },
+      {
+        "ns/op": 47365909200.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 1282729648.0,
+        "allocs/op": 1437953.0
+      },
+      {
+        "ns/op": 47680440200.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 1282649384.0,
+        "allocs/op": 1437912.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs12/near-suite-limit/distinctfalse/cachetrue": [
+      {
+        "ns/op": 26856661400.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 636845920.0,
+        "allocs/op": 1187018.0
+      },
+      {
+        "ns/op": 26720721200.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 636835088.0,
+        "allocs/op": 1186991.0
+      },
+      {
+        "ns/op": 27143290100.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 636839856.0,
+        "allocs/op": 1186992.0
+      },
+      {
+        "ns/op": 25229441900.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 636840224.0,
+        "allocs/op": 1187014.0
+      },
+      {
+        "ns/op": 26144797800.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 636858920.0,
+        "allocs/op": 1187035.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs12/near-suite-limit/distincttrue/cachefalse": [
+      {
+        "ns/op": 42892111100.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 1282621728.0,
+        "allocs/op": 1437201.0
+      },
+      {
+        "ns/op": 41400496900.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 1282647640.0,
+        "allocs/op": 1437131.0
+      },
+      {
+        "ns/op": 44033179700.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 1282648240.0,
+        "allocs/op": 1437177.0
+      },
+      {
+        "ns/op": 45657310200.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 1282646616.0,
+        "allocs/op": 1437167.0
+      },
+      {
+        "ns/op": 42306005700.0,
+        "decodes/op": 19.0,
+        "reads/op": 101.0,
+        "B/op": 1282611808.0,
+        "allocs/op": 1437161.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs12/near-suite-limit/distincttrue/cachetrue": [
+      {
+        "ns/op": 24499904400.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 637433696.0,
+        "allocs/op": 1201986.0
+      },
+      {
+        "ns/op": 24396448200.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 637425808.0,
+        "allocs/op": 1201932.0
+      },
+      {
+        "ns/op": 24384891500.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 637429320.0,
+        "allocs/op": 1201989.0
+      },
+      {
+        "ns/op": 25143550400.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 637436448.0,
+        "allocs/op": 1201988.0
+      },
+      {
+        "ns/op": 24333606400.0,
+        "decodes/op": 2.0,
+        "reads/op": 84.0,
+        "B/op": 637437360.0,
+        "allocs/op": 1201993.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs16/small/distinctfalse/cachefalse": [
+      {
+        "ns/op": 802223400.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 102310352.0,
+        "allocs/op": 1809003.0
+      },
+      {
+        "ns/op": 815305100.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 102302040.0,
+        "allocs/op": 1809011.0
+      },
+      {
+        "ns/op": 774539900.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 102304592.0,
+        "allocs/op": 1809027.0
+      },
+      {
+        "ns/op": 792417200.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 102302456.0,
+        "allocs/op": 1809011.0
+      },
+      {
+        "ns/op": 791816900.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 102299624.0,
+        "allocs/op": 1808988.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs16/small/distinctfalse/cachetrue": [
+      {
+        "ns/op": 549336800.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 83847728.0,
+        "allocs/op": 1496319.0
+      },
+      {
+        "ns/op": 537557400.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 83848696.0,
+        "allocs/op": 1496321.0
+      },
+      {
+        "ns/op": 545231700.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 83893832.0,
+        "allocs/op": 1496362.0
+      },
+      {
+        "ns/op": 549317400.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 83892312.0,
+        "allocs/op": 1496352.0
+      },
+      {
+        "ns/op": 539281700.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 83858448.0,
+        "allocs/op": 1496360.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs16/small/distincttrue/cachefalse": [
+      {
+        "ns/op": 768296600.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 102260968.0,
+        "allocs/op": 1808059.0
+      },
+      {
+        "ns/op": 802410000.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 102246112.0,
+        "allocs/op": 1807970.0
+      },
+      {
+        "ns/op": 779774900.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 102254384.0,
+        "allocs/op": 1808005.0
+      },
+      {
+        "ns/op": 780259500.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 102253232.0,
+        "allocs/op": 1808001.0
+      },
+      {
+        "ns/op": 759509600.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 102251280.0,
+        "allocs/op": 1807995.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs16/small/distincttrue/cachetrue": [
+      {
+        "ns/op": 600144200.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 84727904.0,
+        "allocs/op": 1518314.0
+      },
+      {
+        "ns/op": 565936500.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 84719456.0,
+        "allocs/op": 1518268.0
+      },
+      {
+        "ns/op": 593572000.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 84729144.0,
+        "allocs/op": 1518319.0
+      },
+      {
+        "ns/op": 576370800.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 84765488.0,
+        "allocs/op": 1518309.0
+      },
+      {
+        "ns/op": 574334000.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 84728896.0,
+        "allocs/op": 1518310.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs16/medium/distinctfalse/cachefalse": [
+      {
+        "ns/op": 1925488300.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 142718088.0,
+        "allocs/op": 1810033.0
+      },
+      {
+        "ns/op": 2012357200.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 142711344.0,
+        "allocs/op": 1810013.0
+      },
+      {
+        "ns/op": 1923374800.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 142714312.0,
+        "allocs/op": 1810007.0
+      },
+      {
+        "ns/op": 1965015600.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 142710600.0,
+        "allocs/op": 1810003.0
+      },
+      {
+        "ns/op": 1928408800.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 142719336.0,
+        "allocs/op": 1810036.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs16/medium/distinctfalse/cachetrue": [
+      {
+        "ns/op": 1245815400.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 103961576.0,
+        "allocs/op": 1496834.0
+      },
+      {
+        "ns/op": 1254377400.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 104000272.0,
+        "allocs/op": 1496864.0
+      },
+      {
+        "ns/op": 1227858400.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 104011088.0,
+        "allocs/op": 1496906.0
+      },
+      {
+        "ns/op": 1231778100.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 103965760.0,
+        "allocs/op": 1496851.0
+      },
+      {
+        "ns/op": 1290583800.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 103960776.0,
+        "allocs/op": 1496832.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs16/medium/distincttrue/cachefalse": [
+      {
+        "ns/op": 1883354100.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 142666376.0,
+        "allocs/op": 1809030.0
+      },
+      {
+        "ns/op": 1966681400.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 142662568.0,
+        "allocs/op": 1808998.0
+      },
+      {
+        "ns/op": 1916934100.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 142661408.0,
+        "allocs/op": 1809012.0
+      },
+      {
+        "ns/op": 1900291600.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 142661496.0,
+        "allocs/op": 1809002.0
+      },
+      {
+        "ns/op": 1988685900.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 142671080.0,
+        "allocs/op": 1809040.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs16/medium/distincttrue/cachetrue": [
+      {
+        "ns/op": 1300066900.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 104832616.0,
+        "allocs/op": 1518781.0
+      },
+      {
+        "ns/op": 1320586500.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 104833056.0,
+        "allocs/op": 1518782.0
+      },
+      {
+        "ns/op": 1314651800.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 104834360.0,
+        "allocs/op": 1518796.0
+      },
+      {
+        "ns/op": 1302650400.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 104826144.0,
+        "allocs/op": 1518751.0
+      },
+      {
+        "ns/op": 1333838300.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 104827408.0,
+        "allocs/op": 1518753.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs16/near-suite-limit/distinctfalse/cachefalse": [
+      {
+        "ns/op": 54999081000.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 1590759392.0,
+        "allocs/op": 1811128.0
+      },
+      {
+        "ns/op": 52860050100.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 1590749880.0,
+        "allocs/op": 1811084.0
+      },
+      {
+        "ns/op": 54990084900.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 1590753032.0,
+        "allocs/op": 1811088.0
+      },
+      {
+        "ns/op": 58959849000.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 1590720904.0,
+        "allocs/op": 1811093.0
+      },
+      {
+        "ns/op": 52604798100.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 1590753576.0,
+        "allocs/op": 1811089.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs16/near-suite-limit/distinctfalse/cachetrue": [
+      {
+        "ns/op": 31226411600.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 792790632.0,
+        "allocs/op": 1497615.0
+      },
+      {
+        "ns/op": 30697621600.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 792790640.0,
+        "allocs/op": 1497610.0
+      },
+      {
+        "ns/op": 30747215900.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 792788968.0,
+        "allocs/op": 1497633.0
+      },
+      {
+        "ns/op": 31117876800.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 792796680.0,
+        "allocs/op": 1497604.0
+      },
+      {
+        "ns/op": 31009297400.0,
+        "decodes/op": 2.0,
+        "reads/op": 60.0,
+        "B/op": 792792168.0,
+        "allocs/op": 1497605.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs16/near-suite-limit/distincttrue/cachefalse": [
+      {
+        "ns/op": 53426102600.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 1590680120.0,
+        "allocs/op": 1810135.0
+      },
+      {
+        "ns/op": 52652651300.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 1590706864.0,
+        "allocs/op": 1810096.0
+      },
+      {
+        "ns/op": 54444953500.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 1590703416.0,
+        "allocs/op": 1810088.0
+      },
+      {
+        "ns/op": 59397289300.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 1590700280.0,
+        "allocs/op": 1810084.0
+      },
+      {
+        "ns/op": 52834141000.0,
+        "decodes/op": 23.0,
+        "reads/op": 117.0,
+        "B/op": 1590706288.0,
+        "allocs/op": 1810101.0
+      }
+    ],
+    "BenchmarkProjectPrepare/pairs16/near-suite-limit/distincttrue/cachetrue": [
+      {
+        "ns/op": 31197976800.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 793667008.0,
+        "allocs/op": 1519573.0
+      },
+      {
+        "ns/op": 30410871200.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 793682072.0,
+        "allocs/op": 1519608.0
+      },
+      {
+        "ns/op": 30531122200.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 793691752.0,
+        "allocs/op": 1519602.0
+      },
+      {
+        "ns/op": 30689845300.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 793690920.0,
+        "allocs/op": 1519650.0
+      },
+      {
+        "ns/op": 30417715700.0,
+        "decodes/op": 2.0,
+        "reads/op": 96.0,
+        "B/op": 793679232.0,
+        "allocs/op": 1519599.0
+      }
+    ],
+    "BenchmarkProjectAssess/pairs6/valid": [
+      {
+        "ns/op": 672131500.0,
+        "B/op": 171029400.0,
+        "allocs/op": 2079811.0
+      },
+      {
+        "ns/op": 694492100.0,
+        "B/op": 171000080.0,
+        "allocs/op": 2079716.0
+      },
+      {
+        "ns/op": 692513200.0,
+        "B/op": 166073264.0,
+        "allocs/op": 2079561.0
+      },
+      {
+        "ns/op": 683961200.0,
+        "B/op": 167354368.0,
+        "allocs/op": 2079610.0
+      },
+      {
+        "ns/op": 881079900.0,
+        "B/op": 166075904.0,
+        "allocs/op": 2079606.0
+      }
+    ],
+    "BenchmarkProjectAssess/pairs6/missing": [
+      {
+        "ns/op": 976946200.0,
+        "B/op": 161983616.0,
+        "allocs/op": 1932388.0
+      },
+      {
+        "ns/op": 818493000.0,
+        "B/op": 155915136.0,
+        "allocs/op": 1932284.0
+      },
+      {
+        "ns/op": 639117800.0,
+        "B/op": 158339360.0,
+        "allocs/op": 1932298.0
+      },
+      {
+        "ns/op": 636013900.0,
+        "B/op": 157168456.0,
+        "allocs/op": 1932295.0
+      },
+      {
+        "ns/op": 816864700.0,
+        "B/op": 158300520.0,
+        "allocs/op": 1932292.0
+      }
+    ],
+    "BenchmarkProjectAssess/pairs6/corrupt": [
+      {
+        "ns/op": 95768100.0,
+        "B/op": 14653040.0,
+        "allocs/op": 193010.0
+      },
+      {
+        "ns/op": 86317700.0,
+        "B/op": 14493696.0,
+        "allocs/op": 192737.0
+      },
+      {
+        "ns/op": 81481100.0,
+        "B/op": 13339704.0,
+        "allocs/op": 192710.0
+      },
+      {
+        "ns/op": 85938400.0,
+        "B/op": 14493816.0,
+        "allocs/op": 192740.0
+      },
+      {
+        "ns/op": 74616400.0,
+        "B/op": 13340088.0,
+        "allocs/op": 192716.0
+      }
+    ],
+    "BenchmarkProjectAssess/pairs12/valid": [
+      {
+        "ns/op": 1390137100.0,
+        "B/op": 335905136.0,
+        "allocs/op": 4137344.0
+      },
+      {
+        "ns/op": 1394881500.0,
+        "B/op": 334841424.0,
+        "allocs/op": 4137405.0
+      },
+      {
+        "ns/op": 1360762400.0,
+        "B/op": 338509264.0,
+        "allocs/op": 4137412.0
+      },
+      {
+        "ns/op": 1361818800.0,
+        "B/op": 333472080.0,
+        "allocs/op": 4137277.0
+      },
+      {
+        "ns/op": 1345484300.0,
+        "B/op": 335855056.0,
+        "allocs/op": 4137283.0
+      }
+    ],
+    "BenchmarkProjectAssess/pairs12/missing": [
+      {
+        "ns/op": 1334974000.0,
+        "B/op": 324724880.0,
+        "allocs/op": 3990108.0
+      },
+      {
+        "ns/op": 1323650300.0,
+        "B/op": 319772984.0,
+        "allocs/op": 3990036.0
+      },
+      {
+        "ns/op": 1303301800.0,
+        "B/op": 319502816.0,
+        "allocs/op": 3989812.0
+      },
+      {
+        "ns/op": 1335647900.0,
+        "B/op": 325987312.0,
+        "allocs/op": 3990032.0
+      },
+      {
+        "ns/op": 1322557600.0,
+        "B/op": 319713176.0,
+        "allocs/op": 3989972.0
+      }
+    ],
+    "BenchmarkProjectAssess/pairs12/corrupt": [
+      {
+        "ns/op": 97782700.0,
+        "B/op": 15620016.0,
+        "allocs/op": 219291.0
+      },
+      {
+        "ns/op": 93461500.0,
+        "B/op": 14314856.0,
+        "allocs/op": 219258.0
+      },
+      {
+        "ns/op": 93754800.0,
+        "B/op": 14315928.0,
+        "allocs/op": 219272.0
+      },
+      {
+        "ns/op": 96643100.0,
+        "B/op": 14316008.0,
+        "allocs/op": 219271.0
+      },
+      {
+        "ns/op": 100013100.0,
+        "B/op": 14350992.0,
+        "allocs/op": 219254.0
+      }
+    ],
+    "BenchmarkProjectAssess/pairs16/valid": [
+      {
+        "ns/op": 1879928300.0,
+        "B/op": 447168016.0,
+        "allocs/op": 5529360.0
+      },
+      {
+        "ns/op": 1920054700.0,
+        "B/op": 448617664.0,
+        "allocs/op": 5529492.0
+      },
+      {
+        "ns/op": 1897745300.0,
+        "B/op": 451129808.0,
+        "allocs/op": 5529587.0
+      },
+      {
+        "ns/op": 1797670400.0,
+        "B/op": 444907256.0,
+        "allocs/op": 5529386.0
+      },
+      {
+        "ns/op": 1816368200.0,
+        "B/op": 445873408.0,
+        "allocs/op": 5529482.0
+      }
+    ],
+    "BenchmarkProjectAssess/pairs16/missing": [
+      {
+        "ns/op": 1761129600.0,
+        "B/op": 433405840.0,
+        "allocs/op": 5382203.0
+      },
+      {
+        "ns/op": 1767693200.0,
+        "B/op": 433478440.0,
+        "allocs/op": 5382100.0
+      },
+      {
+        "ns/op": 1737483800.0,
+        "B/op": 433306904.0,
+        "allocs/op": 5382040.0
+      },
+      {
+        "ns/op": 1764201000.0,
+        "B/op": 430935720.0,
+        "allocs/op": 5382054.0
+      },
+      {
+        "ns/op": 1767997300.0,
+        "B/op": 435664928.0,
+        "allocs/op": 5382330.0
+      }
+    ],
+    "BenchmarkProjectAssess/pairs16/corrupt": [
+      {
+        "ns/op": 107018900.0,
+        "B/op": 16451960.0,
+        "allocs/op": 236896.0
+      },
+      {
+        "ns/op": 109699500.0,
+        "B/op": 15184480.0,
+        "allocs/op": 236876.0
+      },
+      {
+        "ns/op": 106467100.0,
+        "B/op": 15147824.0,
+        "allocs/op": 236880.0
+      },
+      {
+        "ns/op": 111427100.0,
+        "B/op": 15147776.0,
+        "allocs/op": 236875.0
+      },
+      {
+        "ns/op": 109065000.0,
+        "B/op": 15147776.0,
+        "allocs/op": 236877.0
+      }
+    ]
+  }
+}

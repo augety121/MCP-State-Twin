@@ -205,3 +205,50 @@ func TestProjectGuideCLI(t *testing.T) {
 		}
 	}
 }
+
+func TestProjectRunStdoutFailurePreservesPublication(t *testing.T) {
+	root := preparePackageCLI(t)
+	if _, err := bundle.Build(filepath.Join(root, "reviewed", "world", "agent", "bundle-agent.yaml"), filepath.Join(root, ".statetwin", "reviewed-agent-world.stb")); err != nil {
+		t.Fatal(err)
+	}
+	// A real one-task project is sufficient to exercise publication followed
+	// by a short stdout write; the four-group pipeline has its own tests.
+	for _, item := range []struct {
+		name, key string
+		n         int
+	}{{"agent-suite.json", "pairs", 1}, {"agent-cases.json", "tasks", 1}, {"agent-cases.json", "cases", 3}, {"reviewed/catalog-core.json", "tasks", 1}, {"reviewed/worlds-core.json", "worlds", 1}} {
+		raw, err := os.ReadFile(filepath.Join(root, item.name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var m map[string]any
+		if json.Unmarshal(raw, &m) != nil {
+			t.Fatal(item.name)
+		}
+		m[item.key] = m[item.key].([]any)[:item.n]
+		raw, _ = json.Marshal(m)
+		if err := os.WriteFile(filepath.Join(root, item.name), raw, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	raw, _ := os.ReadFile(filepath.Join(root, "agent-expectation.json"))
+	var expect agenteval.SuiteExpectation
+	if json.Unmarshal(raw, &expect) != nil {
+		t.Fatal("expectation")
+	}
+	expect.Plan.Pairs = expect.Plan.Pairs[:1]
+	raw, _ = json.Marshal(expect)
+	os.WriteFile(filepath.Join(root, "agent-expectation.json"), raw, 0600)
+	err := runEvaluationProjectTo(context.Background(), "project-run", []string{"--root", root, "--project", "project-core.json", "--out", "delivery"}, projectShortWriter{})
+	if err == nil || err.Error() != "PROJECT_OUTPUT_FAILED" {
+		t.Fatal(err)
+	}
+	raw, err = os.ReadFile(filepath.Join(root, "delivery", "project-report.json"))
+	if err != nil {
+		t.Fatal("publication rolled back", err)
+	}
+	var report agenteval.ProjectReport
+	if json.Unmarshal(raw, &report) != nil || report.Lifecycle != "published" || report.Decision != "passed" {
+		t.Fatal(string(raw))
+	}
+}
