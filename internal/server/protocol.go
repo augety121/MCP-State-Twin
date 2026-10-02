@@ -2,7 +2,7 @@ package server
 
 const (
 	MCPGoSDKModule          = "github.com/modelcontextprotocol/go-sdk"
-	MCPGoSDKVersion         = "v1.7.0"
+	MCPGoSDKVersion         = "v1.8.0"
 	ModernProtocolVersion   = "2026-07-28"
 	LegacyProtocolVersion   = "2025-11-25"
 	ProtocolEvidenceFormat  = "statetwin.dev/mcp-protocol-evidence/v1alpha1"
