@@ -1,0 +1,17 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "issue-find-open",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "list_issues",
+      "input": {
+        "owner": "octo",
+        "repository": "demo"
+      }
+    }
+  ],
+  "answer": {
+    "number": 1
+  }
+}

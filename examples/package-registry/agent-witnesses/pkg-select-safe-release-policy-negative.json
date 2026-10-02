@@ -1,0 +1,30 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-select-safe-release",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "list_releases",
+      "input": {
+        "name": "acme/cli"
+      }
+    },
+    {
+      "tool": "check_advisories",
+      "input": {
+        "name": "acme/cli",
+        "version": "1.2.0"
+      }
+    },
+    {
+      "tool": "publish_release",
+      "input": {
+        "name": "acme/cli",
+        "version": "99.0.0"
+      }
+    }
+  ],
+  "answer": {
+    "version": "1.2.0"
+  }
+}

@@ -128,6 +128,13 @@ func PrepareSuite(ctx context.Context, root string, data []byte) (*PreparedSuite
 }
 
 func prepareSuite(ctx context.Context, root string, data []byte, inputBudget, extractedBudget int) (*PreparedSuite, error) {
+	return prepareSuiteWith(ctx, data, inputBudget, extractedBudget, func(n string, limit int) ([]byte, error) { return task.ReadFile(root, n, limit) }, bundle.OpenBytes)
+}
+
+type inputReader func(string, int) ([]byte, error)
+type bundleReader func([]byte) (*bundle.Artifact, error)
+
+func prepareSuiteWith(ctx context.Context, data []byte, inputBudget, extractedBudget int, readFile inputReader, openBundle bundleReader) (*PreparedSuite, error) {
 	p, err := DecodeSuite(data)
 	if err != nil {
 		return nil, err
@@ -140,7 +147,7 @@ func prepareSuite(ctx context.Context, root string, data []byte, inputBudget, ex
 			return nil, errors.New("SUITE_RESOURCE_LIMIT")
 		}
 		readLimit := min(limit, inputBudget)
-		raw, err := task.ReadFile(root, name, readLimit)
+		raw, err := readFile(name, readLimit)
 		if err != nil {
 			if readLimit < limit {
 				return nil, errors.New("SUITE_RESOURCE_LIMIT")
@@ -167,7 +174,7 @@ func prepareSuite(ctx context.Context, root string, data []byte, inputBudget, ex
 		if err != nil {
 			return nil, err
 		}
-		b, err := bundle.OpenBytes(bundleBytes)
+		b, err := openBundle(bundleBytes)
 		if err != nil {
 			return nil, errors.New("SUITE_INPUT_INVALID")
 		}

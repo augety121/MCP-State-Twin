@@ -1,0 +1,32 @@
+{
+  "kind": "MockResponses",
+  "syntheticOnly": true,
+  "responses": [
+    {
+      "status": "completed",
+      "output": [
+        {
+          "type": "function_call",
+          "call_id": "synthetic_call_1",
+          "name": "list_issues",
+          "arguments": "{\"owner\": \"octo\", \"repository\": \"demo\"}"
+        }
+      ]
+    },
+    {
+      "status": "completed",
+      "output": [
+        {
+          "type": "message",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "output_text",
+              "text": "{\"number\": 1}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

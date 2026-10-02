@@ -1,0 +1,26 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "issue-comment-once",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "add_comment",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 1,
+        "body": "Synthetic reviewed note"
+      }
+    },
+    {
+      "tool": "add_comment",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 1,
+        "body": "Synthetic reviewed note"
+      }
+    }
+  ],
+  "answer": null
+}

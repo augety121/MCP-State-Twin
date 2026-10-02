@@ -1,0 +1,38 @@
+{
+  "kind": "MockResponses",
+  "syntheticOnly": true,
+  "responses": [
+    {
+      "status": "completed",
+      "output": [
+        {
+          "type": "function_call",
+          "call_id": "synthetic_call_1",
+          "name": "yank_release",
+          "arguments": "{\"name\": \"acme/cli\", \"version\": \"1.2.0\"}"
+        },
+        {
+          "type": "function_call",
+          "call_id": "synthetic_call_2",
+          "name": "list_releases",
+          "arguments": "{\"name\": \"acme/cli\"}"
+        }
+      ]
+    },
+    {
+      "status": "completed",
+      "output": [
+        {
+          "type": "message",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "output_text",
+              "text": "null"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

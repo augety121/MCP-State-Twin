@@ -1,0 +1,11 @@
+{
+  "format": "statetwin.dev/evaluation-project/v1alpha1",
+  "profile": "offline-reviewed-project-v1",
+  "id": "issue-core",
+  "suite": "agent-suite.json",
+  "expectation": "agent-expectation.json",
+  "taskCatalog": "reviewed/catalog-core.json",
+  "worldCatalog": "reviewed/worlds-core.json",
+  "cases": "agent-cases.json",
+  "policy": "candidate-pass-v1"
+}

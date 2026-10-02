@@ -1,0 +1,9 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-read-release",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": {
+    "version": "wrong"
+  }
+}

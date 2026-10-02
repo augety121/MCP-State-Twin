@@ -1,0 +1,29 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "read-issue",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "get_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 1
+      }
+    },
+    {
+      "tool": "close_issue",
+      "input": {
+        "owner": "other",
+        "repository": "protected",
+        "number": 1
+      }
+    }
+  ],
+  "answer": {
+    "repository": "octo/demo",
+    "number": 1,
+    "state": "open",
+    "title": "Target issue"
+  }
+}

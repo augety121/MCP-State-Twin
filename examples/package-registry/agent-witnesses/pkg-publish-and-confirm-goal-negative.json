@@ -1,0 +1,7 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-publish-and-confirm",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": null
+}

@@ -1,0 +1,344 @@
+{
+  "format": "statetwin.dev/task-cases/v1alpha1",
+  "profile": "synthetic-witness-cases-v1",
+  "tasks": [
+    {
+      "taskId": "issue-find-open",
+      "task": "agent-tasks/issue-find-open.json"
+    },
+    {
+      "taskId": "issue-comment-once",
+      "task": "agent-tasks/issue-comment-once.json"
+    },
+    {
+      "taskId": "issue-close-with-comment",
+      "task": "agent-tasks/issue-close-with-comment.json"
+    },
+    {
+      "taskId": "issue-create-and-confirm",
+      "task": "agent-tasks/issue-create-and-confirm.json"
+    },
+    {
+      "taskId": "issue-cross-repository-abstain",
+      "task": "agent-tasks/issue-cross-repository-abstain.json"
+    },
+    {
+      "taskId": "issue-preserve-neighbor",
+      "task": "agent-tasks/issue-preserve-neighbor.json"
+    }
+  ],
+  "cases": [
+    {
+      "caseId": "issue-find-open-positive",
+      "taskId": "issue-find-open",
+      "role": "positive",
+      "witness": "agent-witnesses/issue-find-open.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "issue-find-open-alternate",
+      "taskId": "issue-find-open",
+      "role": "positive",
+      "witness": "agent-witnesses/issue-find-open-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "issue-find-open-goal-negative",
+      "taskId": "issue-find-open",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/issue-find-open-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-find-open-policy-negative",
+      "taskId": "issue-find-open",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/issue-find-open-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-comment-once-positive",
+      "taskId": "issue-comment-once",
+      "role": "positive",
+      "witness": "agent-witnesses/issue-comment-once.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "issue-comment-once-alternate",
+      "taskId": "issue-comment-once",
+      "role": "positive",
+      "witness": "agent-witnesses/issue-comment-once-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "issue-comment-once-goal-negative",
+      "taskId": "issue-comment-once",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/issue-comment-once-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-comment-once-policy-negative",
+      "taskId": "issue-comment-once",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/issue-comment-once-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-close-with-comment-positive",
+      "taskId": "issue-close-with-comment",
+      "role": "positive",
+      "witness": "agent-witnesses/issue-close-with-comment.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "issue-close-with-comment-alternate",
+      "taskId": "issue-close-with-comment",
+      "role": "positive",
+      "witness": "agent-witnesses/issue-close-with-comment-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "issue-close-with-comment-goal-negative",
+      "taskId": "issue-close-with-comment",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/issue-close-with-comment-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-close-with-comment-policy-negative",
+      "taskId": "issue-close-with-comment",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/issue-close-with-comment-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-create-and-confirm-positive",
+      "taskId": "issue-create-and-confirm",
+      "role": "positive",
+      "witness": "agent-witnesses/issue-create-and-confirm.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "issue-create-and-confirm-alternate",
+      "taskId": "issue-create-and-confirm",
+      "role": "positive",
+      "witness": "agent-witnesses/issue-create-and-confirm-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "issue-create-and-confirm-goal-negative",
+      "taskId": "issue-create-and-confirm",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/issue-create-and-confirm-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-create-and-confirm-policy-negative",
+      "taskId": "issue-create-and-confirm",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/issue-create-and-confirm-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-cross-repository-abstain-positive",
+      "taskId": "issue-cross-repository-abstain",
+      "role": "positive",
+      "witness": "agent-witnesses/issue-cross-repository-abstain.json",
+      "expected": {
+        "outcome": "expected_abstention",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "issue-cross-repository-abstain-alternate",
+      "taskId": "issue-cross-repository-abstain",
+      "role": "positive",
+      "witness": "agent-witnesses/issue-cross-repository-abstain-alternate.json",
+      "expected": {
+        "outcome": "expected_abstention",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "issue-cross-repository-abstain-goal-negative",
+      "taskId": "issue-cross-repository-abstain",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/issue-cross-repository-abstain-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-cross-repository-abstain-policy-negative",
+      "taskId": "issue-cross-repository-abstain",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/issue-cross-repository-abstain-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-preserve-neighbor-positive",
+      "taskId": "issue-preserve-neighbor",
+      "role": "positive",
+      "witness": "agent-witnesses/issue-preserve-neighbor.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "issue-preserve-neighbor-alternate",
+      "taskId": "issue-preserve-neighbor",
+      "role": "positive",
+      "witness": "agent-witnesses/issue-preserve-neighbor-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "issue-preserve-neighbor-goal-negative",
+      "taskId": "issue-preserve-neighbor",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/issue-preserve-neighbor-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-preserve-neighbor-policy-negative",
+      "taskId": "issue-preserve-neighbor",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/issue-preserve-neighbor-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-comment-once-duplicate",
+      "taskId": "issue-comment-once",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/issue-comment-once-duplicate.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-close-with-comment-half",
+      "taskId": "issue-close-with-comment",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/issue-close-with-comment-half.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-create-and-confirm-unconfirmed",
+      "taskId": "issue-create-and-confirm",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/issue-create-and-confirm-unconfirmed.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "issue-create-and-confirm-duplicate",
+      "taskId": "issue-create-and-confirm",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/issue-create-and-confirm-duplicate.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    }
+  ]
+}

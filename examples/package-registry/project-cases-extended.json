@@ -1,0 +1,332 @@
+{
+  "format": "statetwin.dev/task-cases/v1alpha1",
+  "profile": "synthetic-witness-cases-v1",
+  "tasks": [
+    {
+      "taskId": "pkg-select-safe-release",
+      "task": "agent-tasks/pkg-select-safe-release.json"
+    },
+    {
+      "taskId": "pkg-publish-and-confirm",
+      "task": "agent-tasks/pkg-publish-and-confirm.json"
+    },
+    {
+      "taskId": "pkg-yank-and-confirm",
+      "task": "agent-tasks/pkg-yank-and-confirm.json"
+    },
+    {
+      "taskId": "pkg-reject-yanked-install",
+      "task": "agent-tasks/pkg-reject-yanked-install.json"
+    },
+    {
+      "taskId": "pkg-isolated-install",
+      "task": "agent-tasks/pkg-isolated-install.json"
+    },
+    {
+      "taskId": "pkg-publish-then-install",
+      "task": "agent-tasks/pkg-publish-then-install.json"
+    }
+  ],
+  "cases": [
+    {
+      "caseId": "pkg-select-safe-release-positive",
+      "taskId": "pkg-select-safe-release",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-select-safe-release.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-select-safe-release-alternate",
+      "taskId": "pkg-select-safe-release",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-select-safe-release-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-select-safe-release-goal-negative",
+      "taskId": "pkg-select-safe-release",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-select-safe-release-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-select-safe-release-policy-negative",
+      "taskId": "pkg-select-safe-release",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-select-safe-release-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-publish-and-confirm-positive",
+      "taskId": "pkg-publish-and-confirm",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-publish-and-confirm.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-publish-and-confirm-alternate",
+      "taskId": "pkg-publish-and-confirm",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-publish-and-confirm-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-publish-and-confirm-goal-negative",
+      "taskId": "pkg-publish-and-confirm",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-publish-and-confirm-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-publish-and-confirm-policy-negative",
+      "taskId": "pkg-publish-and-confirm",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-publish-and-confirm-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-yank-and-confirm-positive",
+      "taskId": "pkg-yank-and-confirm",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-yank-and-confirm.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-yank-and-confirm-alternate",
+      "taskId": "pkg-yank-and-confirm",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-yank-and-confirm-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-yank-and-confirm-goal-negative",
+      "taskId": "pkg-yank-and-confirm",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-yank-and-confirm-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-yank-and-confirm-policy-negative",
+      "taskId": "pkg-yank-and-confirm",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-yank-and-confirm-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-reject-yanked-install-positive",
+      "taskId": "pkg-reject-yanked-install",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-reject-yanked-install.json",
+      "expected": {
+        "outcome": "expected_abstention",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-reject-yanked-install-alternate",
+      "taskId": "pkg-reject-yanked-install",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-reject-yanked-install-alternate.json",
+      "expected": {
+        "outcome": "expected_abstention",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-reject-yanked-install-goal-negative",
+      "taskId": "pkg-reject-yanked-install",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-reject-yanked-install-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-reject-yanked-install-policy-negative",
+      "taskId": "pkg-reject-yanked-install",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-reject-yanked-install-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-isolated-install-positive",
+      "taskId": "pkg-isolated-install",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-isolated-install.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-isolated-install-alternate",
+      "taskId": "pkg-isolated-install",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-isolated-install-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-isolated-install-goal-negative",
+      "taskId": "pkg-isolated-install",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-isolated-install-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-isolated-install-policy-negative",
+      "taskId": "pkg-isolated-install",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-isolated-install-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-publish-then-install-positive",
+      "taskId": "pkg-publish-then-install",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-publish-then-install.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-publish-then-install-alternate",
+      "taskId": "pkg-publish-then-install",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-publish-then-install-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-publish-then-install-goal-negative",
+      "taskId": "pkg-publish-then-install",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-publish-then-install-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-publish-then-install-policy-negative",
+      "taskId": "pkg-publish-then-install",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-publish-then-install-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-publish-and-confirm-duplicate",
+      "taskId": "pkg-publish-and-confirm",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-publish-and-confirm-duplicate.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-yank-and-confirm-unconfirmed",
+      "taskId": "pkg-yank-and-confirm",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-yank-and-confirm-unconfirmed.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-publish-then-install-half",
+      "taskId": "pkg-publish-then-install",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-publish-then-install-half.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    }
+  ]
+}

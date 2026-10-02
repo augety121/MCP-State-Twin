@@ -1,0 +1,27 @@
+{
+  "format": "statetwin.dev/evaluation-campaign/v1alpha1",
+  "profile": "offline-reviewed-campaign-v1",
+  "id": "reviewed-two-domain",
+  "projects": [
+    {
+      "id": "issue-core",
+      "root": "examples/issue-tracker",
+      "project": "project-core.json"
+    },
+    {
+      "id": "issue-extended",
+      "root": "examples/issue-tracker",
+      "project": "project-extended.json"
+    },
+    {
+      "id": "registry-core",
+      "root": "examples/package-registry",
+      "project": "project-core.json"
+    },
+    {
+      "id": "registry-extended",
+      "root": "examples/package-registry",
+      "project": "project-extended.json"
+    }
+  ]
+}

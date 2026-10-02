@@ -1,6 +1,6 @@
 # SPEC-0069: Task Case Manifest
 
-Status: **Proposal — not accepted or implemented**；[ADR-0069](ADR-0069-TASK-QUALITY-PROPOSAL.md)。
+Status: **Accepted — implemented in the bounded offline subset**；[ADR-0069](ADR-0069-TASK-QUALITY-PROPOSAL.md)。
 
 ## 1. 输入及用途
 

@@ -1,0 +1,9 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "issue-cross-repository-abstain",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": {
+    "refused": false
+  }
+}

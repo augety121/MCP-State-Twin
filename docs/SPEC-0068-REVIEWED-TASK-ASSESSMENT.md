@@ -1,6 +1,6 @@
 # SPEC-0068: Replay-backed Reviewed Task Assessment
 
-Status: **Proposal — not accepted or implemented**，依赖
+Status: **Accepted — implemented in the bounded offline subset**，依赖
 [SPEC-0066](SPEC-0066-INDEPENDENT-TASK-CATALOG.md)；设计决策为
 [ADR-0066](ADR-0066-REVIEWED-TASK-BINDING-PROPOSAL.md)。当前 `suite-assess` 不具有本能力。
 
@@ -10,7 +10,7 @@ Status: **Proposal — not accepted or implemented**，依赖
 改得更宽松，现有 expectation 身份和 repeat 一致性仍可匹配。SPEC-0065 正确地按
 实际保存的 Task 评分，却无法知道它与操作者独立选定的内容不同。
 
-提议新命令，必须同时满足现有绝对达标门禁和完整 Task 的外部绑定：
+新增命令，必须同时满足现有绝对达标门禁和完整 Task 的外部绑定：
 
 ```text
 statetwin eval suite-assess-reviewed --root ROOT --out OUT --expect EXPECT --tasks CATALOG --policy candidate-pass-v1|both-pass-v1 --format json|markdown
@@ -64,7 +64,7 @@ unverifiable；只有覆盖精确且每个 expected trial 完成绑定才 matche
 
 ## 4. 独立结果封套与门禁
 
-提议 format `statetwin.dev/agent-reviewed-assessment/v1alpha1`，profile
+采用 format `statetwin.dev/agent-reviewed-assessment/v1alpha1`，profile
 `offline-reviewed-task-v1`，必填字段：format、profile、policy、decision、reasons、
 taskBinding、assessment、upgradeAllowed、provenance。
 
@@ -96,7 +96,7 @@ Task.Bundle 字符串匹配不等于对 bundle 内容的独立期待；bundle �
 一致性仍由原有机制处理。即使顶层 passed，也不能宣称世界内容、runtime、模型身份
 获得独立审批、样本统计独立或 oracle 质量正确。目录是可信根下的输入声明，不是证书。
 
-## 6. 后续实施验收矩阵
+## 6. 实施验收矩阵
 
 | 反例或正例 | 旧 assessment | 新封套 |
 |---|---|---|

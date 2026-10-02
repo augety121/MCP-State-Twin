@@ -1,0 +1,24 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-install-release",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "install_dependency",
+      "input": {
+        "project": "demo",
+        "name": "acme/cli",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "tool": "install_dependency",
+      "input": {
+        "project": "other",
+        "name": "acme/cli",
+        "version": "1.0.0"
+      }
+    }
+  ],
+  "answer": null
+}

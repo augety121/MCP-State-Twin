@@ -1,0 +1,7 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "already-closed",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": null
+}

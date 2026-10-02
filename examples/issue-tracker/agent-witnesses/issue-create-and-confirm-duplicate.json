@@ -1,0 +1,34 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "issue-create-and-confirm",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "create_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "title": "Synthetic regression probe",
+        "body": "Fixture-only task"
+      }
+    },
+    {
+      "tool": "create_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "title": "Synthetic regression probe",
+        "body": "Fixture-only task"
+      }
+    },
+    {
+      "tool": "get_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 4
+      }
+    }
+  ],
+  "answer": null
+}

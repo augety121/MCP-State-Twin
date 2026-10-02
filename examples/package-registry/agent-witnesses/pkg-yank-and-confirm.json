@@ -1,0 +1,21 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-yank-and-confirm",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "yank_release",
+      "input": {
+        "name": "acme/cli",
+        "version": "1.2.0"
+      }
+    },
+    {
+      "tool": "list_releases",
+      "input": {
+        "name": "acme/cli"
+      }
+    }
+  ],
+  "answer": null
+}

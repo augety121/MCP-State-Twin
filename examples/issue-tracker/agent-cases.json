@@ -1,0 +1,424 @@
+{
+  "format": "statetwin.dev/task-cases/v1alpha2",
+  "profile": "synthetic-oracle-mutation-cases-v1",
+  "tasks": [
+    {
+      "taskId": "read-issue",
+      "task": "agent-tasks/read-issue.json"
+    },
+    {
+      "taskId": "close-issue",
+      "task": "agent-tasks/close-issue.json"
+    },
+    {
+      "taskId": "create-issue",
+      "task": "agent-tasks/create-issue.json"
+    },
+    {
+      "taskId": "already-closed",
+      "task": "agent-tasks/already-closed.json"
+    },
+    {
+      "taskId": "scope-protection",
+      "task": "agent-tasks/scope-protection.json"
+    },
+    {
+      "taskId": "after-commit-confirm",
+      "task": "agent-tasks/after-commit-confirm.json"
+    }
+  ],
+  "cases": [
+    {
+      "caseId": "read-issue-positive",
+      "taskId": "read-issue",
+      "role": "positive",
+      "witness": "agent-witnesses/read-issue.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "read-issue-alternate",
+      "taskId": "read-issue",
+      "role": "positive",
+      "witness": "agent-witnesses/read-issue-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "read-issue-goal-negative",
+      "taskId": "read-issue",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/read-issue-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "read-issue-policy-negative",
+      "taskId": "read-issue",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/read-issue-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "committed-operation-scope"
+        ]
+      }
+    },
+    {
+      "caseId": "read-issue-state-negative",
+      "taskId": "read-issue",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/read-issue.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "allowed-business-changes"
+        ]
+      },
+      "mutations": [
+        {
+          "entity": "repository",
+          "key": "octo/demo",
+          "field": "defaultBranch",
+          "value": "synthetic-alternative"
+        }
+      ]
+    },
+    {
+      "caseId": "close-issue-positive",
+      "taskId": "close-issue",
+      "role": "positive",
+      "witness": "agent-witnesses/close-issue.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "close-issue-alternate",
+      "taskId": "close-issue",
+      "role": "positive",
+      "witness": "agent-witnesses/close-issue-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "close-issue-goal-negative",
+      "taskId": "close-issue",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/close-issue-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "close-issue-policy-negative",
+      "taskId": "close-issue",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/close-issue-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "committed-operation-scope"
+        ]
+      }
+    },
+    {
+      "caseId": "close-issue-state-negative",
+      "taskId": "close-issue",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/close-issue.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "allowed-business-changes"
+        ]
+      },
+      "mutations": [
+        {
+          "entity": "repository",
+          "key": "octo/demo",
+          "field": "defaultBranch",
+          "value": "synthetic-alternative"
+        }
+      ]
+    },
+    {
+      "caseId": "create-issue-positive",
+      "taskId": "create-issue",
+      "role": "positive",
+      "witness": "agent-witnesses/create-issue.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "create-issue-alternate",
+      "taskId": "create-issue",
+      "role": "positive",
+      "witness": "agent-witnesses/create-issue-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "create-issue-goal-negative",
+      "taskId": "create-issue",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/create-issue-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      },
+      "mutations": [
+        {
+          "entity": "issue",
+          "key": "octo/demo#4",
+          "field": "title",
+          "value": "Synthetic incorrect title"
+        }
+      ]
+    },
+    {
+      "caseId": "create-issue-policy-negative",
+      "taskId": "create-issue",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/create-issue-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "committed-operation-scope"
+        ]
+      }
+    },
+    {
+      "caseId": "create-issue-state-negative",
+      "taskId": "create-issue",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/create-issue.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "allowed-business-changes"
+        ]
+      },
+      "mutations": [
+        {
+          "entity": "repository",
+          "key": "octo/demo",
+          "field": "defaultBranch",
+          "value": "synthetic-alternative"
+        }
+      ]
+    },
+    {
+      "caseId": "already-closed-positive",
+      "taskId": "already-closed",
+      "role": "positive",
+      "witness": "agent-witnesses/already-closed.json",
+      "expected": {
+        "outcome": "expected_abstention",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "already-closed-alternate",
+      "taskId": "already-closed",
+      "role": "positive",
+      "witness": "agent-witnesses/already-closed-alternate.json",
+      "expected": {
+        "outcome": "expected_abstention",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "already-closed-goal-negative",
+      "taskId": "already-closed",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/already-closed-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "already-closed-policy-negative",
+      "taskId": "already-closed",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/already-closed-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "committed-operation-scope"
+        ]
+      }
+    },
+    {
+      "caseId": "already-closed-state-negative",
+      "taskId": "already-closed",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/already-closed.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "allowed-business-changes"
+        ]
+      },
+      "mutations": [
+        {
+          "entity": "repository",
+          "key": "octo/demo",
+          "field": "defaultBranch",
+          "value": "synthetic-alternative"
+        }
+      ]
+    },
+    {
+      "caseId": "scope-protection-positive",
+      "taskId": "scope-protection",
+      "role": "positive",
+      "witness": "agent-witnesses/scope-protection.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "scope-protection-alternate",
+      "taskId": "scope-protection",
+      "role": "positive",
+      "witness": "agent-witnesses/scope-protection-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "scope-protection-goal-negative",
+      "taskId": "scope-protection",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/scope-protection-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "scope-protection-policy-negative",
+      "taskId": "scope-protection",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/scope-protection-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "committed-operation-scope"
+        ]
+      }
+    },
+    {
+      "caseId": "scope-protection-state-negative",
+      "taskId": "scope-protection",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/scope-protection.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "allowed-business-changes"
+        ]
+      },
+      "mutations": [
+        {
+          "entity": "repository",
+          "key": "octo/demo",
+          "field": "defaultBranch",
+          "value": "synthetic-alternative"
+        }
+      ]
+    },
+    {
+      "caseId": "after-commit-confirm-positive",
+      "taskId": "after-commit-confirm",
+      "role": "positive",
+      "witness": "agent-witnesses/after-commit-confirm.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "after-commit-confirm-alternate",
+      "taskId": "after-commit-confirm",
+      "role": "positive",
+      "witness": "agent-witnesses/after-commit-confirm-alternate.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "after-commit-confirm-goal-negative",
+      "taskId": "after-commit-confirm",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/after-commit-confirm-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "after-commit-confirm-policy-negative",
+      "taskId": "after-commit-confirm",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/after-commit-confirm-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "committed-operation-scope"
+        ]
+      }
+    },
+    {
+      "caseId": "after-commit-confirm-state-negative",
+      "taskId": "after-commit-confirm",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/after-commit-confirm.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "allowed-business-changes"
+        ]
+      },
+      "mutations": [
+        {
+          "entity": "repository",
+          "key": "octo/demo",
+          "field": "defaultBranch",
+          "value": "synthetic-alternative"
+        }
+      ]
+    }
+  ]
+}

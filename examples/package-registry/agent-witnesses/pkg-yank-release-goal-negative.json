@@ -1,0 +1,7 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-yank-release",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": null
+}

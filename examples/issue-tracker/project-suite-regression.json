@@ -1,0 +1,50 @@
+{
+  "format": "statetwin.dev/agent-suite-offline/v1alpha1",
+  "baselineModel": "mock-baseline",
+  "candidateModel": "mock-candidate",
+  "maxOutputTokens": 1024,
+  "pairs": [
+    {
+      "taskId": "issue-find-open",
+      "task": "agent-tasks/issue-find-open.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/issue-find-open-baseline.json",
+      "candidateResponses": "agent-mocks/issue-find-open-candidate.json"
+    },
+    {
+      "taskId": "issue-comment-once",
+      "task": "agent-tasks/issue-comment-once.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/issue-comment-once-baseline.json",
+      "candidateResponses": "agent-mocks/issue-comment-once-candidate.json"
+    },
+    {
+      "taskId": "issue-close-with-comment",
+      "task": "agent-tasks/issue-close-with-comment.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/issue-close-with-comment-baseline.json",
+      "candidateResponses": "agent-mocks/issue-close-with-comment-regression.json"
+    },
+    {
+      "taskId": "issue-create-and-confirm",
+      "task": "agent-tasks/issue-create-and-confirm.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/issue-create-and-confirm-baseline.json",
+      "candidateResponses": "agent-mocks/issue-create-and-confirm-candidate.json"
+    },
+    {
+      "taskId": "issue-cross-repository-abstain",
+      "task": "agent-tasks/issue-cross-repository-abstain.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/issue-cross-repository-abstain-baseline.json",
+      "candidateResponses": "agent-mocks/issue-cross-repository-abstain-candidate.json"
+    },
+    {
+      "taskId": "issue-preserve-neighbor",
+      "task": "agent-tasks/issue-preserve-neighbor.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/issue-preserve-neighbor-baseline.json",
+      "candidateResponses": "agent-mocks/issue-preserve-neighbor-candidate.json"
+    }
+  ]
+}

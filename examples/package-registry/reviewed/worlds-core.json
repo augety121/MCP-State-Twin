@@ -1,0 +1,30 @@
+{
+  "format": "statetwin.dev/reviewed-world-catalog/v1alpha1",
+  "profile": "offline-world-content-v1",
+  "worlds": [
+    {
+      "taskId": "pkg-read-release",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "pkg-publish-release",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "pkg-yank-release",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "pkg-install-release",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "pkg-advisory-abstain",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "pkg-scope-protection",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    }
+  ]
+}

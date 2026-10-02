@@ -29,6 +29,8 @@
 > **Development Preview · `0.1.0-dev` · latest prerelease `v0.1.0-alpha.1` · 非 production-ready。**
 > 当前实现究竟可以声明什么，以 [Implementation Status](docs/IMPLEMENTATION-STATUS.md)、RFC、已接受 ADR、规范文档和可执行测试证据为准。Roadmap 中的能力不会被当作当前功能宣传。
 
+离线项目入口已扩展为 `project-check/run/inspect` 和 `campaign-check/run/inspect`：先冻结并审阅全部输入，再执行质量门禁与独立世界绑定。两领域共 24 个任务、103 个质量 case、48 个 trial，附正向与回归 campaign。完整流程见[项目指南](docs/guides/EVALUATION-PROJECTS.md)，本分支验证与主线集成状态见[交付台账](docs/maintenance/SPEC-0077-DELIVERY.md)。旧的[独立离线命令](docs/guides/OFFLINE-DELIVERY.md)仍可使用。
+
 <p align="center">
   <a href="#快速开始"><strong>快速开始</strong></a> ·
   <a href="#30-秒看懂工作原理">工作原理</a> ·

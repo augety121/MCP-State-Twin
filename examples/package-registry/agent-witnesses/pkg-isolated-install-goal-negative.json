@@ -1,0 +1,7 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-isolated-install",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": null
+}

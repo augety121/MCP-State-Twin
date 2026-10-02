@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -52,6 +51,23 @@ func inspectSuiteObserved(parent context.Context, root, out string, sizeLimit in
 	if task.PortablePath(out) != nil {
 		return nil, errors.New("SUITE_INSPECT_PATH_INVALID")
 	}
+	if err := parent.Err(); err != nil {
+		return nil, err
+	}
+	fs, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, errors.New("SUITE_INSPECT_ROOT_UNAVAILABLE")
+	}
+	defer fs.Close()
+	return inspectSuiteView(parent, diskReadRoot{fs}, out, sizeLimit, planObserver, observe)
+}
+func inspectSuiteView(parent context.Context, fs evidenceReadRoot, out string, sizeLimit int64, planObserver func(ComparePlan), observe definitionObserver) (*SuiteInspection, error) {
+	return inspectSuiteViewVerified(parent, fs, out, sizeLimit, planObserver, observe, replay)
+}
+func inspectSuiteViewVerified(parent context.Context, fs evidenceReadRoot, out string, sizeLimit int64, planObserver func(ComparePlan), observe definitionObserver, verifyOffline func(context.Context, *AgentEvidence, bool) error) (*SuiteInspection, error) {
+	if task.PortablePath(out) != nil {
+		return nil, errors.New("SUITE_INSPECT_PATH_INVALID")
+	}
 	ctx, cancel := context.WithTimeout(parent, 120*time.Second)
 	defer cancel()
 	if err := ctx.Err(); err != nil {
@@ -62,11 +78,6 @@ func inspectSuiteObserved(parent context.Context, root, out string, sizeLimit in
 		r.State, r.Problem, r.RegressionGatePassed = "invalid", problem, false
 		return r, nil
 	}
-	fs, err := os.OpenRoot(root)
-	if err != nil {
-		return nil, errors.New("SUITE_INSPECT_ROOT_UNAVAILABLE")
-	}
-	defer fs.Close()
 	parts := strings.Split(out, "/")
 	for i := range parts {
 		info, err := fs.Lstat(strings.Join(parts[:i+1], "/"))
@@ -190,25 +201,41 @@ func inspectSuiteObserved(parent context.Context, root, out string, sizeLimit in
 	if published != nil && pending != nil && !same(published, pending) {
 		return invalid("report_publication_conflict")
 	}
-	for _, pair := range plan.Pairs {
+	// Retain at most the current pair, never a cohort of raw traces. Compare
+	// reuses a verified terminal only after full semantic equality, so a changed
+	// file is verified again rather than inheriting a stale success.
+	type verifiedTerminal struct {
+		evidence *AgentEvidence
+		err      error
+	}
+	cache := []verifiedTerminal{}
+	invalidTrial := errors.New("suite trial invalid")
+	markInvalid := func(problem string) error {
+		r.State = "invalid"
+		r.Problem = problem
+		r.RegressionGatePassed = false
+		return invalidTrial
+	}
+	beforePair := func(pair PlannedPair) error {
+		cache = nil
 		for j, trial := range []PlannedTrial{pair.Baseline, pair.Candidate} {
 			if err := ctx.Err(); err != nil {
-				return nil, err
+				return err
 			}
-			i, err := InspectDirectory(ctx, root, path.Join(out, trial.TrialID))
+			i, err := inspectDirectoryObserved(ctx, fs, path.Join(out, trial.TrialID), func(e *AgentEvidence, err error) { cache = append(cache, verifiedTerminal{e, err}) }, verifyOffline)
 			if ctx.Err() != nil {
-				return nil, ctx.Err()
+				return ctx.Err()
 			}
 			if err != nil {
 				if err.Error() == "EVIDENCE_INSPECT_CANCELED_OR_TIMED_OUT" {
-					return nil, context.DeadlineExceeded
+					return context.DeadlineExceeded
 				}
-				return nil, errors.New("SUITE_INSPECT_TRIAL_FAILED")
+				return errors.New("SUITE_INSPECT_TRIAL_FAILED")
 			}
 			r.Trials = append(r.Trials, SuiteTrialInspection{TrialID: trial.TrialID, Inspection: i})
 			r.StagingResidue = r.StagingResidue || i.StagingResidue
 			if i.State == "invalid" {
-				return invalid("trial_invalid")
+				return markInvalid("trial_invalid")
 			}
 			if i.TrialID != "" {
 				model := plan.BaselineModel
@@ -217,20 +244,32 @@ func inspectSuiteObserved(parent context.Context, root, out string, sizeLimit in
 				}
 				raw, err := readArtifact(fs, path.Join(out, trial.TrialID, "claim.json"), 16<<10)
 				if err != nil {
-					return invalid("trial_claim_mismatch")
+					return markInvalid("trial_claim_mismatch")
 				}
 				c, err := DecodeRun(raw)
 				if err != nil || i.Lane != "offline" || c.TrialID != trial.TrialID || c.Model != model {
-					return invalid("trial_claim_mismatch")
+					return markInvalid("trial_claim_mismatch")
 				}
 			}
 			if i.EvidenceComplete {
 				r.CompleteTrials++
 			}
 		}
+		return nil
 	}
-	r.Comparison, err = compareObserved(ctx, filepath.Join(root, filepath.FromSlash(out)), &plan, VerifyEvidence, maxCompareEvidenceBytes, observe)
+	verify := func(ctx context.Context, e *AgentEvidence) error {
+		for _, v := range cache {
+			if same(e, v.evidence) {
+				return v.err
+			}
+		}
+		return verifyOffline(ctx, e, true)
+	}
+	r.Comparison, err = compareViewBefore(ctx, subReadRoot{fs, out}, &plan, verify, maxCompareEvidenceBytes, observe, beforePair)
 	if err != nil {
+		if errors.Is(err, invalidTrial) {
+			return r, nil
+		}
 		if errors.Is(err, errAssessmentResourceLimit) {
 			return nil, err
 		}
@@ -280,7 +319,7 @@ func inspectSuiteObserved(parent context.Context, root, out string, sizeLimit in
 	return r, nil
 }
 
-func suiteEntries(fs *os.Root, dir string, limit int) ([]os.DirEntry, error) {
+func suiteEntries(fs evidenceReadRoot, dir string, limit int) ([]os.DirEntry, error) {
 	f, err := fs.Open(dir)
 	if err != nil {
 		return nil, errors.New("SUITE_INSPECT_READ_FAILED")

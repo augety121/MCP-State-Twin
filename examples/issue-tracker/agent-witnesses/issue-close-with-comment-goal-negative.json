@@ -1,0 +1,7 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "issue-close-with-comment",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": null
+}

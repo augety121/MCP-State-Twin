@@ -1,0 +1,30 @@
+{
+  "format": "statetwin.dev/reviewed-world-catalog/v1alpha1",
+  "profile": "offline-world-content-v1",
+  "worlds": [
+    {
+      "taskId": "pkg-select-safe-release",
+      "bundle": ".statetwin/reviewed-project-world.stb"
+    },
+    {
+      "taskId": "pkg-publish-and-confirm",
+      "bundle": ".statetwin/reviewed-project-world.stb"
+    },
+    {
+      "taskId": "pkg-yank-and-confirm",
+      "bundle": ".statetwin/reviewed-project-world.stb"
+    },
+    {
+      "taskId": "pkg-reject-yanked-install",
+      "bundle": ".statetwin/reviewed-project-world.stb"
+    },
+    {
+      "taskId": "pkg-isolated-install",
+      "bundle": ".statetwin/reviewed-project-world.stb"
+    },
+    {
+      "taskId": "pkg-publish-then-install",
+      "bundle": ".statetwin/reviewed-project-world.stb"
+    }
+  ]
+}

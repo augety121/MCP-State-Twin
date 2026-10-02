@@ -1,0 +1,87 @@
+{
+  "format": "statetwin.dev/agent-suite-expectation/v1alpha1",
+  "profile": "offline-suite-v1",
+  "maxOutputTokens": 1024,
+  "plan": {
+    "format": "statetwin.dev/agent-compare-offline/v1alpha1",
+    "baselineModel": "mock-baseline",
+    "candidateModel": "mock-candidate",
+    "allowedDifferences": [
+      "model"
+    ],
+    "pairs": [
+      {
+        "taskId": "pkg-select-safe-release",
+        "repeat": 1,
+        "baseline": {
+          "trialId": "baseline-01",
+          "artifact": "baseline-01/terminal.json"
+        },
+        "candidate": {
+          "trialId": "candidate-01",
+          "artifact": "candidate-01/terminal.json"
+        }
+      },
+      {
+        "taskId": "pkg-publish-and-confirm",
+        "repeat": 1,
+        "baseline": {
+          "trialId": "baseline-02",
+          "artifact": "baseline-02/terminal.json"
+        },
+        "candidate": {
+          "trialId": "candidate-02",
+          "artifact": "candidate-02/terminal.json"
+        }
+      },
+      {
+        "taskId": "pkg-yank-and-confirm",
+        "repeat": 1,
+        "baseline": {
+          "trialId": "baseline-03",
+          "artifact": "baseline-03/terminal.json"
+        },
+        "candidate": {
+          "trialId": "candidate-03",
+          "artifact": "candidate-03/terminal.json"
+        }
+      },
+      {
+        "taskId": "pkg-reject-yanked-install",
+        "repeat": 1,
+        "baseline": {
+          "trialId": "baseline-04",
+          "artifact": "baseline-04/terminal.json"
+        },
+        "candidate": {
+          "trialId": "candidate-04",
+          "artifact": "candidate-04/terminal.json"
+        }
+      },
+      {
+        "taskId": "pkg-isolated-install",
+        "repeat": 1,
+        "baseline": {
+          "trialId": "baseline-05",
+          "artifact": "baseline-05/terminal.json"
+        },
+        "candidate": {
+          "trialId": "candidate-05",
+          "artifact": "candidate-05/terminal.json"
+        }
+      },
+      {
+        "taskId": "pkg-publish-then-install",
+        "repeat": 1,
+        "baseline": {
+          "trialId": "baseline-06",
+          "artifact": "baseline-06/terminal.json"
+        },
+        "candidate": {
+          "trialId": "candidate-06",
+          "artifact": "candidate-06/terminal.json"
+        }
+      }
+    ]
+  }
+}

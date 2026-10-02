@@ -1,0 +1,11 @@
+{
+  "format": "statetwin.dev/evaluation-project/v1alpha1",
+  "profile": "offline-reviewed-project-v1",
+  "id": "registry-regression",
+  "suite": "project-suite-regression.json",
+  "expectation": "project-expectation-extended.json",
+  "taskCatalog": "reviewed/catalog-extended.json",
+  "worldCatalog": "reviewed/worlds-extended.json",
+  "cases": "project-cases-extended.json",
+  "policy": "candidate-pass-v1"
+}

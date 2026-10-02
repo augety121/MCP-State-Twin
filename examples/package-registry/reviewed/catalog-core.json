@@ -1,0 +1,30 @@
+{
+  "format": "statetwin.dev/agent-task-catalog/v1alpha1",
+  "profile": "offline-task-binding-v1",
+  "tasks": [
+    {
+      "taskId": "pkg-read-release",
+      "task": "reviewed/tasks/pkg-read-release.json"
+    },
+    {
+      "taskId": "pkg-publish-release",
+      "task": "reviewed/tasks/pkg-publish-release.json"
+    },
+    {
+      "taskId": "pkg-yank-release",
+      "task": "reviewed/tasks/pkg-yank-release.json"
+    },
+    {
+      "taskId": "pkg-install-release",
+      "task": "reviewed/tasks/pkg-install-release.json"
+    },
+    {
+      "taskId": "pkg-advisory-abstain",
+      "task": "reviewed/tasks/pkg-advisory-abstain.json"
+    },
+    {
+      "taskId": "pkg-scope-protection",
+      "task": "reviewed/tasks/pkg-scope-protection.json"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-select-safe-release",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": {
+    "version": "synthetic-wrong"
+  }
+}

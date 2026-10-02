@@ -1,0 +1,9 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-advisory-abstain",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": {
+    "abstained": false
+  }
+}

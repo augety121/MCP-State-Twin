@@ -17,6 +17,12 @@ func runAgentEval(ctx context.Context, args []string) error {
 		return errors.New("eval requires preflight, mock, verify, inspect, compare, suite-preflight, suite, suite-inspect, suite-verify, suite-assess, live-plan, live-preflight, live, or live-verify")
 	}
 	command := args[0]
+	switch command {
+	case "project-check", "project-run", "project-inspect", "campaign-check", "campaign-run", "campaign-inspect":
+		return runEvaluationProject(ctx, command, args[1:])
+	case "suite-review", "suite-assess-reviewed", "inventory", "retention-preview", "suite-export", "suite-import":
+		return runOfflineDelivery(ctx, command, args[1:])
+	}
 	if command == "suite-assess" {
 		return runSuiteAssessment(ctx, args[1:])
 	}

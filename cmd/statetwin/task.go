@@ -14,6 +14,9 @@ func runTask(ctx context.Context, args []string) error {
 		return errors.New("task requires validate or witness")
 	}
 	command := args[0]
+	if command == "cases" || command == "qualify" {
+		return runOfflineDelivery(ctx, command, args[1:])
+	}
 	if command != "validate" && command != "witness" {
 		return errors.New("unsupported task command")
 	}

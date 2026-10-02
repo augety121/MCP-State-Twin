@@ -1,0 +1,31 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "after-commit-confirm",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "get_repository",
+      "input": {
+        "owner": "octo",
+        "repository": "demo"
+      }
+    },
+    {
+      "tool": "close_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 1
+      }
+    },
+    {
+      "tool": "get_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 1
+      }
+    }
+  ],
+  "answer": null
+}
