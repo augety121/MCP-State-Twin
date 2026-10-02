@@ -37,6 +37,8 @@ Python ctypes 被沙箱 DLL 策略阻止，测试在同一项目 venv 的获准�
 
 代码与文档已推送 [PR #19](https://github.com/augety121/MCP-State-Twin/pull/19)。首候选 832c618 的三平台 Inspect、Windows/macOS 回归、hermetic-egress、fuzz、conformance、secret-policy 均通过；最终 head 的完整 CI 由 PR 检查记录核对，不能用首候选替代。
 
+首轮 Linux race+atomic coverage 中 cmd/statetwin 与 internal/agenteval 触及包累计 20 分钟超时，日志没有 data race；前者仍在两个 profile ×24 Task 中，后者仍在 Project cancellation 用例中。CI 改为两个重包各 4 个完整清单分片，其他包保留整包 race。脚本动态读取 Test/Fuzz/Example，验证分片并集和互斥；唯一展开项为两个各含完整 24 Task 的 protocol profile。没有删除用例、放宽业务 deadline 或去掉 race/coverage。修复后以新 head 的全部 18 个 CI job 为准。
+
 实际 provider 请求次数为零；没有读模型凭据、邀请外部参与者、操作生产服务或发布 tag/包。外部缺项已询问，仍可独立完成的开发/测试/PR 工作继续推进。
 
 配套：[安装与使用](../guides/BASELINE-PLUGIN.md)、[验收矩阵](../planning/agi-baseline/ITERATION-AND-ACCEPTANCE.md)、[外部 reference 合同](../planning/agi-baseline/REFERENCE-QUALIFICATION.md)。
