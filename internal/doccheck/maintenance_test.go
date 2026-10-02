@@ -14,6 +14,37 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// PowerShell otherwise reports only the final native command's exit status.
+func TestPlatformCIFailureCannotBeMaskedByBuild(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join(repositoryRoot(t), ".github", "workflows", "ci.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var w struct {
+		Jobs map[string]struct {
+			Steps []struct {
+				Run      string `yaml:"run"`
+				Continue bool   `yaml:"continue-on-error"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(data, &w); err != nil {
+		t.Fatal(err)
+	}
+	checks := 0
+	for _, step := range w.Jobs["platform-smoke"].Steps {
+		if strings.Contains(step.Run, "go test") {
+			checks++
+			if strings.TrimSpace(step.Run) != "go test ./..." || step.Continue {
+				t.Fatal("platform test failure can be masked")
+			}
+		}
+	}
+	if checks != 1 {
+		t.Fatal("missing standalone platform test gate")
+	}
+}
+
 func TestCELModuleMigrationIsComplete(t *testing.T) {
 	root := repositoryRoot(t)
 	data, err := os.ReadFile(filepath.Join(root, "go.mod"))
