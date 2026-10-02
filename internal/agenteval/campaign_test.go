@@ -222,3 +222,50 @@ func TestCampaignFrozenInputs(t *testing.T) {
 		t.Fatal(r, err)
 	}
 }
+
+func TestCampaignCrossProjectReferenceAlias(t *testing.T) {
+	root, m := campaignFixture(t, 2)
+	load := func(n string, v any) {
+		raw, err := os.ReadFile(filepath.Join(root, n))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if json.Unmarshal(raw, v) != nil {
+			t.Fatal(n)
+		}
+	}
+	var project ProjectManifest
+	load(m.Projects[1].Project, &project)
+	var ta task.Task
+	load("task-close-issue.json", &ta)
+	ta.Bundle = "reviewed-world.stb"
+	writeTestJSON(t, root, "second-task.json", ta)
+	writeTestJSON(t, root, "second-reference.json", ta)
+	var suite SuitePlan
+	load("suite.json", &suite)
+	suite.Pairs[0].Task = "second-task.json"
+	writeTestJSON(t, root, "second-suite.json", suite)
+	project.Suite = "second-suite.json"
+	var cases CaseManifest
+	load("cases.json", &cases)
+	cases.Tasks[0].Task = "second-task.json"
+	writeTestJSON(t, root, "second-cases.json", cases)
+	project.Cases = "second-cases.json"
+	var catalog taskCatalog
+	load("catalog.json", &catalog)
+	catalog.Tasks[0].Task = "second-reference.json"
+	writeTestJSON(t, root, "second-catalog.json", catalog)
+	project.TaskCatalog = "second-catalog.json"
+	var worlds worldCatalog
+	load("worlds.json", &worlds)
+	worlds.Worlds[0].Bundle = "world.stb"
+	writeTestJSON(t, root, "second-worlds.json", worlds)
+	project.WorldCatalog = "second-worlds.json"
+	writeTestJSON(t, root, m.Projects[1].Project, project)
+	if _, err := CheckProject(context.Background(), root, m.Projects[1].Project); err != nil {
+		t.Fatal("independent within project", err)
+	}
+	if _, err := CheckCampaign(context.Background(), root, "campaign.json"); err == nil || err.Error() != "CAMPAIGN_REFERENCE_MISMATCH" {
+		t.Fatal("cross-project world alias accepted", err)
+	}
+}

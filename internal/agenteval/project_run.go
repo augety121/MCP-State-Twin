@@ -181,6 +181,8 @@ func runPreparedProject(ctx context.Context, root, out string, p *preparedProjec
 	if quality.Decision != "qualified" {
 		r.Stages[stage].Status = "failed"
 		r.Stages[stage].ReasonCode = "PROJECT_QUALITY_NOT_QUALIFIED"
+		r.Stages[3].ReasonCode = "PROJECT_QUALITY_NOT_QUALIFIED"
+		r.Stages[4].ReasonCode = "PROJECT_QUALITY_NOT_QUALIFIED"
 		r.ReasonCodes = append(r.ReasonCodes, "PROJECT_QUALITY_NOT_QUALIFIED")
 		r.Decision = "failed"
 	} else {
@@ -210,7 +212,11 @@ func runPreparedProject(ctx context.Context, root, out string, p *preparedProjec
 		a, w, checks, err := assessProject(ctx, diskReadRoot{disk}, path.Join(out, "suite"), p)
 		disk.Close()
 		if err != nil {
-			return fail(projectError(err).Error())
+			code := "PROJECT_ASSESSMENT_FAILED"
+			if strings.Contains(err.Error(), "RESOURCE_LIMIT") {
+				code = "PROJECT_RESOURCE_LIMIT"
+			}
+			return fail(code)
 		}
 		r.WorldBinding = w
 		r.TaskBinding = a.TaskBinding

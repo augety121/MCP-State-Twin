@@ -137,6 +137,8 @@ func inspectPreparedProject(ctx context.Context, fs evidenceReadRoot, out string
 		want.Decision = "failed"
 		want.Stages[2].Status = "failed"
 		want.Stages[2].ReasonCode = "PROJECT_QUALITY_NOT_QUALIFIED"
+		want.Stages[3].ReasonCode = "PROJECT_QUALITY_NOT_QUALIFIED"
+		want.Stages[4].ReasonCode = "PROJECT_QUALITY_NOT_QUALIFIED"
 		want.ReasonCodes = append(want.ReasonCodes, "PROJECT_QUALITY_NOT_QUALIFIED")
 	} else {
 		if !present["suite"] {

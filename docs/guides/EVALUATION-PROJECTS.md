@@ -64,7 +64,7 @@ issue-close-with-comment 的候选只评论、不关闭；pkg-publish-then-insta
 
 JSON 是完整有界结构，`--format markdown` 投影相同结论/计数并附 JSON。`completed`
 指执行结束，不等同业务成功；质量 case matched 指符合预期，包括正确命中的负例。
-`CaseFailures` 列未命中预期的 case；`baseAssessment.failedChecks` 列已核验 trial 的失败
+`caseFailures` 列未命中预期的 case；`baseAssessment.failedChecks` 列已核验 trial 的失败
 断言；Task binding、World binding、base assessment 分别显示，不互相代替。
 
 质量不合格会发布 failed 报告，但不创建 suite，所有 trial 仍计为 not_started。

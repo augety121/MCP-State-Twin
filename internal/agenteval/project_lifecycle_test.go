@@ -356,3 +356,29 @@ func TestMutationIsolationAndAdmission(t *testing.T) {
 		})
 	}
 }
+
+func TestRealUnscorableCaseDoesNotCoverGoal(t *testing.T) {
+	root, p := preparedProjectFixture(t)
+	ta := p.cases.tasks["close-issue"]
+	ta.Oracle[0].Expr = "answer.missing"
+	writeTestJSON(t, root, "task-close-issue.json", ta)
+	m := p.cases.manifest
+	m.Cases = []TaskCase{{CaseID: "unscorable", TaskID: ta.ID, Role: "unscorable-negative", Witness: "positive.json", Expected: CaseExpected{Outcome: "not_evaluated", FailedChecks: []string{"objective"}}}}
+	writeTestJSON(t, root, "unscorable.json", m)
+	prepared, err := prepareCases(context.Background(), root, "unscorable.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := runCases(context.Background(), prepared, RunWitness)
+	if err != nil || r.Matched != 1 || len(r.Cases[0].ErrorCheckIDs) != 1 {
+		t.Fatal(r, err)
+	}
+	q := qualifyCases(prepared, r)
+	if q.Decision != "not_qualified" || q.Tasks[0].Checks[0].Status != "uncovered" {
+		t.Fatal(q)
+	}
+	p.cases = prepared
+	if !recordedQualityValid(p, q) {
+		t.Fatal("honest not_evaluated record rejected")
+	}
+}

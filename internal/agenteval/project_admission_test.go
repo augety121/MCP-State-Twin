@@ -283,3 +283,19 @@ func TestProjectResourceBoundaries(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestProjectManifestInclusiveLimit(t *testing.T) {
+	root, _ := projectFixture(t)
+	raw, _ := os.ReadFile(filepath.Join(root, "project.json"))
+	raw = append(raw, bytes.Repeat([]byte(" "), (64<<10)-len(raw))...)
+	if err := os.WriteFile(filepath.Join(root, "project.json"), raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := CheckProject(context.Background(), root, "project.json"); err != nil {
+		t.Fatal("exact limit refused", err)
+	}
+	os.WriteFile(filepath.Join(root, "project.json"), append(raw, ' '), 0600)
+	if _, err := CheckProject(context.Background(), root, "project.json"); err == nil || err.Error() != "PROJECT_RESOURCE_LIMIT" {
+		t.Fatal(err)
+	}
+}
