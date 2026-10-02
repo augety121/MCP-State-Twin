@@ -107,6 +107,10 @@ func main() {
 		err = runTask(ctx, args[1:])
 	case "eval":
 		err = runAgentEval(ctx, args[1:])
+	case "plugin":
+		err = runPlugin(ctx, args[1:])
+	case "baseline":
+		err = runBaseline(ctx, args[1:], os.Stdout)
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -134,6 +138,10 @@ Execution policy:
   not OS/RSS hard quotas or distributed rate limiting.
 
 Commands:
+	statetwin plugin check --root DIR --pack baseline-pack.json --profile plugin-profile.json
+	statetwin plugin describe --root DIR --pack baseline-pack.json --profile plugin-profile.json
+	statetwin plugin serve --root DIR --session-plan plugin-session.json
+	statetwin plugin inspect --root DIR --session-plan plugin-session.json --format markdown
   statetwin validate --spec twin.yaml
   statetwin init --spec twin.yaml --fixture state.json --db twin.db --snapshot base
   statetwin call --spec twin.yaml --db twin.db --branch main --tool get_issue --input '{...}'

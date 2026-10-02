@@ -73,6 +73,33 @@ jobs:
       - name: Build
         run: go build ./cmd/statetwin
 
+  inspect-plugin:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache: true
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Build plugin
+        run: go build -o plugin-runtime/statetwin.exe ./cmd/statetwin
+      - name: Install optional adapter in isolated environment
+        run: python -m pip install './adapters/inspect[test]'
+      - name: Real Inspect MCP sessions, framework grading and disclosure
+        env:
+          STATETWIN_TEST_BINARY: plugin-runtime/statetwin.exe
+        run: python -m pytest adapters/inspect/tests -q
+
   fuzz-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 15

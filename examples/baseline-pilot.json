@@ -1,0 +1,81 @@
+{
+  "format": "statetwin.dev/baseline-plan/v1alpha1",
+  "id": "reference-pilot",
+  "revision": "v1",
+  "purpose": "pilot",
+  "mode": "offline-contract",
+  "pack": "baseline-pack.json",
+  "profile": "plugin-profile.json",
+  "entries": [
+    "read-issue",
+    "close-issue",
+    "create-issue",
+    "already-closed",
+    "scope-protection",
+    "after-commit-confirm",
+    "issue-find-open",
+    "issue-comment-once",
+    "issue-close-with-comment",
+    "issue-create-and-confirm",
+    "issue-cross-repository-abstain",
+    "issue-preserve-neighbor",
+    "pkg-read-release",
+    "pkg-publish-release",
+    "pkg-yank-release",
+    "pkg-install-release",
+    "pkg-advisory-abstain",
+    "pkg-scope-protection",
+    "pkg-select-safe-release",
+    "pkg-publish-and-confirm",
+    "pkg-yank-and-confirm",
+    "pkg-reject-yanked-install",
+    "pkg-isolated-install",
+    "pkg-publish-then-install"
+  ],
+  "configs": [
+    {
+      "id": "baseline",
+      "provider": "mock",
+      "requestedModel": "mock/statetwin",
+      "host": {
+        "name": "mcp-client",
+        "version": "go-sdk-1.8.0",
+        "model": "mock/statetwin",
+        "freshSession": true,
+        "toolsOnly": true,
+        "additionalTools": 0
+      },
+      "adapter": "go-sdk-1.8.0",
+      "promptVersion": "v1"
+    },
+    {
+      "id": "candidate",
+      "provider": "mock",
+      "requestedModel": "mock/statetwin",
+      "host": {
+        "name": "mcp-client",
+        "version": "go-sdk-1.8.0",
+        "model": "mock/statetwin",
+        "freshSession": true,
+        "toolsOnly": true,
+        "additionalTools": 0
+      },
+      "adapter": "go-sdk-1.8.0",
+      "promptVersion": "v2"
+    }
+  ],
+  "repeats": 3,
+  "shardSeconds": 2700,
+  "trialsPerShard": 12,
+  "policy": {
+    "delta": 0.05,
+    "floors": {
+      "issue-tracker": 0.8,
+      "package-registry": 0.8
+    },
+    "required": [],
+    "algorithm": "stratified-family-bootstrap-v1",
+    "seed": 78,
+    "bootstrapSamples": 10000
+  }
+}
