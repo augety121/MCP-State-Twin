@@ -2,6 +2,8 @@ package baselinepack
 
 import (
 	"context"
+	"encoding/json"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -43,15 +45,34 @@ func TestBaselineVariantQualification(t *testing.T) {
 	if len(seen) != 12 {
 		t.Fatal("expected four case groups in each split", len(seen))
 	}
-	quality, err := Qualify(ctx, filepath.Join(root, "expanded"), "baseline-pack.json", "plugin-profile.json")
-	if err != nil || quality.Decision != "matched" || len(quality.Groups) != 12 {
-		t.Fatal(quality, err)
-	}
 	planned := 0
-	for _, g := range quality.Groups {
-		planned += g.Report.Planned
-		if g.Report.Matched != g.Report.Planned {
-			t.Fatal(g)
+	// Each public operation retains its 120s production deadline under race.
+	// Partition by declared split; the aggregate still covers all 309 cases.
+	for _, split := range []string{"dev", "regression", "evaluation"} {
+		manifest := p.Pack
+		manifest.Entries = nil
+		for _, e := range p.Pack.Entries {
+			if e.Split == split {
+				manifest.Entries = append(manifest.Entries, e)
+			}
+		}
+		name := "quality-" + split + ".json"
+		raw, err := json.Marshal(manifest)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = os.WriteFile(filepath.Join(root, "expanded", name), raw, 0600); err != nil {
+			t.Fatal(err)
+		}
+		quality, err := Qualify(ctx, filepath.Join(root, "expanded"), name, "plugin-profile.json")
+		if err != nil || quality.Decision != "matched" || len(quality.Groups) != 4 {
+			t.Fatalf("split %s: %+v %v", split, quality, err)
+		}
+		for _, g := range quality.Groups {
+			planned += g.Report.Planned
+			if g.Report.Matched != g.Report.Planned {
+				t.Fatal(g)
+			}
 		}
 	}
 	if planned != 309 {

@@ -39,6 +39,8 @@ Python ctypes 被沙箱 DLL 策略阻止，测试在同一项目 venv 的获准�
 
 首轮 Linux race+atomic coverage 中 cmd/statetwin 与 internal/agenteval 触及包累计 20 分钟超时，日志没有 data race；前者仍在两个 profile ×24 Task 中，后者仍在 Project cancellation 用例中。CI 改为两个重包各 4 个完整清单分片，其他包保留整包 race。脚本动态读取 Test/Fuzz/Example，验证分片并集和互斥；唯一展开项为两个各含完整 24 Task 的 protocol profile。没有删除用例、放宽业务 deadline 或去掉 race/coverage。修复后以新 head 的全部 18 个 CI job 为准。
 
+新增 public qualify 的整包正例在 race instrumentation 下触及 120 秒操作上限；改为按 dev/regression/evaluation 三个 split 分别调用公开接口，每次仍受 120 秒生产限制，合计仍断言 12 组 309 case 全匹配。非 race 的整包 72-instance/309-case public qualify 已在本地通过（20.49 秒含生成与测试准备）；没有调整生产超时或把超时视为通过。
+
 实际 provider 请求次数为零；没有读模型凭据、邀请外部参与者、操作生产服务或发布 tag/包。外部缺项已询问，仍可独立完成的开发/测试/PR 工作继续推进。
 
 配套：[安装与使用](../guides/BASELINE-PLUGIN.md)、[验收矩阵](../planning/agi-baseline/ITERATION-AND-ACCEPTANCE.md)、[外部 reference 合同](../planning/agi-baseline/REFERENCE-QUALIFICATION.md)。
