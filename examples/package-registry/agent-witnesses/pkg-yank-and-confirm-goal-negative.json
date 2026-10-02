@@ -1,0 +1,7 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-yank-and-confirm",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": null
+}

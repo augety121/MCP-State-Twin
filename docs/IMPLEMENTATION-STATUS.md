@@ -1,5 +1,20 @@
 # Implementation Status
 
+ADR-0077 accepts the complete offline evaluation project scope on 2026-10-02.
+This branch is a main integration candidate, not a claim that main has merged it.
+Project/campaign admission, serial frozen execution, independent reviewed world
+content binding and read-only inspection have executable tests in `project_*test.go`,
+`campaign_test.go` and `project_eval_test.go`. Four six-task groups contain 24 Tasks,
+103 case rows, 97 witness files and 48 trials. Historical qualification is explicitly
+`recorded_only`; seven labeled grading-view mutation cases do not claim Agent
+execution evidence. Original Task definitions and suite formats remain unchanged.
+
+See the [project guide](guides/EVALUATION-PROJECTS.md),
+[acceptance ledger](maintenance/SPEC-0077-DELIVERY.md), and
+[measured performance](maintenance/SPEC-0077-PERFORMANCE.md).
+Final CI belongs to the implementation PR exact head; old CI is not reused.
+
+
 ADR-0066, ADR-0069 and ADR-0073 accept SPEC-0066–0076 after the maintainer's
 2026-09-30 instruction to implement the whole batch. The bounded offline subset
 has code, CLI integration and executable validation:
@@ -20,8 +35,7 @@ JSON/Markdown, rejected flags, cancellation and stdout failure. See the
 [offline delivery guide](guides/OFFLINE-DELIVERY.md).
 
 Local tests are implementation evidence; they do not assert a future PR CI run
-has passed. Live provider validation, trusted provenance, independent world-content
-approval, automatic deletion, generic backup/restore and database migration remain
+has passed. Live provider validation, trusted provenance, source authentication, automatic deletion, generic backup/restore and database migration remain
 outside this subset. Existing business digests are unchanged.
 
 ADR-0063 / SPEC-0063–0065 implement independent expectation matching, replay-bound

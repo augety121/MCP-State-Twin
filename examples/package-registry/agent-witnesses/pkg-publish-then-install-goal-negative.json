@@ -1,0 +1,7 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-publish-then-install",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": null
+}

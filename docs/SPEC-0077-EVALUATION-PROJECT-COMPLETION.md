@@ -1,8 +1,9 @@
 # SPEC-0077：可完整交付的离线评测项目
 
-- 状态：**Proposal — 未接受、未实施**；本轮只调查和设计。
+- 状态：**Accepted — 实施候选**；2026-10-02 用户明确要求整批实施并完成 PR。
+- 实施与实际验证：[交付台账](maintenance/SPEC-0077-DELIVERY.md)。main 合并状态以 PR 为准。
 - 日期：2026-10-02。
-- 决策提案：[ADR-0077](ADR-0077-EVALUATION-PROJECT-COMPLETION.md)。
+- 决策：[ADR-0077](ADR-0077-EVALUATION-PROJECT-COMPLETION.md)。
 - 权威：沿用 [RFC-0001](RFC-0001.md) 与已接受 ADR；本稿不自行改变旧格式或批准 live。
 - 目标：将已有 Task、质量检查、suite、独立审阅、证据审计组合成可从干净检出完整运行、可解释失败、可批量验收的本地产品。
 - 交付单位：下列 W0–W9 **全部完成**。可以拆 PR，但完成若干子项不等于本 Spec 完成。
@@ -367,7 +368,7 @@ credential/生产 trace。错误与日志只含有限分类。若取消已发生
 
 ## 12. 验收矩阵：每条都需要可执行证据或明确交付记录
 
-下列 Test/Benchmark 名是实施目标，不是已经存在或通过的测试。
+下列名称是设计时的验收入口；实际实现和已执行测试逐项记录于交付台账，不能仅凭名称推断通过。
 
 | ID | 必须证明的结果 | 拟议证据入口 |
 |---|---|---|
@@ -428,7 +429,7 @@ result / headRevision / remaining`。result 只取 not_started/in_progress/passe
 
 只要还有已授权且可执行的工作，就继续推进。一个子项受外部条件阻塞先完成其他
 子项，最终明确列出已尝试方法和缺少的条件；不得把该条件扩大成整批停工理由。
-本轮仍处设计阶段：检查本 Spec 后交付文档 PR 并停止，不改业务代码或运行环境。
+设计阶段已结束：2026-10-02 用户明确要求整批实施并完成 PR。本批按上述全部完成条件交付。
 
 ## 14. 与既有路线的关系
 
@@ -441,3 +442,30 @@ result / headRevision / remaining`。result 只取 not_started/in_progress/passe
 后续明确实施本 Spec 时，默认范围是 W0–W9 的整体，不再按每两个子项向用户重复
 索要“继续”。如实施发现新的契约冲突，应给出具体受影响条款和可执行修订，而非
 自行删去困难项目或无条件扩张到其他产品线。
+
+
+## 15. 实施修订：受限评分视图变异
+
+保留旧六个 issue Task 的定义与 oracle 后，发现两项不可同时通过普通调用满足的条件：
+`allowed-business-changes` 受工具 authority 保护，无法用越权调用制造实际状态变化；
+`create-issue` 的 policy 要求必须新增一条记录，因此空轨迹同时违反 goal 和 policy，
+不能作为要求 `task_failed` 的 goal-negative。不能通过放宽旧 oracle 或伪称覆盖解决。
+
+增加显式 `statetwin.dev/task-cases/v1alpha2` / `synthetic-oracle-mutation-cases-v1`。
+旧 v1 格式和无变异 case 的行为保持不变。v2 的 goal-negative/policy-negative 可以带
+最多四个 `{entity,key,field,value}` 替换；定位分量最长 128 字符，值最长 1024 字符，
+只替换字符串，不新增/删除字段、对象，不支持路径表达式、随机值或脚本。entity/field
+必须是准入 fixture 中已有的字符串字段；key 可以由 witness 创建，但评分时该精确
+记录与字段必须存在，否则 case 为基础设施失败并停止后续执行，不能凭空造记录。
+已有目标的替换值必须不同；相同 selector 不得重复；positive 禁止变异。
+
+流程为真实隔离 witness 完成且清理成功 → 深拷贝评分视图 After → 应用替换 → 原 oracle
+重新评分。原世界、证据和 Task 不变。case 行标注 `gradingSource=synthetic-view-mutation`。
+这些是评分器的合成反例，不是 Agent 行为轨迹或业务执行证据。质量报告说明覆盖来源；
+独立 suite 的任务通过仍只由真实执行/replay 决定。v2 的 unscorable-negative 还允许
+真实 evaluator 的 `not_evaluated` 结果，但有错误的 check 不计语义负覆盖。
+
+当前资产含 24 个业务 Task、103 个 case 行、97 个不同 witness 文件、18 个不同 Task
+的第二条合法轨迹；其中 7 个 case 使用上述变异。变异数不计入业务任务数，且不替代
+每 Task 的正常越权/错误对象反例。额外的重复操作、组合任务只做一半、缺少确认等
+用例超过最低数量要求。旧业务 Task 字节未改写。

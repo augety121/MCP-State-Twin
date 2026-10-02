@@ -1,17 +1,16 @@
 # MCP State Twin Documentation
 
-## Whole-project completion proposal — 2026-10-02
+## 完整离线评测项目 — SPEC-0077
 
-[SPEC-0077](SPEC-0077-EVALUATION-PROJECT-COMPLETION.md) and
-[ADR-0077](ADR-0077-EVALUATION-PROJECT-COMPLETION.md) propose one complete
-delivery: main integration, project admission, independent world binding,
-frozen execution, campaigns, 24 tasks, readable reports, measured optimization
-and end-to-end fault/compatibility checks. **Design only; not accepted or implemented.**
+[SPEC-0077](SPEC-0077-EVALUATION-PROJECT-COMPLETION.md) / [ADR-0077](ADR-0077-EVALUATION-PROJECT-COMPLETION.md)
+已接受并落为本分支的主线集成候选：项目 check/run/inspect、独立世界内容绑定、
+四组 24 任务/48 trial、质量正反例、固定分母汇总、诊断和资源/故障保护。
 
-Baseline caveat: PR #14 was merged into `codex/reviewed-task-specs`, not main.
-The inspected main revision `406a775` does not contain implementation `3de2ef9`.
-The new proposal explicitly tracks that integration gap; the entries below
-describe this main tree and must not be read as denying the implementation branch.
+从[项目与 campaign 指南](guides/EVALUATION-PROJECTS.md)开始。
+[交付台账](maintenance/SPEC-0077-DELIVERY.md)逐项记录验收，
+[性能记录](maintenance/SPEC-0077-PERFORMANCE.md)单独保存测量。
+此前 #14 仅进入设计分支；本实现分支已从 main 集成其代码，并保留 SQLite 1.59.0
+和 SDK 1.8.0 修复。分支可审查不等于已合入 main，最终以实施 PR 的合并/Checks 为准。
 
 ## Offline task quality and evidence delivery
 

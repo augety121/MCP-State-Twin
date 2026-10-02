@@ -40,10 +40,13 @@ type frozenCatalog struct {
 }
 
 func loadCatalog(ctx context.Context, root, name, out string) (*frozenCatalog, error) {
+	return loadCatalogWith(ctx, name, out, func(n string, limit int) ([]byte, error) { return task.ReadFile(root, n, limit) })
+}
+func loadCatalogWith(ctx context.Context, name, out string, readFile inputReader) (*frozenCatalog, error) {
 	if task.PortablePath(name) != nil || task.PortablePath(out) != nil || beneath(name, out) {
 		return nil, errors.New("TASK_CATALOG_PATH_INVALID")
 	}
-	raw, err := task.ReadFile(root, name, MaxSuitePlanBytes)
+	raw, err := readFile(name, MaxSuitePlanBytes)
 	if err != nil {
 		return nil, errors.New("TASK_CATALOG_INVALID")
 	}
@@ -65,7 +68,7 @@ func loadCatalog(ctx context.Context, root, name, out string) (*frozenCatalog, e
 			return nil, errors.New("TASK_CATALOG_PATH_INVALID")
 		}
 		paths[strings.ToLower(ref.Task)] = true
-		raw, err := task.ReadFile(root, ref.Task, task.MaxBytes)
+		raw, err := readFile(ref.Task, task.MaxBytes)
 		if err != nil {
 			return nil, errors.New("TASK_CATALOG_INVALID")
 		}

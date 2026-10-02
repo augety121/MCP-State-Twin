@@ -1,0 +1,23 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-publish-then-install",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "publish_release",
+      "input": {
+        "name": "acme/cli",
+        "version": "2.0.0"
+      }
+    },
+    {
+      "tool": "install_dependency",
+      "input": {
+        "name": "acme/cli",
+        "project": "sandbox",
+        "version": "2.0.0"
+      }
+    }
+  ],
+  "answer": null
+}

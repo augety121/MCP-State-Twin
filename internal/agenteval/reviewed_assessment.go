@@ -3,6 +3,7 @@ package agenteval
 import (
 	"context"
 	"errors"
+	"os"
 	"time"
 )
 
@@ -39,6 +40,15 @@ func AssessReviewedSuite(parent context.Context, root, out, expect, catalog, pol
 	if err != nil {
 		return nil, err
 	}
+	fs, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, errors.New("SUITE_INSPECT_ROOT_UNAVAILABLE")
+	}
+	defer fs.Close()
+	return assessReviewedView(ctx, diskReadRoot{fs}, out, e, c, policy, replay)
+}
+
+func assessReviewedView(ctx context.Context, fs evidenceReadRoot, out string, e *SuiteExpectation, c *frozenCatalog, policy string, verify func(context.Context, *AgentEvidence, bool) error) (*ReviewedAssessment, error) {
 	collector := newAssessmentCollector(e, maxDefinitionReferences)
 	r := &ReviewedAssessment{Format: "statetwin.dev/agent-reviewed-assessment/v1alpha1", Profile: "offline-reviewed-task-v1", Policy: policy, Decision: "passed", Reasons: []ReviewReason{}, Provenance: "not-proven"}
 	b := &r.TaskBinding
@@ -71,7 +81,7 @@ func AssessReviewedSuite(parent context.Context, root, out, expect, catalog, pol
 		}
 		return ctx.Err()
 	}
-	audit, err := inspectSuiteObserved(ctx, root, out, maxSuiteWriteBytes, collector.plan, observe)
+	audit, err := inspectSuiteViewVerified(ctx, fs, out, maxSuiteWriteBytes, collector.plan, observe, verify)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,9 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-reject-yanked-install",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": {
+    "rejected": false
+  }
+}

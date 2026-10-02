@@ -1,0 +1,50 @@
+{
+  "format": "statetwin.dev/agent-suite-offline/v1alpha1",
+  "baselineModel": "mock-baseline",
+  "candidateModel": "mock-candidate",
+  "maxOutputTokens": 1024,
+  "pairs": [
+    {
+      "taskId": "pkg-select-safe-release",
+      "task": "agent-tasks/pkg-select-safe-release.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/pkg-select-safe-release-baseline.json",
+      "candidateResponses": "agent-mocks/pkg-select-safe-release-candidate.json"
+    },
+    {
+      "taskId": "pkg-publish-and-confirm",
+      "task": "agent-tasks/pkg-publish-and-confirm.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/pkg-publish-and-confirm-baseline.json",
+      "candidateResponses": "agent-mocks/pkg-publish-and-confirm-candidate.json"
+    },
+    {
+      "taskId": "pkg-yank-and-confirm",
+      "task": "agent-tasks/pkg-yank-and-confirm.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/pkg-yank-and-confirm-baseline.json",
+      "candidateResponses": "agent-mocks/pkg-yank-and-confirm-candidate.json"
+    },
+    {
+      "taskId": "pkg-reject-yanked-install",
+      "task": "agent-tasks/pkg-reject-yanked-install.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/pkg-reject-yanked-install-baseline.json",
+      "candidateResponses": "agent-mocks/pkg-reject-yanked-install-candidate.json"
+    },
+    {
+      "taskId": "pkg-isolated-install",
+      "task": "agent-tasks/pkg-isolated-install.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/pkg-isolated-install-baseline.json",
+      "candidateResponses": "agent-mocks/pkg-isolated-install-candidate.json"
+    },
+    {
+      "taskId": "pkg-publish-then-install",
+      "task": "agent-tasks/pkg-publish-then-install.json",
+      "repeat": 1,
+      "baselineResponses": "agent-mocks/pkg-publish-then-install-baseline.json",
+      "candidateResponses": "agent-mocks/pkg-publish-then-install-candidate.json"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "format": "statetwin.dev/reviewed-world-catalog/v1alpha1",
+  "profile": "offline-world-content-v1",
+  "worlds": [
+    {
+      "taskId": "read-issue",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "close-issue",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "create-issue",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "already-closed",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "scope-protection",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "after-commit-confirm",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    }
+  ]
+}

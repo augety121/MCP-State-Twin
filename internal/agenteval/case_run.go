@@ -6,10 +6,12 @@ import (
 	"time"
 
 	"github.com/augety121/mcp-state-twin/internal/bundle"
+	"github.com/augety121/mcp-state-twin/internal/evaluator"
 	"github.com/augety121/mcp-state-twin/internal/task"
 )
 
 type CaseRow struct {
+	GradingSource   string   `json:"gradingSource,omitempty"`
 	CaseID          string   `json:"caseId"`
 	TaskID          string   `json:"taskId"`
 	Role            string   `json:"role"`
@@ -59,6 +61,10 @@ func runCases(ctx context.Context, p *preparedCases, run witnessRunner) (*CaseRe
 		}
 		row := &r.Cases[i]
 		result, err := run(ctx, in.task, in.bundle, in.witness)
+		if err == nil && result != nil && result.ExecutionStatus == "completed" && result.CleanupStatus == "complete" && len(p.manifest.Cases[i].Mutations) > 0 {
+			result, err = mutatedGrading(ctx, in.task, result, p.manifest.Cases[i].Mutations)
+			row.GradingSource = "synthetic-view-mutation"
+		}
 		if result != nil {
 			row.ExecutionStatus = result.ExecutionStatus
 			row.CleanupStatus = result.CleanupStatus
@@ -115,6 +121,30 @@ func runCases(ctx context.Context, p *preparedCases, run witnessRunner) (*CaseRe
 		return nil, errors.New("CASE_RESOURCE_LIMIT")
 	}
 	return r, first
+}
+
+func mutatedGrading(ctx context.Context, t *task.Task, r *Report, mutations []ViewMutation) (*Report, error) {
+	copy := *r
+	if r.View.After == nil {
+		return nil, errors.New("CASE_EXECUTION_FAILED")
+	}
+	after, err := r.View.After.Clone()
+	if err != nil {
+		return nil, err
+	}
+	copy.View.After = after
+	for _, m := range mutations {
+		if _, ok := after.Entities[m.Entity][m.Key][m.Field].(string); !ok {
+			return nil, errors.New("CASE_EXECUTION_FAILED")
+		}
+		after.Entities[m.Entity][m.Key][m.Field] = m.Value
+	}
+	grader, err := evaluator.Compile(t)
+	if err != nil {
+		return nil, err
+	}
+	copy.Evaluation, err = grader.Evaluate(ctx, copy.View)
+	return &copy, err
 }
 func equalIDs(a, b []string) bool {
 	if len(a) != len(b) {

@@ -1,0 +1,30 @@
+{
+  "format": "statetwin.dev/agent-task-catalog/v1alpha1",
+  "profile": "offline-task-binding-v1",
+  "tasks": [
+    {
+      "taskId": "read-issue",
+      "task": "reviewed/tasks/read-issue.json"
+    },
+    {
+      "taskId": "close-issue",
+      "task": "reviewed/tasks/close-issue.json"
+    },
+    {
+      "taskId": "create-issue",
+      "task": "reviewed/tasks/create-issue.json"
+    },
+    {
+      "taskId": "already-closed",
+      "task": "reviewed/tasks/already-closed.json"
+    },
+    {
+      "taskId": "scope-protection",
+      "task": "reviewed/tasks/scope-protection.json"
+    },
+    {
+      "taskId": "after-commit-confirm",
+      "task": "reviewed/tasks/after-commit-confirm.json"
+    }
+  ]
+}

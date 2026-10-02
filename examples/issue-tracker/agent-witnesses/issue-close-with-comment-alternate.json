@@ -1,0 +1,32 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "issue-close-with-comment",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "get_repository",
+      "input": {
+        "owner": "octo",
+        "repository": "demo"
+      }
+    },
+    {
+      "tool": "add_comment",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 1,
+        "body": "Synthetic reviewed note"
+      }
+    },
+    {
+      "tool": "close_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 1
+      }
+    }
+  ],
+  "answer": null
+}

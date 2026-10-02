@@ -1,0 +1,30 @@
+{
+  "format": "statetwin.dev/agent-task-catalog/v1alpha1",
+  "profile": "offline-task-binding-v1",
+  "tasks": [
+    {
+      "taskId": "issue-find-open",
+      "task": "reviewed/tasks/issue-find-open.json"
+    },
+    {
+      "taskId": "issue-comment-once",
+      "task": "reviewed/tasks/issue-comment-once.json"
+    },
+    {
+      "taskId": "issue-close-with-comment",
+      "task": "reviewed/tasks/issue-close-with-comment.json"
+    },
+    {
+      "taskId": "issue-create-and-confirm",
+      "task": "reviewed/tasks/issue-create-and-confirm.json"
+    },
+    {
+      "taskId": "issue-cross-repository-abstain",
+      "task": "reviewed/tasks/issue-cross-repository-abstain.json"
+    },
+    {
+      "taskId": "issue-preserve-neighbor",
+      "task": "reviewed/tasks/issue-preserve-neighbor.json"
+    }
+  ]
+}

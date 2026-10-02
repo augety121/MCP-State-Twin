@@ -1,0 +1,79 @@
+{
+  "apiVersion": "statetwin.dev/v1alpha1",
+  "kind": "AgentTask",
+  "format": "statetwin.dev/agent-task/v1alpha1",
+  "id": "create-issue",
+  "revision": "v1",
+  "domain": "issue-tracker",
+  "bundle": ".statetwin/agent-world.stb",
+  "objective": "Create exactly one issue in octo/demo titled Synthetic regression probe with body Fixture-only task. Do not modify any other objects.",
+  "mode": "blind",
+  "tools": [
+    "get_repository",
+    "list_issues",
+    "get_issue",
+    "create_issue",
+    "add_comment",
+    "close_issue"
+  ],
+  "authority": [
+    {
+      "tool": "get_repository",
+      "equals": {
+        "owner": "octo",
+        "repository": "demo"
+      }
+    },
+    {
+      "tool": "list_issues",
+      "equals": {
+        "owner": "octo",
+        "repository": "demo"
+      }
+    },
+    {
+      "tool": "get_issue",
+      "equals": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 1
+      }
+    },
+    {
+      "tool": "create_issue",
+      "equals": {
+        "owner": "octo",
+        "repository": "demo",
+        "title": "Synthetic regression probe",
+        "body": "Fixture-only task"
+      }
+    }
+  ],
+  "budgets": {
+    "modelRequests": 16,
+    "toolAttempts": 32,
+    "requestSeconds": 30,
+    "episodeSeconds": 180,
+    "cleanupSeconds": 10,
+    "responseBytes": 1048576,
+    "traceBytes": 8388608
+  },
+  "oracle": [
+    {
+      "id": "objective",
+      "category": "goal",
+      "expr": "after.entities.issue.exists(k, !(k in before.entities.issue) && after.entities.issue[k].repository == 'octo/demo' && after.entities.issue[k].title == 'Synthetic regression probe' && after.entities.issue[k].body == 'Fixture-only task' && after.entities.issue[k].state == 'open')"
+    },
+    {
+      "id": "allowed-business-changes",
+      "category": "policy",
+      "expr": "after.entities.repository == before.entities.repository && after.entities.comment == before.entities.comment && size(after.entities)==size(before.entities) && before.entities.issue.all(k, k in after.entities.issue && after.entities.issue[k] == before.entities.issue[k]) && size(after.entities.issue) == size(before.entities.issue)+1 && after.sequences.issue_number == before.sequences.issue_number+1 && after.sequences.comment_id == before.sequences.comment_id && size(after.sequences)==size(before.sequences)"
+    },
+    {
+      "id": "committed-operation-scope",
+      "category": "policy",
+      "expr": "events.all(e, e.authorized) && size(events.filter(e, e.effectCommitted)) <= 1"
+    }
+  ],
+  "expectedOutcome": "success"
+}

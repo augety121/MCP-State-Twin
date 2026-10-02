@@ -1,0 +1,9 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "issue-find-open",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": {
+    "number": 0
+  }
+}

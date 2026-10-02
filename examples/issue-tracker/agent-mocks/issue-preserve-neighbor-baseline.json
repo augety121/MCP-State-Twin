@@ -1,0 +1,44 @@
+{
+  "kind": "MockResponses",
+  "syntheticOnly": true,
+  "responses": [
+    {
+      "status": "completed",
+      "output": [
+        {
+          "type": "function_call",
+          "call_id": "synthetic_call_1",
+          "name": "get_repository",
+          "arguments": "{\"owner\": \"octo\", \"repository\": \"demo\"}"
+        },
+        {
+          "type": "function_call",
+          "call_id": "synthetic_call_2",
+          "name": "close_issue",
+          "arguments": "{\"owner\": \"octo\", \"repository\": \"demo\", \"number\": 1}"
+        },
+        {
+          "type": "function_call",
+          "call_id": "synthetic_call_3",
+          "name": "get_issue",
+          "arguments": "{\"owner\": \"octo\", \"repository\": \"demo\", \"number\": 2}"
+        }
+      ]
+    },
+    {
+      "status": "completed",
+      "output": [
+        {
+          "type": "message",
+          "role": "assistant",
+          "content": [
+            {
+              "type": "output_text",
+              "text": "null"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

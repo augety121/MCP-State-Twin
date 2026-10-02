@@ -157,6 +157,12 @@ Commands:
   statetwin eval suite-assess --root DIR --out results/suite --expect expected.json --policy candidate-pass-v1
   statetwin eval suite-review --root DIR --suite suite.json --out results/suite --expect expected.json --tasks reviewed/catalog.json
   statetwin eval suite-assess-reviewed --root DIR --out results/suite --expect expected.json --tasks reviewed/catalog.json --policy both-pass-v1
+  statetwin eval project-check --root DIR --project project.json
+  statetwin eval project-run --root DIR --project project.json --out results/project
+  statetwin eval project-inspect --root DIR --project project.json --out results/project --format markdown
+  statetwin eval campaign-check --root DIR --campaign campaign.json
+  statetwin eval campaign-run --root DIR --campaign campaign.json --out results/campaign
+  statetwin eval campaign-inspect --root DIR --campaign campaign.json --out results/campaign --format markdown
   statetwin eval inventory --root DIR --registry registry.json --mode metadata
   statetwin eval suite-export --root DIR --out results/suite --archive suite.tar
   statetwin eval suite-import --root DIR --archive suite.tar --out results/restored

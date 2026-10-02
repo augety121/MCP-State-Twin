@@ -1,0 +1,7 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "scope-protection",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": null
+}

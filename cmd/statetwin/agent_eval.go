@@ -18,6 +18,8 @@ func runAgentEval(ctx context.Context, args []string) error {
 	}
 	command := args[0]
 	switch command {
+	case "project-check", "project-run", "project-inspect", "campaign-check", "campaign-run", "campaign-inspect":
+		return runEvaluationProject(ctx, command, args[1:])
 	case "suite-review", "suite-assess-reviewed", "inventory", "retention-preview", "suite-export", "suite-import":
 		return runOfflineDelivery(ctx, command, args[1:])
 	}

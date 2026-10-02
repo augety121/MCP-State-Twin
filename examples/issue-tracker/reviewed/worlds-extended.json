@@ -1,0 +1,30 @@
+{
+  "format": "statetwin.dev/reviewed-world-catalog/v1alpha1",
+  "profile": "offline-world-content-v1",
+  "worlds": [
+    {
+      "taskId": "issue-find-open",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "issue-comment-once",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "issue-close-with-comment",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "issue-create-and-confirm",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "issue-cross-repository-abstain",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    },
+    {
+      "taskId": "issue-preserve-neighbor",
+      "bundle": ".statetwin/reviewed-agent-world.stb"
+    }
+  ]
+}

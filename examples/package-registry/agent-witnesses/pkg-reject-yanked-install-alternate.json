@@ -1,0 +1,24 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-reject-yanked-install",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "get_package",
+      "input": {
+        "name": "acme/cli"
+      }
+    },
+    {
+      "tool": "install_dependency",
+      "input": {
+        "name": "acme/cli",
+        "project": "sandbox",
+        "version": "0.9.0"
+      }
+    }
+  ],
+  "answer": {
+    "rejected": true
+  }
+}

@@ -9,6 +9,7 @@ import (
 	"github.com/augety121/mcp-state-twin/internal/limits"
 	"github.com/augety121/mcp-state-twin/internal/logging"
 	"github.com/augety121/mcp-state-twin/internal/task"
+	"github.com/augety121/mcp-state-twin/internal/world"
 )
 
 type CaseExpected struct {
@@ -16,11 +17,21 @@ type CaseExpected struct {
 	FailedChecks []string `json:"failedChecks"`
 }
 type TaskCase struct {
-	CaseID   string       `json:"caseId"`
-	TaskID   string       `json:"taskId"`
-	Role     string       `json:"role"`
-	Witness  string       `json:"witness"`
-	Expected CaseExpected `json:"expected"`
+	CaseID    string         `json:"caseId"`
+	TaskID    string         `json:"taskId"`
+	Role      string         `json:"role"`
+	Witness   string         `json:"witness"`
+	Expected  CaseExpected   `json:"expected"`
+	Mutations []ViewMutation `json:"mutations,omitempty"`
+}
+
+// ViewMutation only replaces an existing string field in a private grading
+// view. It cannot dispatch tools, modify a world, or introduce executable code.
+type ViewMutation struct {
+	Entity string `json:"entity"`
+	Key    string `json:"key"`
+	Field  string `json:"field"`
+	Value  string `json:"value"`
 }
 type CaseManifest struct {
 	Format  string          `json:"format"`
@@ -40,15 +51,19 @@ type preparedCases struct {
 }
 
 func prepareCases(ctx context.Context, root, name string) (*preparedCases, error) {
+	return prepareCasesWith(ctx, name, func(n string, limit int) ([]byte, error) { return task.ReadFile(root, n, limit) }, bundle.OpenBytes)
+}
+
+func prepareCasesWith(ctx context.Context, name string, readFile inputReader, openBundle bundleReader) (*preparedCases, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	raw, err := task.ReadFile(root, name, 256<<10)
+	raw, err := readFile(name, 256<<10)
 	if err != nil {
 		return nil, errors.New("CASE_MANIFEST_INVALID")
 	}
 	var m CaseManifest
-	if decodeSuiteMetadata(raw, 256<<10, &m) != nil || m.Format != "statetwin.dev/task-cases/v1alpha1" || m.Profile != "synthetic-witness-cases-v1" || len(m.Tasks) < 1 || len(m.Tasks) > 16 || len(m.Cases) < 1 || len(m.Cases) > 64 {
+	if decodeSuiteMetadata(raw, 256<<10, &m) != nil || !((m.Format == "statetwin.dev/task-cases/v1alpha1" && m.Profile == "synthetic-witness-cases-v1") || (m.Format == "statetwin.dev/task-cases/v1alpha2" && m.Profile == "synthetic-oracle-mutation-cases-v1")) || len(m.Tasks) < 1 || len(m.Tasks) > 16 || len(m.Cases) < 1 || len(m.Cases) > 64 {
 		return nil, errors.New("CASE_MANIFEST_INVALID")
 	}
 	p := &preparedCases{manifest: m, tasks: map[string]*task.Task{}}
@@ -62,7 +77,7 @@ func prepareCases(ctx context.Context, root, name string) (*preparedCases, error
 		if b, ok := cache[name]; ok {
 			return b, nil
 		}
-		b, err := task.ReadFile(root, name, limit)
+		b, err := readFile(name, limit)
 		if err != nil {
 			return nil, errors.New("CASE_INPUT_INVALID")
 		}
@@ -91,7 +106,7 @@ func prepareCases(ctx context.Context, root, name string) (*preparedCases, error
 			if err != nil {
 				return nil, err
 			}
-			b, err = bundle.OpenBytes(raw)
+			b, err = openBundle(raw)
 			if err != nil {
 				return nil, errors.New("CASE_INPUT_INVALID")
 			}
@@ -147,10 +162,40 @@ func prepareCases(ctx context.Context, root, name string) (*preparedCases, error
 		case "policy-negative":
 			valid = c.Expected.Outcome == "policy_violation"
 		case "unscorable-negative":
-			valid = c.Expected.Outcome == "evaluator_error" && len(failed) > 0
+			valid = (c.Expected.Outcome == "evaluator_error" || (m.Profile == "synthetic-oracle-mutation-cases-v1" && c.Expected.Outcome == "not_evaluated")) && len(failed) > 0
 		}
 		if !valid {
 			return nil, errors.New("CASE_MANIFEST_INVALID")
+		}
+		if len(c.Mutations) > 0 {
+			if m.Profile != "synthetic-oracle-mutation-cases-v1" || (c.Role != "policy-negative" && c.Role != "goal-negative") || len(c.Mutations) > 4 {
+				return nil, errors.New("CASE_MANIFEST_INVALID")
+			}
+			b := bundles[t.Bundle]
+			state, err := world.DecodeStrict(b.Files[b.Manifest.Fixture])
+			if err != nil {
+				return nil, errors.New("CASE_INPUT_INVALID")
+			}
+			seen := map[string]bool{}
+			for _, v := range c.Mutations {
+				key := v.Entity + "\x00" + v.Key + "\x00" + v.Field
+				previous, ok := state.Entities[v.Entity][v.Key][v.Field].(string)
+				// A witness may create the target record. Its entity and string
+				// field must already be represented in the admitted fixture;
+				// the exact target must exist after execution or the case fails.
+				knownField := ok
+				if state.Entities[v.Entity][v.Key] == nil {
+					for _, record := range state.Entities[v.Entity] {
+						if _, stringField := record[v.Field].(string); stringField {
+							knownField = true
+						}
+					}
+				}
+				if !knownField || len(v.Entity) == 0 || len(v.Key) == 0 || len(v.Field) == 0 || len(v.Entity) > 128 || len(v.Key) > 128 || len(v.Field) > 128 || len(v.Value) > 1024 || (ok && v.Value == previous) || seen[key] {
+					return nil, errors.New("CASE_INPUT_INVALID")
+				}
+				seen[key] = true
+			}
 		}
 		raw, err := read(c.Witness, task.MaxBytes)
 		if err != nil {

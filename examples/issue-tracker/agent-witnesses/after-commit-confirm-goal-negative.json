@@ -1,0 +1,7 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "after-commit-confirm",
+  "syntheticOnly": true,
+  "calls": [],
+  "answer": null
+}

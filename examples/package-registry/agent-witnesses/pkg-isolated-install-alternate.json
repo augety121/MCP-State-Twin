@@ -1,0 +1,22 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-isolated-install",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "get_package",
+      "input": {
+        "name": "acme/cli"
+      }
+    },
+    {
+      "tool": "install_dependency",
+      "input": {
+        "name": "acme/cli",
+        "project": "sandbox",
+        "version": "1.2.0"
+      }
+    }
+  ],
+  "answer": null
+}

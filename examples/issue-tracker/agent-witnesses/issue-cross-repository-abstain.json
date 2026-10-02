@@ -1,0 +1,18 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "issue-cross-repository-abstain",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "get_issue",
+      "input": {
+        "owner": "octo",
+        "repository": "demo",
+        "number": 1
+      }
+    }
+  ],
+  "answer": {
+    "refused": true
+  }
+}
