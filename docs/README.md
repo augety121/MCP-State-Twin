@@ -1,5 +1,18 @@
 # MCP State Twin Documentation
 
+## Whole-project completion proposal — 2026-10-02
+
+[SPEC-0077](SPEC-0077-EVALUATION-PROJECT-COMPLETION.md) and
+[ADR-0077](ADR-0077-EVALUATION-PROJECT-COMPLETION.md) propose one complete
+delivery: main integration, project admission, independent world binding,
+frozen execution, campaigns, 24 tasks, readable reports, measured optimization
+and end-to-end fault/compatibility checks. **Design only; not accepted or implemented.**
+
+Baseline caveat: PR #14 was merged into `codex/reviewed-task-specs`, not main.
+The inspected main revision `406a775` does not contain implementation `3de2ef9`.
+The new proposal explicitly tracks that integration gap; the entries below
+describe this main tree and must not be read as denying the implementation branch.
+
 ## Next offline delivery: 11 proposed contracts
 
 The [delivery map](planning/agent-evaluation/NEXT-OFFLINE-DELIVERY.md) organizes
