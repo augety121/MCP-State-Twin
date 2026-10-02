@@ -29,6 +29,8 @@
 > **Development Preview · `0.1.0-dev` · latest prerelease `v0.1.0-alpha.1` · 非 production-ready。**
 > 当前实现究竟可以声明什么，以 [Implementation Status](docs/IMPLEMENTATION-STATUS.md)、RFC、已接受 ADR、规范文档和可执行测试证据为准。Roadmap 中的能力不会被当作当前功能宣传。
 
+新增离线评测闭环：独立 Task 审阅与绑定、任务用例和 oracle 质量检查、六任务 package-registry 样例，以及证据清点、导出导入和只读保留预览。完整命令见 [离线交付指南](docs/guides/OFFLINE-DELIVERY.md)。
+
 <p align="center">
   <a href="#快速开始"><strong>快速开始</strong></a> ·
   <a href="#30-秒看懂工作原理">工作原理</a> ·

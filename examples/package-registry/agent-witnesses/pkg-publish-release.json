@@ -1,0 +1,15 @@
+{
+  "kind": "TaskWitness",
+  "taskId": "pkg-publish-release",
+  "syntheticOnly": true,
+  "calls": [
+    {
+      "tool": "publish_release",
+      "input": {
+        "name": "acme/cli",
+        "version": "1.1.0"
+      }
+    }
+  ],
+  "answer": null
+}

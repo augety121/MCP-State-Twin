@@ -1,10 +1,10 @@
 # SPEC-0075: No-clobber Offline Suite Import
 
-Status: **Proposal — not accepted or implemented**；依赖 [0074](SPEC-0074-SUITE-EXPORT.md)。
+Status: **Accepted — implemented in the bounded offline subset**；依赖 [0074](SPEC-0074-SUITE-EXPORT.md)。
 
 ## 1. 接口及准入
 
-拟议 `statetwin eval suite-import --root ROOT --archive FILE --out NEW_OUT`。
+命令 `statetwin eval suite-import --root ROOT --archive FILE --out NEW_OUT`。
 archive 为 root 下常规文件，out 是完全不存在的新目录，父目录已存在。
 两者不得相同、大小写别名或使 archive 位于 out 子树；拒绝任一路径中可见 symlink。
 不支持 URL、stdin、覆盖、merge、resume、自动迁移和 runtime compatibility 强制绕过。

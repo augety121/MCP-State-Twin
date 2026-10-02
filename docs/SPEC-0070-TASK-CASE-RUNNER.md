@@ -1,8 +1,8 @@
 # SPEC-0070: Isolated Task Case Runner
 
-Status: **Proposal — not accepted or implemented**；依赖 [0069](SPEC-0069-TASK-CASE-MANIFEST.md)。
+Status: **Accepted — implemented in the bounded offline subset**；依赖 [0069](SPEC-0069-TASK-CASE-MANIFEST.md)。
 
-## 1. 拟议接口
+## 1. 命令接口
 
 `statetwin task cases --root ROOT --cases FILE --format json|markdown`
 

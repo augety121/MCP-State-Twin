@@ -1,7 +1,8 @@
 # ADR-0073: Bounded Offline Evidence Portability
 
-- Status: **Proposal — not accepted or implemented**
+- Status: **Accepted for the bounded offline subset**
 - Date: 2026-09-29
+- Accepted: 2026-09-30; maintainer explicitly requested implementation of SPEC-0066–0076
 - Scope: B28/B29 的本地合成 suite 证据子集，不接受删除、迁移或 live 归档。
 - Contracts: [0073](SPEC-0073-SUITE-INVENTORY.md)、[0074](SPEC-0074-SUITE-EXPORT.md)、
   [0075](SPEC-0075-SUITE-IMPORT.md)、[0076](SPEC-0076-RETENTION-PREVIEW.md)。
@@ -36,4 +37,4 @@ suite 可以在不依赖原 authoring 文件的前提下重放，但当前没有
 0073 是独立只读工作；0074/0075 共用有界归档 reader 和只读文件视图，先完成格式与
 畸形输入拒绝，再实现写入生命周期；0076 只复用 registry，不依赖归档已实现。
 接受每份 ADR 后仍须代码、故障注入、平台测试、用户指南和同提交 CI 才能声称完成。
-本次文档不会自动接受新写路径；未来实现也仅限用户指定的本地新输出位置。
+本次接受的写路径仅限用户指定的本地新输出位置，禁止覆盖、恢复和删除旧数据。

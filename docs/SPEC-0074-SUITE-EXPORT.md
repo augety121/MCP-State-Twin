@@ -1,10 +1,10 @@
 # SPEC-0074: Frozen Offline Suite Export
 
-Status: **Proposal — not accepted or implemented**；[ADR-0073](ADR-0073-OFFLINE-EVIDENCE-PORTABILITY-PROPOSAL.md)。
+Status: **Accepted — implemented in the bounded offline subset**；[ADR-0073](ADR-0073-OFFLINE-EVIDENCE-PORTABILITY-PROPOSAL.md)。
 
 ## 1. 范围与前置条件
 
-拟议 `statetwin eval suite-export --root ROOT --out SUITE --archive DEST`，root 默认点，
+命令 `statetwin eval suite-export --root ROOT --out SUITE --archive DEST`，root 默认点，
 其余必填且 portable，DEST 及 DEST.pending 必须在 SUITE 子树外，父目录须已存在。
 输入只支持现有 offline suite。完整加载最多 128 MiB 的固定成员，冻结后只读审计
 该同一视图；不能审核后重新读取活动目录来打包。所有操作共享 120 秒。

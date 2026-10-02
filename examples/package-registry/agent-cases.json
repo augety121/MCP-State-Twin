@@ -1,0 +1,236 @@
+{
+  "format": "statetwin.dev/task-cases/v1alpha1",
+  "profile": "synthetic-witness-cases-v1",
+  "tasks": [
+    {
+      "taskId": "pkg-read-release",
+      "task": "agent-tasks/pkg-read-release.json"
+    },
+    {
+      "taskId": "pkg-publish-release",
+      "task": "agent-tasks/pkg-publish-release.json"
+    },
+    {
+      "taskId": "pkg-yank-release",
+      "task": "agent-tasks/pkg-yank-release.json"
+    },
+    {
+      "taskId": "pkg-install-release",
+      "task": "agent-tasks/pkg-install-release.json"
+    },
+    {
+      "taskId": "pkg-advisory-abstain",
+      "task": "agent-tasks/pkg-advisory-abstain.json"
+    },
+    {
+      "taskId": "pkg-scope-protection",
+      "task": "agent-tasks/pkg-scope-protection.json"
+    }
+  ],
+  "cases": [
+    {
+      "caseId": "pkg-read-release-positive",
+      "taskId": "pkg-read-release",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-read-release.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-read-release-goal-negative",
+      "taskId": "pkg-read-release",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-read-release-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-read-release-policy-negative",
+      "taskId": "pkg-read-release",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-read-release-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-publish-release-positive",
+      "taskId": "pkg-publish-release",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-publish-release.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-publish-release-goal-negative",
+      "taskId": "pkg-publish-release",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-publish-release-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-publish-release-policy-negative",
+      "taskId": "pkg-publish-release",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-publish-release-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-yank-release-positive",
+      "taskId": "pkg-yank-release",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-yank-release.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-yank-release-goal-negative",
+      "taskId": "pkg-yank-release",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-yank-release-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-yank-release-policy-negative",
+      "taskId": "pkg-yank-release",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-yank-release-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-install-release-positive",
+      "taskId": "pkg-install-release",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-install-release.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-install-release-goal-negative",
+      "taskId": "pkg-install-release",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-install-release-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-install-release-policy-negative",
+      "taskId": "pkg-install-release",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-install-release-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-advisory-abstain-positive",
+      "taskId": "pkg-advisory-abstain",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-advisory-abstain.json",
+      "expected": {
+        "outcome": "expected_abstention",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-advisory-abstain-goal-negative",
+      "taskId": "pkg-advisory-abstain",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-advisory-abstain-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-advisory-abstain-policy-negative",
+      "taskId": "pkg-advisory-abstain",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-advisory-abstain-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-scope-protection-positive",
+      "taskId": "pkg-scope-protection",
+      "role": "positive",
+      "witness": "agent-witnesses/pkg-scope-protection.json",
+      "expected": {
+        "outcome": "success",
+        "failedChecks": []
+      }
+    },
+    {
+      "caseId": "pkg-scope-protection-goal-negative",
+      "taskId": "pkg-scope-protection",
+      "role": "goal-negative",
+      "witness": "agent-witnesses/pkg-scope-protection-goal-negative.json",
+      "expected": {
+        "outcome": "task_failed",
+        "failedChecks": [
+          "objective"
+        ]
+      }
+    },
+    {
+      "caseId": "pkg-scope-protection-policy-negative",
+      "taskId": "pkg-scope-protection",
+      "role": "policy-negative",
+      "witness": "agent-witnesses/pkg-scope-protection-policy-negative.json",
+      "expected": {
+        "outcome": "policy_violation",
+        "failedChecks": [
+          "scope"
+        ]
+      }
+    }
+  ]
+}

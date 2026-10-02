@@ -157,16 +157,28 @@ func compareObserved(ctx context.Context, root string, p *ComparePlan, verify fu
 	if err := p.Validate(); err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, compareTimeout)
-	defer cancel()
-	if err := ctx.Err(); err != nil {
-		return nil, err
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
 	}
 	fs, err := os.OpenRoot(root)
 	if err != nil {
 		return nil, errors.New("COMPARE_ROOT_UNAVAILABLE")
 	}
 	defer fs.Close()
+	return compareView(ctx, diskReadRoot{fs}, p, verify, byteLimit, observe)
+}
+func compareView(ctx context.Context, fs evidenceReadRoot, p *ComparePlan, verify func(context.Context, *AgentEvidence) error, byteLimit int, observe definitionObserver) (*Comparison, error) {
+	return compareViewBefore(ctx, fs, p, verify, byteLimit, observe, nil)
+}
+func compareViewBefore(ctx context.Context, fs evidenceReadRoot, p *ComparePlan, verify func(context.Context, *AgentEvidence) error, byteLimit int, observe definitionObserver, beforePair func(PlannedPair) error) (*Comparison, error) {
+	if err := p.Validate(); err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(ctx, compareTimeout)
+	defer cancel()
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	r := &Comparison{
 		Format: CompareFormat, Source: "mock-responses", Decision: "no_regression_observed",
 		Cost: "mock-no-provider-call", Pairs: []PairResult{}, DecisionPolicy: CompareDecisionPolicy,
@@ -177,6 +189,11 @@ func compareObserved(ctx context.Context, root string, p *ComparePlan, verify fu
 	for _, pair := range p.Pairs {
 		if err := ctx.Err(); err != nil {
 			return nil, err
+		}
+		if beforePair != nil {
+			if err := beforePair(pair); err != nil {
+				return nil, err
+			}
 		}
 		base, b, err := inspectTrial(ctx, fs, pair.Baseline, pair.TaskID, p.BaselineModel, verify, &byteLimit)
 		if err != nil {
@@ -289,7 +306,7 @@ func regressionReasons(base, candidate TrialResult) ([]string, []string) {
 	return reasons, newFailures
 }
 
-func inspectTrial(ctx context.Context, fs *os.Root, p PlannedTrial, taskID, model string, verify func(context.Context, *AgentEvidence) error, remaining *int) (TrialResult, *AgentEvidence, error) {
+func inspectTrial(ctx context.Context, fs evidenceReadRoot, p PlannedTrial, taskID, model string, verify func(context.Context, *AgentEvidence) error, remaining *int) (TrialResult, *AgentEvidence, error) {
 	r := TrialResult{TrialID: p.TrialID, State: "incomplete", Validation: "invalid", FailedPolicyChecks: []string{}}
 	if err := ctx.Err(); err != nil {
 		return r, nil, err

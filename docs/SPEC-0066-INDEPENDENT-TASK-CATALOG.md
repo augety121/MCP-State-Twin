@@ -1,7 +1,7 @@
 # SPEC-0066: Independent Task Catalog
 
-Status: **Proposal — not accepted or implemented**，决策入口为
-[ADR-0066](ADR-0066-REVIEWED-TASK-BINDING-PROPOSAL.md)。本文件中的要求仅用于后续实施。
+Status: **Accepted — implemented in the bounded offline subset**，决策入口为
+[ADR-0066](ADR-0066-REVIEWED-TASK-BINDING-PROPOSAL.md)。本文件定义已接受的受限离线契约；实现证据见 IMPLEMENTATION-STATUS.md。
 
 ## 1. 目标与边界
 
@@ -11,7 +11,7 @@ Status: **Proposal — not accepted or implemented**，决策入口为
 
 ## 2. 目录格式
 
-提议严格 JSON 格式，单对象、64 KiB、最大深度 32；所有下列字段必填。
+采用严格 JSON 格式，单对象、64 KiB、最大深度 32；所有下列字段必填。
 拒绝重复键、未知键、大小写别名、null、多文档、非 JSON 和超限输入。
 
 ```json
@@ -92,7 +92,7 @@ expectedOutcome；tools 含 tools/faultTool。未归类的新字段归 other，�
 取消/期限保留 context 原因。CLI 仅打印有限错误码，不包含路径、内容或底层 OS 错误。
 集合缺项/多项进入结构化绑定结果；不能靠空目录伪造“没有需要检查的任务”。
 
-## 6. 后续实施验收
+## 6. 实施验收
 
 | 场景 | 必须得到的结果 |
 |---|---|
@@ -108,4 +108,4 @@ expectedOutcome；tools 含 tools/faultTool。未归类的新字段归 other，�
 | 冻结后改磁盘文件、取消、累计上限边界 | 不重读；取消/超限明确失败 |
 
 实施建议落点：`internal/agenteval/task_catalog.go` 及对应测试；复用 task/logging/
-strict decoder，不修改既有 Task 解码兼容性。以上是测试计划，当前尚无实现证据。
+strict decoder，不修改既有 Task 解码兼容性。对应实现与测试见实现台账。

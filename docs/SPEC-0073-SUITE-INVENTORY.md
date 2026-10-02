@@ -1,6 +1,6 @@
 # SPEC-0073: Explicit Suite Inventory
 
-Status: **Proposal — not accepted or implemented**；[ADR-0073](ADR-0073-OFFLINE-EVIDENCE-PORTABILITY-PROPOSAL.md)。
+Status: **Accepted — implemented in the bounded offline subset**；[ADR-0073](ADR-0073-OFFLINE-EVIDENCE-PORTABILITY-PROPOSAL.md)。
 
 ## 1. 注册范围与接口
 
