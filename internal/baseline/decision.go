@@ -26,22 +26,27 @@ type Observation struct {
 	Usage           Usage    `json:"usage"`
 }
 type Metrics struct {
-	Planned             int       `json:"planned"`
-	Scorable            int       `json:"scorable"`
-	Complete            int       `json:"complete"`
-	Successes           int       `json:"successes"`
-	Missing             int       `json:"missing"`
-	Unverified          int       `json:"unverified"`
-	Interrupted         int       `json:"interrupted"`
-	PolicyFailures      int       `json:"policyFailures"`
-	IllegalAttempts     int       `json:"illegalAttempts"`
-	IllegalEffects      int       `json:"illegalEffects"`
-	SuccessRate         float64   `json:"successRate"`
-	ScorableRate        float64   `json:"scorableRate"`
-	CostStatus          string    `json:"costStatus"`
-	Cost                *float64  `json:"cost,omitempty"`
-	Currency            string    `json:"currency,omitempty"`
-	SuccessfulLatencies []float64 `json:"successfulLatencies"`
+	Planned             int               `json:"planned"`
+	Scorable            int               `json:"scorable"`
+	Complete            int               `json:"complete"`
+	Successes           int               `json:"successes"`
+	Missing             int               `json:"missing"`
+	Unverified          int               `json:"unverified"`
+	Interrupted         int               `json:"interrupted"`
+	PolicyFailures      int               `json:"policyFailures"`
+	IllegalAttempts     int               `json:"illegalAttempts"`
+	IllegalEffects      int               `json:"illegalEffects"`
+	SuccessRate         float64           `json:"successRate"`
+	ScorableRate        float64           `json:"scorableRate"`
+	CostStatus          string            `json:"costStatus"`
+	Cost                *float64          `json:"cost,omitempty"`
+	Currency            string            `json:"currency,omitempty"`
+	SuccessfulLatencies []float64         `json:"successfulLatencies"`
+	ReportedUsageRows   int               `json:"reportedUsageRows"`
+	TokenStatus         string            `json:"tokenStatus"`
+	InputTokens         *int              `json:"inputTokens,omitempty"`
+	OutputTokens        *int              `json:"outputTokens,omitempty"`
+	LatencyAvailability map[string]string `json:"latencyAvailability"`
 }
 type Reliability struct {
 	ConfigID     string `json:"configId"`
@@ -90,7 +95,7 @@ func Decide(f Frozen, observations []Observation) (*Report, error) {
 		byID[o.TrialID] = o
 	}
 	for _, c := range f.Plan.Configs {
-		r.Metrics[c.ID] = &Metrics{CostStatus: "unknown", SuccessfulLatencies: []float64{}}
+		r.Metrics[c.ID] = &Metrics{CostStatus: "unknown", TokenStatus: "unavailable", SuccessfulLatencies: []float64{}, LatencyAvailability: map[string]string{"total": "unavailable", "startup": "unavailable", "provider": "unavailable", "tools": "unavailable", "grading": "unavailable", "cleanup": "unavailable"}}
 	}
 	valid := true
 	hardFail := false
@@ -102,6 +107,7 @@ func Decide(f Frozen, observations []Observation) (*Report, error) {
 	costs := map[string]float64{}
 	currency := map[string]string{}
 	knownCost := map[string]int{}
+	inputTokens, outputTokens := map[string]int{}, map[string]int{}
 	for _, t := range f.Trials {
 		m := r.Metrics[t.ConfigID]
 		if m == nil {
@@ -146,6 +152,11 @@ func Decide(f Frozen, observations []Observation) (*Report, error) {
 		m.PolicyFailures += o.PolicyFailures
 		m.IllegalAttempts += o.IllegalAttempts
 		m.IllegalEffects += o.IllegalEffects
+		if o.Usage.Status == "reported" && o.Usage.InputTokens != nil && o.Usage.OutputTokens != nil && *o.Usage.InputTokens >= 0 && *o.Usage.OutputTokens >= 0 {
+			m.ReportedUsageRows++
+			inputTokens[t.ConfigID] += *o.Usage.InputTokens
+			outputTokens[t.ConfigID] += *o.Usage.OutputTokens
+		}
 		if o.Usage.Status == "reported" && o.Usage.Cost != nil && *o.Usage.Cost >= 0 && o.Usage.Currency != "" {
 			if currency[t.ConfigID] == "" {
 				currency[t.ConfigID] = o.Usage.Currency
@@ -175,6 +186,18 @@ func Decide(f Frozen, observations []Observation) (*Report, error) {
 		}
 	}
 	for id, m := range r.Metrics {
+		if len(m.SuccessfulLatencies) > 0 {
+			m.LatencyAvailability["total"] = "reported-successful-trials-only"
+		}
+		if m.ReportedUsageRows > 0 {
+			m.TokenStatus = "partial"
+		}
+		if m.ReportedUsageRows == m.Planned && m.Planned > 0 {
+			m.TokenStatus = "reported"
+			input, output := inputTokens[id], outputTokens[id]
+			m.InputTokens = &input
+			m.OutputTokens = &output
+		}
 		if m.Planned > 0 {
 			m.SuccessRate = float64(m.Successes) / float64(m.Planned)
 			m.ScorableRate = float64(m.Scorable) / float64(m.Planned)

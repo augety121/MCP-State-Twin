@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/augety121/mcp-state-twin/internal/agenteval"
 	"github.com/augety121/mcp-state-twin/internal/testfixture"
 )
 
@@ -35,10 +34,6 @@ func TestBaselineVariantQualification(t *testing.T) {
 			continue
 		}
 		seen[key] = true
-		report, err := agenteval.RunCases(ctx, filepath.Join(root, "expanded", e.Entry.Root), e.Entry.Cases)
-		if err != nil || report.Decision != "matched" || report.Matched != report.Planned {
-			t.Fatalf("%s: %+v %v", key, report, err)
-		}
 	}
 	for family, n := range counts {
 		if n != 3 {
@@ -47,6 +42,20 @@ func TestBaselineVariantQualification(t *testing.T) {
 	}
 	if len(seen) != 12 {
 		t.Fatal("expected four case groups in each split", len(seen))
+	}
+	quality, err := Qualify(ctx, filepath.Join(root, "expanded"), "baseline-pack.json", "plugin-profile.json")
+	if err != nil || quality.Decision != "matched" || len(quality.Groups) != 12 {
+		t.Fatal(quality, err)
+	}
+	planned := 0
+	for _, g := range quality.Groups {
+		planned += g.Report.Planned
+		if g.Report.Matched != g.Report.Planned {
+			t.Fatal(g)
+		}
+	}
+	if planned != 309 {
+		t.Fatal("quality inventory", planned)
 	}
 	if _, err = GenerateVariants(ctx, root, "baseline-pack.json", "plugin-profile.json", "expanded"); err == nil {
 		t.Fatal("overwritten")

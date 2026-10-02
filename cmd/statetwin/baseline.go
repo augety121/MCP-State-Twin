@@ -52,7 +52,14 @@ func runBaseline(ctx context.Context, args []string, out io.Writer) error {
 		return errors.New("BASELINE_FLAGS_INVALID")
 	}
 	switch args[0] {
-	case "variants":
+	case "variants", "qualify":
+		if args[0] == "qualify" {
+			if *pack == "" || *profile == "" || *output != "" || *plan != "" || *shard != 0 {
+				return errors.New("BASELINE_FLAGS_INVALID")
+			}
+			result, err = baselinepack.Qualify(ctx, *root, *pack, *profile)
+			break
+		}
 		if *pack == "" || *profile == "" || *output == "" || *plan != "" || *shard != 0 {
 			return errors.New("BASELINE_FLAGS_INVALID")
 		}

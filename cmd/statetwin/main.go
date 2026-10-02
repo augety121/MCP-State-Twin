@@ -142,6 +142,13 @@ Commands:
 	statetwin plugin describe --root DIR --pack baseline-pack.json --profile plugin-profile.json
 	statetwin plugin serve --root DIR --session-plan plugin-session.json
 	statetwin plugin inspect --root DIR --session-plan plugin-session.json --format markdown
+	statetwin plugin recover --root DIR --session-plan plugin-session.json --out recovered
+	statetwin baseline variants --root DIR --pack baseline-pack.json --profile plugin-profile.json --out expanded
+	statetwin baseline qualify --root DIR --pack baseline-pack.json --profile plugin-profile.json
+	statetwin baseline check --root DIR --plan baseline-pilot.json
+	statetwin baseline freeze --root DIR --plan baseline-pilot.json --out experiment
+	statetwin baseline shard --root EXPERIMENT --plan baseline-pilot.json --shard 1
+	statetwin baseline assess --root EXPERIMENT --plan baseline-pilot.json
   statetwin validate --spec twin.yaml
   statetwin init --spec twin.yaml --fixture state.json --db twin.db --snapshot base
   statetwin call --spec twin.yaml --db twin.db --branch main --tool get_issue --input '{...}'

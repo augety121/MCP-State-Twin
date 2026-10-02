@@ -177,3 +177,34 @@ func TestBaselineShardBudgetsAndNoEffects(t *testing.T) {
 		t.Fatal("implicit delta")
 	}
 }
+
+func TestBaselineMetricsAvailability(t *testing.T) {
+	_, p := fixture(t)
+	rows := outcomes(p.Frozen, true)
+	tokensIn, tokensOut := 10, 5
+	cost := 1.0
+	for i := range rows {
+		rows[i].Usage = Usage{Status: "reported", InputTokens: &tokensIn, OutputTokens: &tokensOut, Cost: &cost, Currency: "USD"}
+	}
+	r, e := Decide(p.Frozen, rows)
+	if e != nil {
+		t.Fatal(e)
+	}
+	for _, m := range r.Metrics {
+		if m.CostStatus != "reported" || *m.Cost != 72 || m.TokenStatus != "reported" || *m.InputTokens != 720 || *m.OutputTokens != 360 {
+			t.Fatal(m)
+		}
+	}
+	rows[0].Usage = Usage{Status: "unavailable"}
+	r, e = Decide(p.Frozen, rows)
+	m := r.Metrics[p.Frozen.Trials[0].ConfigID]
+	if e != nil || m.Cost != nil || m.InputTokens != nil || m.TokenStatus != "partial" || m.ReportedUsageRows != 71 {
+		t.Fatal(m, e)
+	}
+	rows[0].Usage = Usage{Status: "reported", InputTokens: &tokensIn, OutputTokens: &tokensOut, Cost: &cost, Currency: "CNY"}
+	r, e = Decide(p.Frozen, rows)
+	m = r.Metrics[p.Frozen.Trials[0].ConfigID]
+	if e != nil || m.Cost != nil || m.CostStatus != "unknown" {
+		t.Fatal("mixed currency", m, e)
+	}
+}

@@ -114,13 +114,13 @@ def test_inspect_rejects_additional_tools_before_start(assets):
     assert not (root / plan["output"]).exists()
 
 
-def test_inspect_task_solver_scorer_and_log_boundary(assets, tmp_path):
+def _run_framework(assets, tmp_path, suffix):
     from inspect_ai import eval as inspect_eval
     from inspect_ai.model import ModelOutput, ChatCompletionChoice, ChatMessageAssistant, get_model
     from inspect_ai.tool import ToolCall
     from statetwin_inspect.task import plugin_task
     binary, root = assets
-    name = plan_for(root, "read-issue", "-framework")
+    name = plan_for(root, "read-issue", suffix)
     calls = ModelOutput(model="mockllm/model", choices=[ChatCompletionChoice(
         message=ChatMessageAssistant(content="", tool_calls=[ToolCall(
             id="read-1", function="get_issue", arguments={"owner": "octo", "repository": "demo", "number": 1})]),
@@ -138,6 +138,42 @@ def test_inspect_task_solver_scorer_and_log_boundary(assets, tmp_path):
     text = logs[0].model_dump_json()
     for forbidden in ("STATETWIN_PLUGIN_CONTROL_TOKEN", "statetwin.dev/plugin-world-evidence", "allowed-business-changes", "worldReplayVerified"):
         assert forbidden not in text
+
+
+def test_inspect_task_solver_scorer_and_log_boundary(assets, tmp_path):
+    _run_framework(assets, tmp_path, "-framework")
+
+
+@pytest.mark.skipif(os.environ.get("STATETWIN_INSPECT_PERFORMANCE") != "1",
+                    reason="opt-in release performance qualification")
+def test_inspect_framework_performance(assets, tmp_path):
+    import platform
+    import time
+    from importlib.metadata import version
+    binary, original = assets
+    root = tmp_path / "inputs"
+    shutil.copytree(original, root, ignore=shutil.ignore_patterns("inspect-*"))
+    pack_path = root / "baseline-pack.json"
+    pack = json.loads(pack_path.read_text())
+    pack["entries"] = [e for e in pack["entries"] if e["id"] == "read-issue"]
+    pack_path.write_text(json.dumps(pack))
+    samples = []
+    for index in range(30):
+        started = time.perf_counter()
+        _run_framework((binary, root), tmp_path / f"logs-{index}", f"-performance-{index}")
+        samples.append(time.perf_counter() - started)
+    ordered = sorted(samples)
+    report = {"format": "statetwin.dev/inspect-performance/v1alpha1",
+              "os": platform.system(), "arch": platform.machine(),
+              "python": platform.python_version(), "inspect": version("inspect_ai"),
+              "samples": samples, "p50Seconds": ordered[14], "p95Seconds": ordered[28],
+              "maxSeconds": ordered[29], "source": "mock-framework-contract",
+              "scope": "warm Python imports; plan/projection + Inspect eval + independent MCP child + original grading + scorer replay + logs + cleanup; asset build excluded",
+              "rssStatus": "unavailable", "startupStatus": "not-separately-measured"}
+    destination = os.environ.get("STATETWIN_INSPECT_PERFORMANCE_OUT")
+    if destination:
+        Path(destination).write_text(json.dumps(report, indent=2), encoding="utf-8")
+    print(json.dumps(report))
 
 
 def test_inspect_actual_cancellation_and_concurrency(assets):

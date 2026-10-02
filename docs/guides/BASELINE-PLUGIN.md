@@ -66,11 +66,14 @@ inspect 只做本地重放与评分核验，不重跑模型或 quality witnesses
 ```text
 .tmp/statetwin.exe baseline variants --root .tmp/baseline --pack baseline-pack.json --profile plugin-profile.json --out expanded
 .tmp/statetwin.exe plugin check --root .tmp/baseline/expanded --pack baseline-pack.json --profile plugin-profile.json
+.tmp/statetwin.exe baseline qualify --root .tmp/baseline/expanded --pack baseline-pack.json --profile plugin-profile.json
 ```
 
 固定枚举生成 original/dev、namespace-regression/regression、namespace-evaluation/evaluation。目标命名空间在 Task/authority/oracle/witness、actual/reviewed Bundle 全部同步替换；没有用户脚本、LLM 生成器或自由 CEL 模板。变体产生独立 Task ID、revision 和 pack entry ID，源 Task ID 保留为 family 的语义身份。两个领域仍是 24 family，不能称为 72 种独立能力。
 
 evaluation 显式 `public-evaluation-split`；公开内容不能充当未见 private holdout。生成结果的 reviewed 文件是源评审资产的机械变换，仍为 self-reviewed，不冒充第二位评审者。
+
+qualify 对冻结输入运行 12 组共 309 个 scripted/评分变异 case；输出保留每组计划/匹配/失败数量。quality 不是模型成功率；register 只冻结内容身份，不替代 qualify 或独立评审。
 
 ```text
 .tmp/statetwin.exe baseline register --root .tmp/baseline/expanded --pack baseline-pack.json --profile plugin-profile.json --registry registry

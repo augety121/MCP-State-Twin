@@ -8,6 +8,10 @@
 
 API TTL 30 天、产品 14 天；任一 runtime/head/adapter/protocol/pack/oracle/evidence 绑定变更立即 stale。claim-check 只评估本地声明，不能自己证明产品来源。
 
+2026-10-03 用户委托选择优先宿主，选择当前可用 Codex。实测 `codex --version` 为 `codex-cli 0.159.0-alpha.12.1`；这只是本机 CLI 版本，不推断桌面应用版本。`codex exec --help` 确认存在 ephemeral、ignore-user-config 与 read-only sandbox 参数，但 read-only 不等于 Agent 不能读 oracle。当前聊天实际拥有 shell、文件、浏览器和其他连接器，不满足 tools-only，不能复用当前会话进行 AB49 评分。
+
+官方 [MCP 配置](https://learn.chatgpt.com/docs/extend/mcp?surface=cli) 支持每服务器工具 allowlist；[配置参考](https://learn.chatgpt.com/docs/config-file/config-reference) 描述 shell_tool 开关。这些配置能力不构成所有旁路工具关闭的实测证据。本次只读版本/帮助，没有修改用户全局配置、启动模型会话或把 local bridge 资格转换为 Codex 产品资格；后续须独立冻结宿主工具清单及生命周期适配，并验证隔离后才能升级 unverified。
+
 ## 非作者 first-value
 
 至少三名独立非作者，事前授权邀请和数据记录；使用本地合成数据。每人记录版本、依赖已安装与否、开始/结束时间、check/connect/run/inspect 各步骤、是否在 10 分钟内得到首个可解释结果、失败原因。使用匿名参与者 ID，不记录联系方式；失败同样保留。作者自己重复三次或 mock 用户不能替代。

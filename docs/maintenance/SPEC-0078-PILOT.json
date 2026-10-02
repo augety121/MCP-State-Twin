@@ -1,0 +1,86 @@
+{
+  "format": "statetwin.dev/baseline-pilot-summary/v1alpha1",
+  "date": "2026-10-03",
+  "planId": "reference-pilot",
+  "mode": "offline-contract",
+  "purpose": "pilot",
+  "decision": "inconclusive",
+  "reason": "degenerate",
+  "sourceTrust": "local-operator-asserted",
+  "hostObservation": "contract-test",
+  "metrics": {
+    "baseline": {
+      "planned": 72,
+      "scorable": 72,
+      "complete": 72,
+      "successes": 72,
+      "missing": 0,
+      "unverified": 0,
+      "interrupted": 0,
+      "policyFailures": 0,
+      "illegalAttempts": 0,
+      "illegalEffects": 0,
+      "successRate": 1,
+      "scorableRate": 1,
+      "costStatus": "unknown",
+      "reportedUsageRows": 0,
+      "tokenStatus": "unavailable",
+      "latencyAvailability": {
+        "cleanup": "unavailable",
+        "grading": "unavailable",
+        "provider": "unavailable",
+        "startup": "unavailable",
+        "tools": "unavailable",
+        "total": "reported-successful-trials-only"
+      }
+    },
+    "candidate": {
+      "planned": 72,
+      "scorable": 72,
+      "complete": 72,
+      "successes": 72,
+      "missing": 0,
+      "unverified": 0,
+      "interrupted": 0,
+      "policyFailures": 0,
+      "illegalAttempts": 0,
+      "illegalEffects": 0,
+      "successRate": 1,
+      "scorableRate": 1,
+      "costStatus": "unknown",
+      "reportedUsageRows": 0,
+      "tokenStatus": "unavailable",
+      "latencyAvailability": {
+        "cleanup": "unavailable",
+        "grading": "unavailable",
+        "provider": "unavailable",
+        "startup": "unavailable",
+        "tools": "unavailable",
+        "total": "reported-successful-trials-only"
+      }
+    }
+  },
+  "interval": {
+    "algorithm": "stratified-family-bootstrap-v1",
+    "seed": 78,
+    "samples": 10000,
+    "families": 24,
+    "observedDifference": 0,
+    "status": "degenerate",
+    "population": "selected families in the two declared synthetic domains; no AGI inference"
+  },
+  "shards": {
+    "shard-01": "complete",
+    "shard-02": "complete",
+    "shard-03": "complete",
+    "shard-04": "complete",
+    "shard-05": "complete",
+    "shard-06": "complete",
+    "shard-07": "complete",
+    "shard-08": "complete",
+    "shard-09": "complete",
+    "shard-10": "complete",
+    "shard-11": "complete",
+    "shard-12": "complete"
+  }
+}

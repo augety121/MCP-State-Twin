@@ -43,6 +43,16 @@ func CheckPluginCaseTasks(ctx context.Context, name string, read func(string, in
 	}
 	return result, nil
 }
+
+// RunPluginCases qualifies the admitted frozen inputs, not paths reread after
+// preflight. Results remain scripted quality evidence, never model trajectories.
+func RunPluginCases(ctx context.Context, name string, read func(string, int) ([]byte, error)) (*CaseReport, error) {
+	p, err := prepareCasesWith(ctx, name, read, bundle.OpenBytes)
+	if err != nil {
+		return nil, err
+	}
+	return runCases(ctx, p, RunWitness)
+}
 func pTask(p *preparedCases, id string) *task.Task {
 	if p == nil {
 		return nil
