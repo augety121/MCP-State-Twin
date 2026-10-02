@@ -68,10 +68,10 @@ jobs:
         with:
           go-version: "1.26.x"
           cache: true
-      - name: Test and build
-        run: |
-          go test ./...
-          go build ./cmd/statetwin
+      - name: Test
+        run: go test ./...
+      - name: Build
+        run: go build ./cmd/statetwin
 
   fuzz-smoke:
     runs-on: ubuntu-latest
