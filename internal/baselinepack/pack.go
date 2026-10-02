@@ -237,7 +237,10 @@ func PrepareWith(r *Reader, packName, profileName string) (*Prepared, error) {
 	taskPaths := map[string]bool{}
 	worldPaths := map[string]bool{}
 	refs := [][2]string{}
-	caseTasks := map[string][]*task.Task{}
+	// A case manifest's relative references are interpreted under its root.
+	// Identical manifest paths reached through different roots are not the
+	// same admission, even when the selected Task JSON happens to be equal.
+	caseTasks := map[[2]string][]*task.Task{}
 	bundles := map[string]*bundle.Artifact{}
 	extracted := InputLimit
 	open := func(name string) ([]byte, *bundle.Artifact, error) {
@@ -248,12 +251,24 @@ func PrepareWith(r *Reader, packName, profileName string) (*Prepared, error) {
 		if b := bundles[name]; b != nil {
 			return data, b, nil
 		}
-		b, e := bundle.OpenBytes(data)
-		if e != nil {
-			return nil, nil, errors.New("PLUGIN_PLAN_INVALID")
+		var b *bundle.Artifact
+		for previous, admitted := range bundles {
+			if bytes.Equal(data, r.Inputs[previous].Raw) {
+				b = admitted
+				break
+			}
+		}
+		reused := b != nil
+		if !reused {
+			b, e = bundle.OpenBytes(data)
+			if e != nil {
+				return nil, nil, errors.New("PLUGIN_PLAN_INVALID")
+			}
 		}
 		for _, v := range b.Files {
-			if len(v) > extracted || logging.ContainsSensitive(string(v)) {
+			// Debit each physical input even when decoding an exact byte copy
+			// is reused. Paths, hard links and original bytes were checked above.
+			if len(v) > extracted || (!reused && logging.ContainsSensitive(string(v))) {
 				return nil, nil, errors.New("PLUGIN_RESOURCE_LIMIT")
 			}
 			extracted -= len(v)
@@ -299,11 +314,8 @@ func PrepareWith(r *Reader, packName, profileName string) (*Prepared, error) {
 		}
 		worldPaths[bn] = true
 		refs = append(refs, [2]string{bn, wn})
-		if agenteval.Admit(t, b) != nil {
-			return nil, errors.New("PLUGIN_PLAN_INVALID")
-		}
 		read := func(name string, max int) ([]byte, error) { return r.Read(path.Join(e.Root, name), max) }
-		caseName := path.Join(e.Root, e.Cases)
+		caseName := [2]string{e.Root, e.Cases}
 		if caseTasks[caseName] == nil {
 			caseTasks[caseName], err = agenteval.CheckPluginCaseTasks(r.ctx, e.Cases, read)
 			if err != nil {
@@ -320,6 +332,9 @@ func PrepareWith(r *Reader, packName, profileName string) (*Prepared, error) {
 		if !matched {
 			return nil, errors.New("PLUGIN_QUALITY_REFERENCE_INVALID")
 		}
+		// CheckPluginCaseTasks already admitted this exact Task against the
+		// same frozen root-relative Bundle, including oracle compilation and
+		// data-policy checks. Do not compile and scan it a second time here.
 		p.Entries = append(p.Entries, PreparedEntry{e, t, bytes.Clone(data)})
 	}
 	for _, ref := range refs {

@@ -43,6 +43,59 @@ func TestBaselinePackAdmission(t *testing.T) {
 	}
 }
 
+func TestCaseAdmissionKeepsRelativeRootAndOracle(t *testing.T) {
+	root := testfixture.Baseline(t)
+	ctx := context.Background()
+	p, err := Prepare(ctx, root, "baseline-pack.json", "plugin-profile.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := p.Pack.Entries[0]
+	copyFile := func(from, to string) {
+		t.Helper()
+		raw, err := os.ReadFile(filepath.Join(root, from))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = os.MkdirAll(filepath.Dir(filepath.Join(root, to)), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err = os.WriteFile(filepath.Join(root, to), raw, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	shadow := first
+	shadow.ID, shadow.Root = "shadow-read-issue", "."
+	shadow.Cases = filepath.ToSlash(filepath.Join(first.Root, first.Cases))
+	copyFile(filepath.Join(first.Root, first.Task), first.Task)
+	copyFile(filepath.Join(first.Root, first.ReviewedTask), first.ReviewedTask)
+	// The same Task text under another root binds a different valid world.
+	// Reusing only the canonical case filename would miss that distinction.
+	copyFile("package-registry/.statetwin/agent-world.stb", ".statetwin/agent-world.stb")
+	copyFile("package-registry/.statetwin/reviewed-agent-world.stb", shadow.ReviewedWorld)
+	manifest := p.Pack
+	manifest.Entries = []Entry{first, shadow}
+	raw, _ := json.Marshal(manifest)
+	if err = os.WriteFile(filepath.Join(root, "shadow.json"), raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = Prepare(ctx, root, "shadow.json", "plugin-profile.json"); err == nil {
+		t.Fatal("case admission reused across different reference roots")
+	}
+	// A matching actual/reviewed Task is still subject to CEL admission.
+	bad := Clone(p.Entries[0].Task)
+	bad.Oracle[0].Expr = "missing_function()"
+	raw, _ = json.Marshal(bad)
+	for _, name := range []string{first.Task, first.ReviewedTask} {
+		if err = os.WriteFile(filepath.Join(root, first.Root, name), raw, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err = Prepare(ctx, root, "baseline-pack.json", "plugin-profile.json"); err == nil {
+		t.Fatal("oracle compilation was skipped")
+	}
+}
+
 func TestPluginReferenceIsolationAndFreeze(t *testing.T) {
 	root := testfixture.Baseline(t)
 	ctx := context.Background()

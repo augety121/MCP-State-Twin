@@ -27,6 +27,8 @@
 
 ## 验证记录与限制
 
+2026-10-03 后续修复：`4dc0c6e9f593e94cf168439f7671f8a5317d1c83` 的 [18 项 CI 全部通过](https://github.com/augety121/MCP-State-Twin/actions/runs/37035109984)，包括完整分片 race、三平台 Inspect 与其他安全检查。随后实现单次准入内精确字节复用、去除重复 oracle 编译，并补上跨 root 缓存隔离反例；本地 gofmt、go vet、整仓 Go 测试再次通过。24-entry 准入微基准中位数下降约 24.8%，100 会话 soak 和 30 次 Inspect 框架复测通过。新提交的 race 结果以 PR 最终 head 检查为准。性能原始≤1.5倍门槛仍未满足，详见性能记录的优化复测段。
+
 上述 targeted Go 测试通过，`go vet ./...` 通过。稳定候选的 `go test -p 1 -timeout=20m ./...` 全部通过。Inspect 本地 wheel 构建/安装通过；最终五项 Python 测试通过（114.15 秒），包含 24 Task、完整 Task/Solver/Scorer、异常、取消与并发拒绝。第一次整仓测试与代码新增并行，遇到 source file inventory 尚未包含新增 live 文件及指南代码被链接检查误识别的问题；对应问题已处理，不把失败轮次称为通过。
 
 2026-10-03 完整离线 pilot：12 shards ×12 trials，baseline/candidate 各 72 planned、72 scorable、72 successes，missing/unverified/interrupted 均为 0；没有 policy failure 或非法实际副作用。24 family、每个配置 3 repeats，结果为 inconclusive/degenerate，符合全成功样本的保守判定。脚本没有 provider usage，tokens/cost 明确 unavailable/unknown。

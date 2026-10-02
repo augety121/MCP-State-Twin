@@ -1,5 +1,17 @@
 # SPEC-0078 插件性能与 soak 记录
 
+## 同日优化复测
+
+在原始候选 `4dc0c6e` 基础上，单次 Prepare 内复用字节完全相同的 bundle 解码及敏感数据扫描，仍逐物理输入扣除资源预算；去除已由 case 准入完成的重复 Task 编译。case 缓存按 root 和引用共同隔离，新增不同根引用和无效 oracle 反例。没有跨会话缓存或省略独立进程核验。
+
+同一台 AMD Ryzen 7 5700X3D、GOMAXPROCS=1，顺序执行原提交源码与修改后源码的 `BenchmarkPackPreparation -benchtime=3x -count=3`，均不启用 profiler，fixture 构建排除在计时外。24-entry 准入三轮中位数从 806.205ms 降至 606.129ms（约 24.8%），范围分别为 787.239–814.960ms 和 591.176–619.345ms；分配从约 86.47MB/op 降至 57.51MB/op。单 entry 中位数 179.014ms→152.872ms，范围重叠；三轮微基准不构成硬件 SLA 或统计显著性结论。
+
+优化后重新执行 100 次会话（75.93 秒），记录前 30 次配对样本：完整链路 p50=0.751730s、p95=0.884805s、max=1.463888s；预加载 RunWitness p95=0.035217s；启动 p95=0.303452s；新增 p95=0.849588s，倍率 25.1242。子进程峰值 working set 最大 43,839,488 bytes，父 goroutine 2→3。原始数据见 `SPEC-0078-PERFORMANCE-OPTIMIZED.json`。
+
+Inspect 30 次完整框架复测通过（63.22 秒），p50=1.883136s、p95=1.974539s、max=4.785316s；范围与下文原测量相同，保留首轮较慢样本，启动/RSS 仍未分别测量。见 `SPEC-0078-INSPECT-PERFORMANCE-OPTIMIZED.json`。相对本次 Go 进程内 p95 的诊断差值为 1.939321s；这是跨运行差值，不能代替严格配对验收。原始≤1.5倍门槛仍失败，AB31 仍未通过，不修改门槛或宣称 stable。
+
+## 原始候选测量（保留历史）
+
 2026-10-03；Windows/amd64，AMD64 Family 25 Model 33 Stepping 2，Go 1.26.5，GOMAXPROCS=1。独立子进程，单 Task pack（issue read）、Go SDK 1.8.0、合成 witness；没有 provider 请求。测量源码 `cmd/statetwin/plugin_soak_test.go` 和 `internal/plugin/contract.go`。
 
 执行 `STATETWIN_PLUGIN_SOAK=1 go test -p 1 ./cmd/statetwin -run '^TestPluginReleaseSoakAndPerformance$' -count=1 -timeout=8m -v`，100 次 session 完成并等待自有子进程退出，耗时 88.98 秒；前 30 次记录分阶段数据，每次配对原 RunWitness。另一个确定性测试覆盖 5 个阶段各两次强制 crash 并验证 Wait 完成。
