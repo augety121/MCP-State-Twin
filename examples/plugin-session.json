@@ -1,0 +1,18 @@
+{
+  "format": "statetwin.dev/plugin-session-plan/v1alpha1",
+  "id": "plugin-read-issue",
+  "pack": "baseline-pack.json",
+  "profile": "plugin-profile.json",
+  "entryId": "read-issue",
+  "host": {
+    "name": "mcp-client",
+    "version": "go-sdk-1.8.0",
+    "model": "mock/statetwin",
+    "freshSession": true,
+    "toolsOnly": true,
+    "additionalTools": 0
+  },
+  "output": "plugin-read-issue",
+  "mode": "offline-contract",
+  "deadlineSeconds": 180
+}

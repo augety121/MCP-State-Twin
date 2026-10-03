@@ -24,10 +24,11 @@ jobs:
       - name: Vet
         run: go vet ./...
       - name: Test
-        # Replay-heavy packages under race + atomic coverage exceed Go's
-        # default aggregate 10m package limit on shared runners. Individual
-        # execution and assessment deadlines remain enforced by the code.
-        run: go test -race -timeout=20m -coverprofile=coverage.out ./...
+        # Replay-heavy packages run in complete-inventory shards below.
+        # Keep race/coverage and the existing 20m per-invocation limit.
+        run: |
+          mapfile -t packages < <(go list ./... | grep -vE '/(cmd/statetwin|internal/agenteval)$')
+          go test -race -timeout=20m -coverprofile=coverage.out "${packages[@]}"
       - name: Documentation authority and link integrity
         run: go test ./internal/doccheck -count=1
       - name: Scenario smoke
@@ -56,6 +57,23 @@ jobs:
       - name: Build
         run: go build ./cmd/statetwin
 
+  race-replay:
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [./cmd/statetwin, ./internal/agenteval]
+        shard: [0, 1, 2, 3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache: true
+      - name: Complete inventory race shard
+        run: python3 scripts/run-race-shard.py '${{ matrix.package }}' '${{ matrix.shard }}' 4
+
   platform-smoke:
     strategy:
       fail-fast: false
@@ -72,6 +90,33 @@ jobs:
         run: go test ./...
       - name: Build
         run: go build ./cmd/statetwin
+
+  inspect-plugin:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache: true
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Build plugin
+        run: go build -o plugin-runtime/statetwin.exe ./cmd/statetwin
+      - name: Install optional adapter in isolated environment
+        run: python -m pip install './adapters/inspect[test]'
+      - name: Real Inspect MCP sessions, framework grading and disclosure
+        env:
+          STATETWIN_TEST_BINARY: plugin-runtime/statetwin.exe
+        run: python -m pytest adapters/inspect/tests -q
 
   fuzz-smoke:
     runs-on: ubuntu-latest

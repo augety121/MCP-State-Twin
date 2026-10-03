@@ -31,6 +31,8 @@
 
 离线项目入口已扩展为 `project-check/run/inspect` 和 `campaign-check/run/inspect`：先冻结并审阅全部输入，再执行质量门禁与独立世界绑定。两领域共 24 个任务、103 个质量 case、48 个 trial，附正向与回归 campaign。完整流程见[项目指南](docs/guides/EVALUATION-PROJECTS.md)，本分支验证与主线集成状态见[交付台账](docs/maintenance/SPEC-0077-DELIVERY.md)。旧的[独立离线命令](docs/guides/OFFLINE-DELIVERY.md)仍可使用。
 
+Agent Baseline Kit 候选增加 Task 约束的 MCP stdio、私有会话控制、独立 Inspect adapter、24 family/72 instances、冻结实验分片和四态基线判定。安装、接入及故障恢复见[插件指南](docs/guides/BASELINE-PLUGIN.md)，测试、性能门槛及外部证据缺口见[SPEC-0078 台账](docs/maintenance/SPEC-0078-DELIVERY.md)。它提供评测基础设施，不提供 AGI 认证。
+
 <p align="center">
   <a href="#快速开始"><strong>快速开始</strong></a> ·
   <a href="#30-秒看懂工作原理">工作原理</a> ·

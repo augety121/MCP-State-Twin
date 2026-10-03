@@ -15,6 +15,10 @@
 coverage.*
 .codex-go-cache-*/
 /.tmp/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+/adapters/inspect/build/
 
 # Editors and operating systems
 .idea/

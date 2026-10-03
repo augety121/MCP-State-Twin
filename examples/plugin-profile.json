@@ -1,0 +1,12 @@
+{
+  "format": "statetwin.dev/plugin-profile/v1alpha1",
+  "id": "local-stdio-tools-v1",
+  "revision": "v1",
+  "protocolProfile": "2025-11-25",
+  "transport": "stdio",
+  "isolation": "trusted-tools-only-v1",
+  "taskProjection": "blind-objective-v1",
+  "lifecycleVersion": "v1",
+  "maxInflight": 4,
+  "startupSeconds": 10
+}
