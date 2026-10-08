@@ -2,7 +2,10 @@
 import importlib.util
 from pathlib import Path
 import sys
+import tempfile
+import time
 import unittest
+from unittest.mock import patch
 
 source = Path(__file__).resolve().parents[1] / "src/statetwin_inspect/_process.py"
 spec = importlib.util.spec_from_file_location("bounded_cli_process", source)
@@ -32,6 +35,49 @@ class CaptureTests(unittest.TestCase):
     def test_timeout_reaps_owned_child(self):
         with self.assertRaisesRegex(process.ProcessError, '^PLUGIN_OPERATION_TIMEOUT$'):
             self.run_child("import time; time.sleep(30)", timeout=0.1)
+
+    def test_inherited_pipe_does_not_extend_deadline(self):
+        with tempfile.TemporaryDirectory() as directory:
+            stop, done, ready = (Path(directory) / name for name in ('stop', 'done', 'ready'))
+            descendant = (
+                "import pathlib,time; "
+                f"stop=pathlib.Path({str(stop)!r}); "
+                f"pathlib.Path({str(ready)!r}).touch(); end=time.monotonic()+10\n"
+                "while not stop.exists() and time.monotonic()<end: time.sleep(.01)\n"
+                f"pathlib.Path({str(done)!r}).touch()"
+            )
+            launcher = (
+                "import subprocess,sys; "
+                f"subprocess.Popen([sys.executable,'-c',{descendant!r}],close_fds=False)"
+            )
+            started = time.monotonic()
+            try:
+                with self.assertRaisesRegex(process.ProcessError, '^PLUGIN_OPERATION_TIMEOUT$'):
+                    self.run_child(launcher, timeout=1)
+                self.assertLess(time.monotonic() - started, 3)
+                self.assertTrue(ready.exists(), 'descendant must hold inherited pipes')
+            finally:
+                stop.touch()
+                deadline = time.monotonic() + 12
+                while not done.exists() and time.monotonic() < deadline:
+                    time.sleep(.01)
+                self.assertTrue(done.exists(), 'test descendant did not exit')
+
+    def test_interruption_waits_and_closes_direct_child(self):
+        original = process.subprocess.Popen
+        children = []
+
+        def spawn(*args, **kwargs):
+            child = original(*args, **kwargs)
+            children.append(child)
+            return child
+
+        with patch.object(process.subprocess, 'Popen', side_effect=spawn), \
+                patch.object(process.os, 'read', side_effect=KeyboardInterrupt):
+            with self.assertRaises(KeyboardInterrupt):
+                self.run_child('import time; time.sleep(30)')
+        self.assertIsNotNone(children[0].returncode)
+        self.assertTrue(children[0].stdout.closed and children[0].stderr.closed)
 
 
 if __name__ == '__main__':

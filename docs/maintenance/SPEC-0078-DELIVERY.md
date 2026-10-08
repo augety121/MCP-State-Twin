@@ -31,6 +31,8 @@
 
 本轮按照用户授权启用 PR 的 Codex 自动代码审核，检查完成且审核问题处理后可合并 main；不改变 stable、真实模型、非作者或 L2 的验收条件。Jev 仅收到跨 root 去重的合成问题描述，返回 semantic_gap（confidence=1），只用于问题优先级判断，实际正确性仍由执行测试证明。
 
+PR #21 的 Codex Code Review 指出 P2：继承管道的后代可能让读取线程 join 超时失效。改为 Python 3.12 支持的非阻塞管道，在同一操作 deadline 内公平读取两流；即使后代保留写端也不等待线程或无限 EOF。辅助 CLI 的直接子进程仍 kill/wait，流总是关闭；不把该 helper 宣称为任意可执行程序的进程树沙箱。新增真实继承管道和调用者 KeyboardInterrupt 反例，六项 Python 进程测试通过。测试后代通过专用停止文件退出，未影响其他进程。
+
 2026-10-03 后续修复：`4dc0c6e9f593e94cf168439f7671f8a5317d1c83` 的 [18 项 CI 全部通过](https://github.com/augety121/MCP-State-Twin/actions/runs/37035109984)，包括完整分片 race、三平台 Inspect 与其他安全检查。随后实现单次准入内精确字节复用、去除重复 oracle 编译，并补上跨 root 缓存隔离反例；本地 gofmt、go vet、整仓 Go 测试再次通过。24-entry 准入微基准中位数下降约 24.8%，100 会话 soak 和 30 次 Inspect 框架复测通过。新提交的 race 结果以 PR 最终 head 检查为准。性能原始≤1.5倍门槛仍未满足，详见性能记录的优化复测段。
 
 上述 targeted Go 测试通过，`go vet ./...` 通过。稳定候选的 `go test -p 1 -timeout=20m ./...` 全部通过。Inspect 本地 wheel 构建/安装通过；最终五项 Python 测试通过（114.15 秒），包含 24 Task、完整 Task/Solver/Scorer、异常、取消与并发拒绝。第一次整仓测试与代码新增并行，遇到 source file inventory 尚未包含新增 live 文件及指南代码被链接检查误识别的问题；对应问题已处理，不把失败轮次称为通过。
