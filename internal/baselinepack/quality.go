@@ -36,9 +36,11 @@ func Qualify(parent context.Context, root, pack, profile string) (*Quality, erro
 	}
 	summary := p.Summary()
 	result := &Quality{Format: "statetwin.dev/baseline-quality/v1alpha1", PackID: p.Pack.ID, Revision: p.Pack.Revision, Decision: "partial", Families: summary.Families, Instances: summary.Entries, Source: "scripted-witness-and-synthetic-mutation", ReviewIndependence: p.Pack.ReviewIndependence, Groups: []QualityGroup{}}
-	seen := map[string]bool{}
+	seen := map[[2]string]bool{}
 	for _, e := range p.Entries {
-		key := path.Join(e.Entry.Root, e.Entry.Cases)
+		// Relative references bind to the entry root, not the manifest's
+		// canonical path. Match static admission's identity exactly.
+		key := [2]string{e.Entry.Root, e.Entry.Cases}
 		if !seen[key] {
 			seen[key] = true
 			result.Groups = append(result.Groups, QualityGroup{Root: e.Entry.Root, Cases: e.Entry.Cases, State: "not_started"})

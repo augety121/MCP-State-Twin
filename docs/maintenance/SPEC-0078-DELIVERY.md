@@ -27,6 +27,10 @@
 
 ## 验证记录与限制
 
+2026-10-08 后续改进：PR #19 已合并，后续以 `dfb3f496ea4509919914d76a88584164e85a4bc3` 为基线。修复 executable qualify 的去重身份：相同 manifest 路径在不同 root 下仍须分别执行，不能漏验第二套 witness/world。新增真实正例 root 与失败 shadow root 的回归测试。Inspect 辅助 CLI 改为同时读取有界 stdout/stderr，超过 1MiB/256KiB 立即终止并等待自有子进程，120 秒超时返回有限错误码；不再退出后才检查临时文件大小。四项独立进程测试覆盖精确边界、两流超限、错误信息不泄露与超时。
+
+本轮按照用户授权启用 PR 的 Codex 自动代码审核，检查完成且审核问题处理后可合并 main；不改变 stable、真实模型、非作者或 L2 的验收条件。Jev 仅收到跨 root 去重的合成问题描述，返回 semantic_gap（confidence=1），只用于问题优先级判断，实际正确性仍由执行测试证明。
+
 2026-10-03 后续修复：`4dc0c6e9f593e94cf168439f7671f8a5317d1c83` 的 [18 项 CI 全部通过](https://github.com/augety121/MCP-State-Twin/actions/runs/37035109984)，包括完整分片 race、三平台 Inspect 与其他安全检查。随后实现单次准入内精确字节复用、去除重复 oracle 编译，并补上跨 root 缓存隔离反例；本地 gofmt、go vet、整仓 Go 测试再次通过。24-entry 准入微基准中位数下降约 24.8%，100 会话 soak 和 30 次 Inspect 框架复测通过。新提交的 race 结果以 PR 最终 head 检查为准。性能原始≤1.5倍门槛仍未满足，详见性能记录的优化复测段。
 
 上述 targeted Go 测试通过，`go vet ./...` 通过。稳定候选的 `go test -p 1 -timeout=20m ./...` 全部通过。Inspect 本地 wheel 构建/安装通过；最终五项 Python 测试通过（114.15 秒），包含 24 Task、完整 Task/Solver/Scorer、异常、取消与并发拒绝。第一次整仓测试与代码新增并行，遇到 source file inventory 尚未包含新增 live 文件及指南代码被链接检查误识别的问题；对应问题已处理，不把失败轮次称为通过。
