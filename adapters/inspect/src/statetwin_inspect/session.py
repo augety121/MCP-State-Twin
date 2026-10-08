@@ -7,11 +7,12 @@ import os
 from pathlib import Path
 import secrets
 import socket
-import subprocess
 import sys
 import tempfile
 import time
 import threading
+
+from ._process import ProcessError, capture
 
 from inspect_ai.tool import mcp_connection, mcp_server_stdio
 
@@ -41,24 +42,14 @@ def _versions():
 
 def _cli(binary, root, plan, command):
     try:
-        # Both output streams are bounded on disk, not accumulated by communicate.
-        with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
-            child = subprocess.Popen([str(Path(binary).resolve()), "plugin", command,
-                                      "--root", str(Path(root).resolve()),
-                                      "--session-plan", plan], stdout=out, stderr=err)
-            try:
-                child.wait(timeout=120)
-            except BaseException:
-                child.kill()
-                child.wait()
-                raise
-            if out.tell() > 1 << 20 or err.tell() > 256 << 10:
-                raise PluginError("PLUGIN_RESOURCE_LIMIT")
-            out.seek(0)
-            data = json.load(out)
-            if child.returncode or not isinstance(data, dict):
-                raise PluginError("PLUGIN_EVIDENCE_INVALID")
-            return data
+        raw = capture([str(Path(binary).resolve()), "plugin", command,
+                       "--root", str(Path(root).resolve()), "--session-plan", plan])
+        data = json.loads(raw)
+        if not isinstance(data, dict):
+            raise PluginError("PLUGIN_EVIDENCE_INVALID")
+        return data
+    except ProcessError as error:
+        raise PluginError(str(error)) from None
     except Exception:
         raise PluginError("PLUGIN_EVIDENCE_INVALID") from None
 
