@@ -65,6 +65,7 @@ class CaptureTests(unittest.TestCase):
 
     def test_interruption_waits_and_closes_direct_child(self):
         original = process.subprocess.Popen
+        original_read = process.os.read
         children = []
 
         def spawn(*args, **kwargs):
@@ -72,8 +73,15 @@ class CaptureTests(unittest.TestCase):
             children.append(child)
             return child
 
+        def interrupt_capture(fd, size):
+            # POSIX Popen itself reads its exec-error pipe before returning.
+            # Interrupt only capture's reads, after construction completed.
+            if children:
+                raise KeyboardInterrupt
+            return original_read(fd, size)
+
         with patch.object(process.subprocess, 'Popen', side_effect=spawn), \
-                patch.object(process.os, 'read', side_effect=KeyboardInterrupt):
+                patch.object(process.os, 'read', side_effect=interrupt_capture):
             with self.assertRaises(KeyboardInterrupt):
                 self.run_child('import time; time.sleep(30)')
         self.assertIsNotNone(children[0].returncode)
