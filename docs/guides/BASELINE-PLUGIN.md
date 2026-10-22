@@ -14,7 +14,7 @@ python -m venv .tmp/inspect-env
 
 使用该虚拟环境的 Python 执行 `-m pip install './adapters/inspect[test]'`。Windows 路径为 `.tmp/inspect-env/Scripts/python.exe`，Unix 为 `.tmp/inspect-env/bin/python`。中文 Windows 启动 Inspect 时使用 `python -X utf8` 或进程环境 `PYTHONUTF8=1`，否则固定 Inspect 版本读取自带模型元数据时可能遇到 GBK 解码错误。
 
-准备脚本复制合成源文件，独立构建 actual/reviewed world，生成 Go client 和 Inspect 会话计划。已有输出目录失败；请指定新目录，不删除既有证据。
+准备脚本复制合成源文件，独立构建 actual/reviewed world，生成 Go client 和 Inspect 会话计划。仓库通过 `.gitattributes` 固定这些 JSON/YAML 输入的 LF 行尾，避免 Windows 的混合 checkout 改变精确字节；准入仍拒绝 actual/reviewed 内容不一致。已有输出目录失败；请指定新目录，不删除既有证据。
 
 ```text
 .tmp/statetwin.exe plugin check --root .tmp/baseline --pack baseline-pack.json --profile plugin-profile.json
@@ -23,7 +23,7 @@ python -m venv .tmp/inspect-env
 .tmp/statetwin.exe plugin schema --type session
 ```
 
-`schema` 支持 pack/profile/session/report/baseline-plan/baseline-report，输出 Draft 2020-12 的字段、类型、required 与封闭对象结构。语义枚举、资源边界、跨文件绑定与路径规则仍须经 `check`/`projection`，单独 JSON Schema 验证不授予运行资格。
+`schema` 支持 pack/profile/session/report/baseline-plan/baseline-report，输出 Draft 2020-12 的字段、类型、required 与封闭对象结构。字段名区分大小写，封闭对象拒绝额外别名；声明的标量、对象和数组不能用 `null` 代替。语义枚举、资源边界、跨文件绑定与路径规则仍须经 `check`/`projection`，单独 JSON Schema 验证不授予运行资格。
 
 ## 2. 真实 Inspect 连接，免费 mock 验证
 
@@ -53,6 +53,8 @@ Agent 只得到 objective/context 和当前 Task 工具。oracle、witness、控
 
 `Session` 管理独立子进程、持久 MCP connection、私有握手、finally abort 和回收。不要手工将 private lifecycle 作为 MCP 工具，也不要用 `asyncio.wait_for` 在另一个 task 内进入 Inspect 的 MCP context。协议 stdout 不含 CLI 报告。
 
+Go contract harness 使用 profile 的独立启动期限覆盖 initialize、tools/list 与私有 ready 握手，成功 ready 后继续受原有总期限约束。等待退出时还使用 Task 的 cleanup 预算限制继承 stderr 管道的等待；不能完成清理时返回失败，不能沿用已封存报告的成功状态。
+
 ```text
 .tmp/statetwin.exe plugin inspect --root .tmp/baseline --session-plan inspect-session.json
 .tmp/statetwin.exe plugin recover --root .tmp/baseline --session-plan inspect-session.json --out recovered
@@ -80,7 +82,7 @@ qualify 对冻结输入运行 12 组共 309 个 scripted/评分变异 case；输
 .tmp/statetwin.exe baseline revision-state --root .tmp/baseline/expanded --registry registry --pack-id reference-agent-baseline --revision v2
 ```
 
-注册保存冻结原始内容。同 identity/revision 重复登记相同内容幂等，不同内容拒绝。`transition --event event.json` 追加 deprecated/revoked 事件；弃用需声明两个不同 preview 版本和替代 revision，紧急撤销可直接追加原因。事件是本地维护者声明，不是密码学发布证明。历史证据不删除。
+注册保存冻结原始内容。同 identity/revision 重复登记相同内容幂等，不同内容拒绝。查询状态或追加事件前，会从快照中的原始 inputs 重新准入并核对 revision 元数据；缺失、损坏或身份不符均失败，不回读可变源文件补齐。`transition --event event.json` 追加 deprecated/revoked 事件；弃用需声明两个不同 preview 版本和替代 revision，紧急撤销可直接追加原因。事件是本地维护者声明，不是密码学发布证明。历史证据不删除。
 
 ## 4. 冻结计划、逐 shard 与四态判定
 
@@ -96,6 +98,8 @@ qualify 对冻结输入运行 12 组共 309 个 scripted/评分变异 case；输
 每条 shard 命令只启动指定分片，显式依次执行 1–12；没有自动后续 shard、自动恢复或失败重试。并行运行由 experiment lease 拒绝；crash 后的 lease/claim 保留，重试须新计划/目录。旧 project 120 秒、campaign 480 秒不变。新计划最多 240 trials、20 shards、12 trials/shard、2700 秒/shard。
 
 冻结目录保存原始输入；运行不再依赖可变源目录。完整 trial 也不能替代丢失的 shard seal。assess 保留全部计划行、缺失/未核验/中断与未知费用，读取 terminal 重新评分；不接受导入的自报分数。
+
+固定证据集不完整、trial 未核验或 shard seal 缺失/损坏时，interval 标为 `invalid`，`samples=0`，不输出上下界。计划分母与完成数量保留用于排查；此时的 `observedDifference` 数值占位不构成有效差异估计。
 
 四态顺序：validity → 新 policy failure/非法实际副作用/required Task → 分领域 floor → family 分层 bootstrap 非劣。算法 `stratified-family-bootstrap-v1` 使用固定 SplitMix64、不偏取样、10,000 次、nearest-rank 95% 区间；每域等权、cluster 内保留所有实例与 repeats。至少 20 family、每域 8 family、3 repeats。全成功/全失败导致退化分布时 inconclusive，不伪造无风险结论。适用总体只包含声明的两个合成领域。
 
@@ -115,9 +119,9 @@ API live-check 复用已有 local bridge 的授权、到期和请求预算，只
 
 冻结计划另支持 `mode=api-bridge-live`：每个 trial 必须通过 `livePlans` 映射到原有严格 `agent-live-plan`，绑定相同 Task/world、独立 plan ID、明确模型、时效、请求/token 上限与全部批准字段。配置 provider=openai、adapter=`openai-responses-local-bridge-v1alpha1`、host=api-bridge/v1alpha1、promptVersion=blind-objective-v1。`baseline shard ... --allow-live` 在本 shard 全量授权检查通过后才读 `OPENAI_API_KEY`；到期、未批准、错误绑定或漏掉 flag 都不创建 provider client。只能走原固定 endpoint/no-retry 传输，不能传入 URL 或外部执行器。先经单 Task live lane 完成获批六任务冒烟，再获批执行具体 pilot；不预选模型或自动开启付费试验。
 
-live 汇总重新验证原 live evidence、receipts 与冻结计划，缺失 receipt usage/cost 保持 unknown；报告明确 API bridge 观察不能代替 stdio/Inspect 或产品宿主兼容证据。
+live 汇总重新验证原 live evidence、receipts 与冻结计划，缺失 receipt usage/cost 保持 unknown；已验证回执中的 reported model 独立保留，多次响应不一致时记为 `mixed`。它不是模型 snapshot 或 provider 来源认证；报告明确 API bridge 观察不能代替 stdio/Inspect 或产品宿主兼容证据。
 
-claim-check 分别绑定 runtime/head、Host/版本、adapter、MCP、pack/revision、oracle、statistics、evidence。API TTL 30 天，产品 14 天；绑定变化或到期 stale，撤销/回归 regressed。unsigned 本地声明最多 experimental/unverified，不自动发出独立 verified claim。
+claim-check 分别绑定 runtime/head、Host/版本、adapter、MCP、pack/revision、oracle、statistics、evidence。声明与当前 binding 的每一项都必须非空，outcome/observation/evidenceRef/撤销原因先通过完整校验，才能进行状态分类；过期或撤销不能掩盖非法声明。API TTL 30 天，产品 14 天；绑定变化或到期 stale，撤销/回归 regressed。unsigned 本地声明最多 experimental/unverified，不自动发出独立 verified claim。
 
 产品宿主实测、三名非作者 first-value 和≤3操作独立可复位 reference 尚需外部条件。不得联系外部参与者、读账号凭据、发模型请求或发布包来绕开这些授权。
 

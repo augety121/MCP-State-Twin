@@ -248,10 +248,11 @@ func Decide(f Frozen, observations []Observation) (*Report, error) {
 		}
 		clusters = append(clusters, Cluster{id, domains[id], sum / float64(len(a))})
 	}
-	r.Interval = Bootstrap(clusters, f.Plan.Repeats, f.Plan.Policy.Seed)
 	if !valid {
+		r.Interval = invalidInterval(len(family), f.Plan.Policy.Seed)
 		return r, nil
 	}
+	r.Interval = Bootstrap(clusters, f.Plan.Repeats, f.Plan.Policy.Seed)
 	if hardFail {
 		r.Decision = "fail"
 		r.Reason = "policy-or-required-task"
@@ -285,4 +286,14 @@ func Decide(f Frozen, observations []Observation) (*Report, error) {
 		r.Reason = "interval-crosses-margin"
 	}
 	return r, nil
+}
+
+// Invalid experiments retain operational denominators but must not treat
+// missing or unverified trials as observed failures in confidence inference.
+func invalidInterval(families int, seed uint64) Interval {
+	r := Bootstrap(nil, 0, seed)
+	r.Status = "invalid"
+	r.Families = families
+	r.Samples = 0
+	return r
 }

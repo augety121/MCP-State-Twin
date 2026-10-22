@@ -2,6 +2,7 @@ package baseline
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/augety121/mcp-state-twin/internal/agentapi"
@@ -83,11 +84,20 @@ type ClaimAssessment struct {
 	PublicationAllowed bool   `json:"publicationAllowed"`
 }
 
+func completeBinding(b Binding) bool {
+	for _, value := range []string{b.Runtime, b.Revision, b.Host, b.HostVersion, b.Adapter, b.Protocol, b.PackID, b.PackRevision, b.Oracle, b.Statistics, b.Evidence} {
+		if strings.TrimSpace(value) == "" {
+			return false
+		}
+	}
+	return true
+}
+
 // AssessClaim is declaration assessment only; unsigned local declarations are
 // never upgraded to independently verified host observations.
 func AssessClaim(c Claim, current Binding, at time.Time) (ClaimAssessment, error) {
 	r := ClaimAssessment{Status: "unverified", Reason: "independent-evidence-not-verified", SourceTrust: "local-operator-asserted"}
-	if c.Format != "statetwin.dev/baseline-host-claim/v1alpha1" || (c.Kind != "api" && c.Kind != "product") || c.Binding.Host == "" || c.Binding.HostVersion == "" || c.Binding.PackID == "" || c.EvidenceRef == "" {
+	if c.Format != "statetwin.dev/baseline-host-claim/v1alpha1" || (c.Kind != "api" && c.Kind != "product") || !completeBinding(c.Binding) || !completeBinding(current) || strings.TrimSpace(c.EvidenceRef) == "" || (c.Outcome != "passed" && c.Outcome != "failed") || (c.Observation != "contract-test" && c.Observation != "operator-observed") || (c.Revoked && strings.TrimSpace(c.RevocationReason) == "") || (!c.Revoked && c.RevocationReason != "") {
 		return r, errors.New("BASELINE_CLAIM_INVALID")
 	}
 	observed, e := time.Parse(time.RFC3339Nano, c.ObservedAt)
@@ -103,9 +113,6 @@ func AssessClaim(c Claim, current Binding, at time.Time) (ClaimAssessment, error
 		expiry = observed.Add(ttl)
 	}
 	if c.Revoked {
-		if c.RevocationReason == "" {
-			return r, errors.New("BASELINE_CLAIM_INVALID")
-		}
 		r.Status = "regressed"
 		r.Reason = "revoked"
 		return r, nil
@@ -119,9 +126,6 @@ func AssessClaim(c Claim, current Binding, at time.Time) (ClaimAssessment, error
 		r.Status = "regressed"
 		r.Reason = "observed-regression"
 		return r, nil
-	}
-	if c.Outcome != "passed" || (c.Observation != "contract-test" && c.Observation != "operator-observed") {
-		return r, errors.New("BASELINE_CLAIM_INVALID")
 	}
 	if c.Observation == "contract-test" {
 		r.Status = "experimental"

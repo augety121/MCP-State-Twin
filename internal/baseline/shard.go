@@ -316,6 +316,7 @@ func Assess(ctx context.Context, root, name string) (*Report, error) {
 		if !valid {
 			r.Decision = "invalid"
 			r.Reason = "missing-or-invalid-shard-evidence"
+			r.Interval = invalidInterval(r.Interval.Families, p.Frozen.Plan.Policy.Seed)
 		}
 	}
 	return r, err

@@ -155,9 +155,24 @@ func TestBaselineRealShardAndFixedDenominators(t *testing.T) {
 	}
 	// A lost final shard index invalidates the experiment even when individual
 	// terminals still replay. Complete trial evidence cannot invent a seal.
-	os.Rename(filepath.Join(frozen, "inputs/runs/shard-02/shard-report.json"), filepath.Join(frozen, "preserved-shard-report.json"))
-	assessed, e = baseline.Assess(ctx, frozen, "small.json")
-	if e != nil || assessed.Decision != "invalid" || assessed.Metrics["candidate"].Planned != 2 {
-		t.Fatal(assessed, e)
+	seal := filepath.Join(frozen, "inputs/runs/shard-02/shard-report.json")
+	if e = os.Rename(seal, filepath.Join(frozen, "preserved-shard-report.json")); e != nil {
+		t.Fatal(e)
+	}
+	for _, condition := range []string{"missing", "malformed"} {
+		t.Run(condition+"-shard-seal", func(t *testing.T) {
+			if condition == "malformed" {
+				if err := os.WriteFile(seal, []byte(`{}`), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			assessed, err := baseline.Assess(ctx, frozen, "small.json")
+			if err != nil || assessed.Decision != "invalid" || assessed.Metrics["candidate"].Planned != 2 || assessed.Metrics["candidate"].Scorable != 2 {
+				t.Fatal(assessed, err)
+			}
+			if assessed.Interval.Status != "invalid" || assessed.Interval.Samples != 0 || assessed.Interval.Lower != nil || assessed.Interval.Upper != nil {
+				t.Fatalf("invalid shard seal retained confidence inference: %+v", assessed.Interval)
+			}
+		})
 	}
 }

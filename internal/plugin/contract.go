@@ -101,7 +101,15 @@ func runContract(parent context.Context, command []string, root, planName string
 	cmd.Env = append(os.Environ(), "STATETWIN_PLUGIN_CONTROL="+address, "STATETWIN_PLUGIN_CONTROL_TOKEN="+token)
 	stderr := &boundedStderr{}
 	stderr.left.Store(256 << 10)
-	cmd.Stderr = stderr
+	// Own the stderr pipe instead of letting os/exec hide its copying goroutine
+	// inside Wait. Child exit and inherited-pipe draining share one cleanup clock.
+	stderrRead, stderrWrite, err := os.Pipe()
+	if err != nil {
+		return nil, errors.New("PLUGIN_STARTUP_FAILED")
+	}
+	defer stderrRead.Close()
+	defer stderrWrite.Close()
+	cmd.Stderr = stderrWrite
 	in, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, err
@@ -112,11 +120,29 @@ func runContract(parent context.Context, command []string, root, planName string
 		return nil, err
 	}
 	phase = time.Now()
+	startupCtx, startupCancel := context.WithTimeout(ctx, time.Duration(p.Pack.Profile.StartupSeconds)*time.Second)
+	startupDeadline, _ := startupCtx.Deadline()
+	defer startupCancel()
+	stopStartupIO := context.AfterFunc(startupCtx, func() { in.Close(); out.Close() })
+	defer stopStartupIO()
+	startupFailure := func(code string) error {
+		if startupCtx.Err() != nil || !time.Now().Before(startupDeadline) {
+			return errors.New("PLUGIN_STARTUP_TIMEOUT")
+		}
+		return errors.New(code)
+	}
 	if err = cmd.Start(); err != nil {
 		in.Close()
 		out.Close()
 		return nil, errors.New("PLUGIN_STARTUP_FAILED")
 	}
+	_ = stderrWrite.Close()
+	stderrDone := make(chan error, 1)
+	go func() {
+		defer stderrRead.Close()
+		_, e := io.Copy(stderr, stderrRead)
+		stderrDone <- e
+	}()
 	measure := residentMeasure(cmd)
 	defer func() {
 		if rss, ok := measure(); ok {
@@ -125,42 +151,71 @@ func runContract(parent context.Context, command []string, root, planName string
 		}
 	}()
 	waited := false
+	reap := func(graceful bool) (error, bool) {
+		var expired atomic.Bool
+		deadlineDone := make(chan struct{})
+		deadline := time.AfterFunc(time.Duration(p.Entry.Task.Budgets.CleanupSeconds)*time.Second, func() {
+			defer close(deadlineDone)
+			expired.Store(true)
+			_ = cmd.Process.Kill()
+			_ = stderrRead.Close()
+		})
+		if !graceful {
+			_ = cmd.Process.Kill()
+		}
+		waitErr := cmd.Wait()
+		drainErr := <-stderrDone
+		if !deadline.Stop() {
+			<-deadlineDone
+		}
+		waited = true
+		return waitErr, expired.Load() || drainErr != nil && !stderr.exceeded.Load()
+	}
 	defer func() {
 		in.Close()
 		out.Close()
 		if !waited {
-			_ = cmd.Process.Kill()
-			_ = cmd.Wait()
+			_, _ = reap(false)
 		}
 	}()
 	contractStage(ctx, "started", cmd)
 	client := mcp.NewClient(&mcp.Implementation{Name: "StateTwinContract", Version: "v1"}, nil)
-	session, err := client.Connect(ctx, &mcp.IOTransport{Reader: out, Writer: in, MaxLineLength: 1 << 20}, &mcp.ClientSessionOptions{ProtocolVersion: p.Pack.Profile.ProtocolProfile})
+	session, err := client.Connect(startupCtx, &mcp.IOTransport{Reader: out, Writer: in, MaxLineLength: 1 << 20}, &mcp.ClientSessionOptions{ProtocolVersion: p.Pack.Profile.ProtocolProfile})
 	if err != nil {
-		return nil, errors.New("PLUGIN_STARTUP_FAILED")
+		return nil, startupFailure("PLUGIN_STARTUP_FAILED")
 	}
 	defer session.Close()
 	contractStage(ctx, "initialized", cmd)
 	// Modern tools-first clients establish readiness through tools/list.
-	listed, err := session.ListTools(ctx, nil)
+	listed, err := session.ListTools(startupCtx, nil)
 	if err != nil || len(listed.Tools) != len(p.Entry.Task.Tools) {
-		return nil, errors.New("PLUGIN_PROJECTION_INVALID")
+		return nil, startupFailure("PLUGIN_PROJECTION_INVALID")
 	}
-	c, err := connectControl(ctx, address)
+	c, err := connectControl(startupCtx, address)
 	if err != nil {
-		return nil, errors.New("PLUGIN_CONTROL_DENIED")
+		return nil, startupFailure("PLUGIN_CONTROL_DENIED")
 	}
 	defer c.Close()
-	_ = c.SetDeadline(time.Now().Add(time.Duration(p.Plan.DeadlineSeconds+10) * time.Second))
+	_ = c.SetDeadline(startupDeadline)
+	stopStartupControl := context.AfterFunc(startupCtx, func() { c.Close() })
+	defer stopStartupControl()
 	if json.NewEncoder(c).Encode(hello{"v1", p.Plan.ID, token}) != nil {
-		return nil, errors.New("PLUGIN_CONTROL_DENIED")
+		return nil, startupFailure("PLUGIN_CONTROL_DENIED")
 	}
 	scan := bufio.NewScanner(c)
 	scan.Buffer(make([]byte, 4096), 64<<10)
 	var ready ControlResponse
 	if readControl(scan, &ready) != nil || ready.Status != "ready" {
-		return nil, errors.New("PLUGIN_STARTUP_FAILED")
+		return nil, startupFailure("PLUGIN_STARTUP_FAILED")
 	}
+	// IOTransport does not propagate its Connect context to the session. Stop
+	// only the bootstrap guards before cancelling this short-lived context.
+	if !stopStartupIO() || !stopStartupControl() || startupCtx.Err() != nil {
+		return nil, errors.New("PLUGIN_STARTUP_TIMEOUT")
+	}
+	startupCancel()
+	deadline, _ := ctx.Deadline()
+	_ = c.SetDeadline(deadline)
 	contractStage(ctx, "ready", cmd)
 	metrics.StartupSeconds = time.Since(phase).Seconds()
 	phase = time.Now()
@@ -187,12 +242,18 @@ func runContract(parent context.Context, command []string, root, planName string
 	c.Close()
 	in.Close()
 	_ = session.Close()
-	err = cmd.Wait()
-	waited = true
+	err, cleanupExpired := reap(true)
 	metrics.CleanupSeconds = time.Since(phase).Seconds()
 	phase = time.Now()
+	if cleanupExpired {
+		failed := *response.Report
+		failed.Cleanup, failed.Decision, failed.FailureCode = "failed", "invalid", "PLUGIN_CLEANUP_FAILED"
+		return &failed, errors.New("PLUGIN_CLEANUP_FAILED")
+	}
 	if err != nil || stderr.exceeded.Load() {
-		return response.Report, errors.New("PLUGIN_EXECUTION_FAILED")
+		failed := *response.Report
+		failed.Execution, failed.Decision, failed.FailureCode = "failed", "invalid", "PLUGIN_EXECUTION_FAILED"
+		return &failed, errors.New("PLUGIN_EXECUTION_FAILED")
 	}
 	checked, err := Inspect(ctx, root, planName)
 	metrics.InspectionSeconds = time.Since(phase).Seconds()

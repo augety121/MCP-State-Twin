@@ -17,12 +17,19 @@ func requiredFields(raw []byte, dst any) error {
 		for t.Kind() == reflect.Pointer {
 			t = t.Elem()
 		}
+		// encoding/json accepts null for scalar fields as their zero value.
+		// Typed contracts allow omission only through omitempty, never null;
+		// unconstrained JSON payloads (schema {}) retain their null value.
+		if v == nil {
+			return t.Kind() == reflect.Interface
+		}
 		switch t.Kind() {
 		case reflect.Struct:
 			object, ok := v.(map[string]any)
 			if !ok {
 				return false
 			}
+			fields := map[string]bool{}
 			for i := 0; i < t.NumField(); i++ {
 				f := t.Field(i)
 				if !f.IsExported() {
@@ -36,6 +43,7 @@ func requiredFields(raw []byte, dst any) error {
 				if name == "" {
 					name = f.Name
 				}
+				fields[name] = true
 				value, exists := object[name]
 				optional := len(tag) > 1 && tag[1] == "omitempty"
 				if !exists {
@@ -45,6 +53,13 @@ func requiredFields(raw []byte, dst any) error {
 					continue
 				}
 				if !visit(f.Type, value) {
+					return false
+				}
+			}
+			// Go's decoder also matches field names case-insensitively. An
+			// alternate spelling must not override a required canonical field.
+			for name := range object {
+				if !fields[name] {
 					return false
 				}
 			}

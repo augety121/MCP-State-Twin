@@ -1,0 +1,6 @@
+# Synthetic bundle admission compares exact bytes with independently reviewed
+# copies. Keep those inputs identical across Windows and Unix checkouts.
+examples/**/*.json text eol=lf
+examples/**/*.yaml text eol=lf
+examples/*.json text eol=lf
+examples/*.yaml text eol=lf
