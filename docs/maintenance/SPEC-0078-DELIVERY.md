@@ -37,13 +37,13 @@
 | 缺失/未核验 trial 或坏 shard seal 仍带数值区间 | invalid 证据集保留计划分母，停止 bootstrap、清除上下界；覆盖纯策略与公开 Assess |
 | live 汇总丢失已核验回执的模型字段 | 保留一致模型，多值标 mixed；合成回执验证，无 provider 请求 |
 | 启动沿用总时限；退出后继承 stderr 或主进程不退出可能阻塞 Wait | 独立 profile 启动期限覆盖三个握手阶段；自有 stderr 管道及同一个 Task cleanup 计时器覆盖进程退出和管道读取；封存后异常返回 invalid 报告 |
-| null 标量或大小写别名绕过闭合 JSON 合同 | 严格字段名称及非空类型检查；保留任意 JSON payload 的合法 null |
+| null 标量、大小写别名或字节数组绕过闭合 JSON 合同 | 严格字段名称及非空类型检查；冻结字节要求 base64 字符串，拒绝数字数组及数组内 null；保留任意 JSON payload 的合法 null |
 | 损坏 revision.json 仍返回 frozen | 仅从冻结 inputs 重准入并核对元数据，查询与事件追加均拒绝损坏快照 |
 | Windows 混合 LF/CRLF 导致 actual/reviewed 字节不一致 | `.gitattributes` 固定 examples JSON/YAML 为 LF，保留原内容一致性检查 |
 
 兼容影响：原先被宽松解码接受的非法输入现在失败；旧 live 报告若错误记录 unknown model，不能通过重写证据迁移，需依照版本绑定另建计划。快照重准入只证明内部一致性，不能认证文件来源或独立评审者。性能与外部验收条件未调整。Jev 的合成语义判断和在线文档请求本轮网络失败，未把它计入判断或验收证据。
 
-本轮定向验证：声明各状态与 11 项 binding 反例通过；4 项 baseline 策略/统计/合成 live 回执测试通过（4.648 秒）；严格 JSON 及冻结快照损坏/无磁盘回读测试通过；8 条真实启动/清理进程路径通过（40.932 秒）。首次默认并行 vet 因本机 Windows 内存不足失败，串行 `go vet -p 1 ./...` 通过。整仓测试与最终 PR 的三平台/race 检查另外核对，不能用定向结果代替。
+本轮定向验证：声明各状态与 11 项 binding 反例通过；4 项 baseline 策略/统计/合成 live 回执测试通过（4.648 秒）；严格 JSON 及冻结快照损坏/无磁盘回读测试通过；9 条真实启动/清理进程路径及原有 10 阶段 crash 回归通过（48.653 秒）。字节数字数组反例先在旧实现失败，再经严格字符串检查通过。首次默认并行 vet 因本机 Windows 内存不足失败，串行 `go vet -p 1 ./...` 通过。整仓测试与最终 PR 的三平台/race 检查另外核对，不能用定向结果代替。
 
 2026-10-08 后续改进：PR #19 已合并，后续以 `dfb3f496ea4509919914d76a88584164e85a4bc3` 为基线。修复 executable qualify 的去重身份：相同 manifest 路径在不同 root 下仍须分别执行，不能漏验第二套 witness/world。新增真实正例 root 与失败 shadow root 的回归测试。Inspect 辅助 CLI 改为同时读取有界 stdout/stderr，超过 1MiB/256KiB 立即终止并等待自有子进程，120 秒超时返回有限错误码；不再退出后才检查临时文件大小。四项独立进程测试覆盖精确边界、两流超限、错误信息不泄露与超时。
 

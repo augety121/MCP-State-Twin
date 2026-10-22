@@ -23,7 +23,7 @@ python -m venv .tmp/inspect-env
 .tmp/statetwin.exe plugin schema --type session
 ```
 
-`schema` 支持 pack/profile/session/report/baseline-plan/baseline-report，输出 Draft 2020-12 的字段、类型、required 与封闭对象结构。字段名区分大小写，封闭对象拒绝额外别名；声明的标量、对象和数组不能用 `null` 代替。语义枚举、资源边界、跨文件绑定与路径规则仍须经 `check`/`projection`，单独 JSON Schema 验证不授予运行资格。
+`schema` 支持 pack/profile/session/report/baseline-plan/baseline-report，输出 Draft 2020-12 的字段、类型、required 与封闭对象结构。字段名区分大小写，封闭对象拒绝额外别名；声明的标量、对象和数组不能用 `null` 代替；冻结字节只能使用 base64 字符串，不能使用数字数组。语义枚举、资源边界、跨文件绑定与路径规则仍须经 `check`/`projection`，单独 JSON Schema 验证不授予运行资格。
 
 ## 2. 真实 Inspect 连接，免费 mock 验证
 

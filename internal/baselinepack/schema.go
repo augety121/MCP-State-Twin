@@ -65,7 +65,10 @@ func requiredFields(raw []byte, dst any) error {
 			}
 		case reflect.Slice, reflect.Array:
 			if t.Elem().Kind() == reflect.Uint8 {
-				return true
+				// encoding/json also accepts numeric arrays for []byte. The
+				// published contract requires a base64 string, including here.
+				_, ok := v.(string)
+				return ok
 			}
 			items, ok := v.([]any)
 			if !ok {

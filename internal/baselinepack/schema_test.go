@@ -98,8 +98,10 @@ func TestStrictClaimAndFrozenBytesJSON(t *testing.T) {
 				if baselinepack.Decode(raw, 1024, &inputs) != nil {
 					t.Fatal("valid frozen bytes rejected")
 				}
-				if baselinepack.Decode([]byte(`{"inputs":{"member":null}}`), 1024, &inputs) == nil {
-					t.Fatal("accepted null frozen member")
+				for _, member := range []string{`null`, `[102,105,120,116,117,114,101]`, `[null]`} {
+					if baselinepack.Decode([]byte(`{"inputs":{"member":`+member+`}}`), 1024, &inputs) == nil {
+						t.Fatalf("accepted non-base64 frozen member: %s", member)
+					}
 				}
 			}
 		})
