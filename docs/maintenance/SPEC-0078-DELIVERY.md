@@ -2,13 +2,15 @@
 
 2026-10-02 用户明确授权整批实施。基线 main `5ad90baa691a8df8ece1942aa74e2d99bcc3502e`；分支 `codex/agent-baseline-plugin`。本表随真实实现和验证更新，不把 proposed 测试名当执行证据。
 
+后续基线已推进至 [PR #21](https://github.com/augety121/MCP-State-Twin/pull/21) 合并提交 `19c380bc6730dad2876eba8ada68c9a85713d5ac`。其最终候选 `8c965c0d30cdda28e6eac651b518b0e9221a264c` 的 [18 项 CI 通过](https://github.com/augety121/MCP-State-Twin/actions/runs/37803823451)，Code/Security review 无剩余问题。以下阶段实现已有该候选检查记录；性能与外部证据缺项保持未完成。
+
 | 范围 | 状态 | 实现/验证 | 剩余 |
 |---|---|---|---|
-| N0 / W00 | implemented, final-head pending | 主线已核对；Go 1.26.5 / SDK 1.8.0 / Python 3.12 / Inspect 0.3.275 / MCP Python 1.26.0 / go-winio 0.6.2 固定 | 最终 head CI |
-| N1 / W01–W08 | implemented, local tests passed | 严格准入、Task authority、stdio/私有 IPC、屏障/回放/inspect、两 Go profile ×24 Task、Inspect ×24 Task 与实际框架评分、故障矩阵；异常/async cancel/concurrency 五项 Python 测试通过 | 最终 head CI |
-| N1 / W09 | in_progress | 100 次会话 soak、30 性能样本、10 次分阶段 crash；本地 wheel 构建安装；指南和三平台 CI | 最终 CI；1.5 倍性能门槛未通过，不能记 N1 完成 |
-| N2 / W10–W11 | implemented, local tests passed | 24 family/72 独立 Task、有限变体、三 split 的 12 组 309 正负/变异 case 全匹配；可执行 qualify、公开披露、revision 冻结/弃用/撤销 | 最终 head；明确 self-reviewed，无私有 holdout 或独立评审宣称 |
-| N3 / W12–W14 | implemented, local tests passed | 原始输入冻结、AB/BA、144/240 上限、串行 shard、固定分母/未知费用、真实 shard 缺 seal 反例、family bootstrap 数字 golden 与四态判定；完整 144-trial scripted pilot 全部重验，结果 inconclusive/degenerate | 最终 head CI；scripted pilot 不代替真实模型 pilot |
+| N0 / W00 | implemented, PR #21 CI passed | 主线已核对；Go 1.26.5 / SDK 1.8.0 / Python 3.12 / Inspect 0.3.275 / MCP Python 1.26.0 / go-winio 0.6.2 固定 | 新候选仍须独立检查 |
+| N1 / W01–W08 | implemented, PR #21 CI passed | 严格准入、Task authority、stdio/私有 IPC、屏障/回放/inspect、两 Go profile ×24 Task、Inspect ×24 Task 与实际框架评分、故障矩阵；异常/async cancel/concurrency Python 测试通过 | 新候选仍须独立检查 |
+| N1 / W09 | in_progress | 100 次会话 soak、30 性能样本、10 次分阶段 crash；本地 wheel 构建安装；指南和三平台 CI | 1.5 倍性能门槛未通过，不能记 N1 完成 |
+| N2 / W10–W11 | implemented, PR #21 CI passed | 24 family/72 独立 Task、有限变体、三 split 的 12 组 309 正负/变异 case 全匹配；可执行 qualify、公开披露、revision 冻结/弃用/撤销 | 明确 self-reviewed，无私有 holdout 或独立评审宣称 |
+| N3 / W12–W14 | implemented, PR #21 CI passed | 原始输入冻结、AB/BA、144/240 上限、串行 shard、固定分母/未知费用、真实 shard 缺 seal 反例、family bootstrap 数字 golden 与四态判定；完整 144-trial scripted pilot 全部重验，结果 inconclusive/degenerate | scripted pilot 不代替真实模型 pilot |
 | N4 / W15 | implementation ready, external evidence blocked | 独立 API bridge live shard；全片批准早于凭据/claim；到期/未批准/错 profile/耗尽/错误绑定零请求反例；原有六任务 mock/不确定响应契约 | 缺具体模型、账号、费用/合成数据/有效期批准；实际六任务及 pilot 未执行 |
 | N4 / W16 | external evidence blocked | 用户委托选择后，核对本机 Codex CLI 0.159.0-alpha.12.1 和官方配置；当前聊天存在 shell/文件/其他工具，不能充当 tools-only 产品实测；产品/非作者 first-value 输入契约、TTL 与隔离边界 | 缺隔离产品会话证据、三名非作者及联系/记录授权 |
 | N5 / W17 | implemented, qualification pending | binding/TTL/撤销评估、copy-to-new 恢复/不覆盖、支持与维护流程 | 最终候选 CI/安装、性能决定；不自动 tag/发包/stable |
@@ -26,6 +28,22 @@
 - `internal/baseline`：`TestBaselinePlanIdentityAndFreeze`、`TestBaselineDecisionPolicy`、`TestBaselineStatisticalCounterexamples`、`TestBaselineShardBudgetsAndNoEffects`、`TestBaselineLiveReadinessZeroOutbound`、`TestBaselineLiveShardApprovalBeforeCredentialsAndClaim`、`TestBaselineClaimBindingFreshnessAndRevocation`。
 
 ## 验证记录与限制
+
+2026-10-22 继续落实 SPEC-0078 的准入、证据和生命周期合同。本轮边界如下，检查结果以本轮最终候选记录为准，不继承旧 head 的通过结论：
+
+| 原有缺口 | 实施与回归 |
+|---|---|
+| 空 binding 或非法 outcome/observation 被 stale/revoked 提前返回掩盖 | 先校验声明与当前 binding 全部 11 项、证据引用及撤销一致性；覆盖有效、过期、撤销、失败状态 |
+| 缺失/未核验 trial 或坏 shard seal 仍带数值区间 | invalid 证据集保留计划分母，停止 bootstrap、清除上下界；覆盖纯策略与公开 Assess |
+| live 汇总丢失已核验回执的模型字段 | 保留一致模型，多值标 mixed；合成回执验证，无 provider 请求 |
+| 启动沿用总时限；退出后继承 stderr 或主进程不退出可能阻塞 Wait | 独立 profile 启动期限覆盖三个握手阶段；自有 stderr 管道及同一个 Task cleanup 计时器覆盖进程退出和管道读取；封存后异常返回 invalid 报告 |
+| null 标量、大小写别名或字节数组绕过闭合 JSON 合同 | 严格字段名称及非空类型检查；冻结字节要求 base64 字符串，拒绝数字数组及数组内 null；保留任意 JSON payload 的合法 null |
+| 损坏 revision.json 仍返回 frozen | 仅从冻结 inputs 重准入并核对元数据，查询与事件追加均拒绝损坏快照 |
+| Windows 混合 LF/CRLF 导致 actual/reviewed 字节不一致 | `.gitattributes` 固定 examples JSON/YAML 为 LF，保留原内容一致性检查 |
+
+兼容影响：原先被宽松解码接受的非法输入现在失败；旧 live 报告若错误记录 unknown model，不能通过重写证据迁移，需依照版本绑定另建计划。快照重准入只证明内部一致性，不能认证文件来源或独立评审者。性能与外部验收条件未调整。Jev 的合成语义判断和在线文档请求本轮网络失败，未把它计入判断或验收证据。
+
+本轮定向验证：声明各状态与 11 项 binding 反例通过；4 项 baseline 策略/统计/合成 live 回执测试通过（4.648 秒）；严格 JSON 及冻结快照损坏/无磁盘回读测试通过；9 条真实启动/清理进程路径及原有 10 阶段 crash 回归通过（48.653 秒）。字节数字数组反例先在旧实现失败，再经严格字符串检查通过。首次默认并行 vet 因本机 Windows 内存不足失败，串行 `go vet -p 1 ./...` 通过。整仓测试与最终 PR 的三平台/race 检查另外核对，不能用定向结果代替。
 
 2026-10-08 后续改进：PR #19 已合并，后续以 `dfb3f496ea4509919914d76a88584164e85a4bc3` 为基线。修复 executable qualify 的去重身份：相同 manifest 路径在不同 root 下仍须分别执行，不能漏验第二套 witness/world。新增真实正例 root 与失败 shadow root 的回归测试。Inspect 辅助 CLI 改为同时读取有界 stdout/stderr，超过 1MiB/256KiB 立即终止并等待自有子进程，120 秒超时返回有限错误码；不再退出后才检查临时文件大小。四项独立进程测试覆盖精确边界、两流超限、错误信息不泄露与超时。
 

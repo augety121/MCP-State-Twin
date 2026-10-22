@@ -77,10 +77,13 @@ type Reader struct {
 	Left   int
 	Inputs map[string]Input
 	ctx    context.Context
+	// Registry inspection resolves only these frozen bytes. A missing input
+	// must never fall back to the current working tree.
+	frozenInputs map[string][]byte
 }
 
 func NewReader(ctx context.Context, root string) *Reader {
-	return &Reader{root, InputLimit, map[string]Input{}, ctx}
+	return &Reader{Root: root, Left: InputLimit, Inputs: map[string]Input{}, ctx: ctx}
 }
 func (r *Reader) Read(name string, limit int) ([]byte, error) {
 	if r.ctx.Err() != nil {
@@ -100,26 +103,39 @@ func (r *Reader) Read(name string, limit int) ([]byte, error) {
 			return nil, errors.New("PLUGIN_PLAN_INVALID")
 		}
 	}
-	fs, err := os.OpenRoot(r.Root)
-	if err != nil {
-		return nil, errors.New("PLUGIN_INPUT_UNAVAILABLE")
-	}
-	defer fs.Close()
-	info, err := fs.Lstat(name)
-	if err != nil {
-		return nil, errors.New("PLUGIN_INPUT_UNAVAILABLE")
-	}
-	if !info.Mode().IsRegular() || info.Size() > int64(min(limit, r.Left)) {
-		return nil, errors.New("PLUGIN_RESOURCE_LIMIT")
-	}
-	for _, previous := range r.Inputs {
-		if os.SameFile(previous.Info, info) {
-			return nil, errors.New("PLUGIN_REFERENCE_MISMATCH")
+	var raw []byte
+	var info os.FileInfo
+	if r.frozenInputs != nil {
+		var ok bool
+		raw, ok = r.frozenInputs[name]
+		if !ok {
+			return nil, errors.New("PLUGIN_INPUT_UNAVAILABLE")
 		}
-	}
-	raw, err := task.ReadFile(r.Root, name, min(limit, r.Left))
-	if err != nil {
-		return nil, errors.New("PLUGIN_PLAN_INVALID")
+		if len(raw) > min(limit, r.Left) {
+			return nil, errors.New("PLUGIN_RESOURCE_LIMIT")
+		}
+	} else {
+		fs, err := os.OpenRoot(r.Root)
+		if err != nil {
+			return nil, errors.New("PLUGIN_INPUT_UNAVAILABLE")
+		}
+		defer fs.Close()
+		info, err = fs.Lstat(name)
+		if err != nil {
+			return nil, errors.New("PLUGIN_INPUT_UNAVAILABLE")
+		}
+		if !info.Mode().IsRegular() || info.Size() > int64(min(limit, r.Left)) {
+			return nil, errors.New("PLUGIN_RESOURCE_LIMIT")
+		}
+		for _, previous := range r.Inputs {
+			if os.SameFile(previous.Info, info) {
+				return nil, errors.New("PLUGIN_REFERENCE_MISMATCH")
+			}
+		}
+		raw, err = task.ReadFile(r.Root, name, min(limit, r.Left))
+		if err != nil {
+			return nil, errors.New("PLUGIN_PLAN_INVALID")
+		}
 	}
 	if logging.ContainsSensitive(string(raw)) {
 		return nil, errors.New("PLUGIN_PLAN_INVALID")
@@ -131,7 +147,7 @@ func (r *Reader) Read(name string, limit int) ([]byte, error) {
 func (r *Reader) Separate(a, b string) bool {
 	x, xok := r.Inputs[a]
 	y, yok := r.Inputs[b]
-	return xok && yok && a != b && !os.SameFile(x.Info, y.Info)
+	return xok && yok && a != b && (r.frozenInputs != nil || !os.SameFile(x.Info, y.Info))
 }
 func (r *Reader) RejectOutput(out string) error {
 	if task.PortablePath(out) != nil {

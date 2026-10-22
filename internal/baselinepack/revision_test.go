@@ -52,3 +52,91 @@ func TestBaselineRevisionLifecycle(t *testing.T) {
 		t.Fatal("history deleted")
 	}
 }
+
+func TestRevisionStateRejectsInvalidSnapshot(t *testing.T) {
+	root := testfixture.Baseline(t)
+	packPath := filepath.Join(root, "baseline-pack.json")
+	raw, err := os.ReadFile(packPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pack Pack
+	if err = json.Unmarshal(raw, &pack); err != nil {
+		t.Fatal(err)
+	}
+	pack.Entries = pack.Entries[:1]
+	raw, err = json.Marshal(pack)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(packPath, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	r, err := Register(context.Background(), root, "baseline-pack.json", "plugin-profile.json", "registry")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(root, "registry", r.PackID, r.Revision)
+	revisionPath := filepath.Join(dir, "revision.json")
+	event := RevisionEvent{Format: "statetwin.dev/baseline-pack-event/v1alpha1", State: "deprecated", At: "2026-10-02T00:00:00Z", Reason: "replacement", Replacement: "v2", PreviewVersions: []string{"preview-one", "preview-two"}}
+	for name, change := range map[string]func(*Revision){
+		"format":              func(r *Revision) { r.Format = "unrecognized" },
+		"pack-id":             func(r *Revision) { r.PackID = "another-pack" },
+		"revision":            func(r *Revision) { r.Revision = "another-revision" },
+		"profile":             func(r *Revision) { r.Profile.ProtocolProfile = "unsupported" },
+		"review-independence": func(r *Revision) { r.ReviewIndependence = "independent" },
+		"missing-task": func(r *Revision) {
+			delete(r.Inputs, pack.Entries[0].Root+"/"+pack.Entries[0].Task)
+		},
+		"invalid-task": func(r *Revision) {
+			r.Inputs[pack.Entries[0].Root+"/"+pack.Entries[0].Task] = []byte(`{}`)
+		},
+		"extra-input":    func(r *Revision) { r.Inputs["unused.json"] = []byte(`{}`) },
+		"unsafe-input":   func(r *Revision) { r.Inputs["../outside"] = []byte("fixture") },
+		"missing-inputs": func(r *Revision) { r.Inputs = map[string][]byte{} },
+	} {
+		t.Run(name, func(t *testing.T) {
+			invalid := Clone(*r)
+			change(&invalid)
+			raw, err := json.Marshal(invalid)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = os.WriteFile(revisionPath, raw, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if state, err := RevisionState(root, "registry", r.PackID, r.Revision); err == nil || state != "" {
+				t.Fatalf("invalid snapshot reported state=%q err=%v", state, err)
+			}
+			if err := Transition(root, "registry", r.PackID, r.Revision, event); err == nil {
+				t.Fatal("transition accepted invalid snapshot")
+			}
+			if _, err := os.Stat(filepath.Join(dir, "deprecated.json")); !os.IsNotExist(err) {
+				t.Fatalf("invalid transition created event: %v", err)
+			}
+		})
+	}
+	for _, invalid := range []string{`{}`, `not-json`} {
+		if err := os.WriteFile(revisionPath, []byte(invalid), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if state, err := RevisionState(root, "registry", r.PackID, r.Revision); err == nil || state != "" {
+			t.Fatalf("invalid document reported state=%q err=%v", state, err)
+		}
+	}
+	// Registry inspection uses the recorded bytes even after original sources
+	// change. The missing-task case above also proves no live-file fallback.
+	raw, err = json.Marshal(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(revisionPath, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(packPath, []byte(`{}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if state, err := RevisionState(root, "registry", r.PackID, r.Revision); err != nil || state != "frozen" {
+		t.Fatalf("frozen source was reread: state=%q err=%v", state, err)
+	}
+}

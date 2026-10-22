@@ -37,6 +37,58 @@ func revision(p *Prepared) Revision {
 	return r
 }
 
+// readRevision checks the registry identity and re-admits its self-contained
+// snapshot. Local registry bytes remain operator-asserted evidence; this is
+// consistency validation, not authentication of the original files/reviewer.
+func readRevision(root, name, packID, revisionID string) (*Revision, error) {
+	raw, err := task.ReadFile(root, name, InputLimit)
+	if err != nil {
+		return nil, err
+	}
+	var r Revision
+	if Decode(raw, InputLimit, &r) != nil || r.Format != "statetwin.dev/baseline-pack-revision/v1alpha1" || r.PackID != packID || r.Revision != revisionID || len(r.Inputs) == 0 {
+		return nil, errors.New("BASELINE_REVISION_CONFLICT")
+	}
+	var packName, profileName string
+	left := InputLimit
+	for name, data := range r.Inputs {
+		if task.PortablePath(name) != nil || len(data) == 0 || len(data) > left {
+			return nil, errors.New("BASELINE_REVISION_CONFLICT")
+		}
+		left -= len(data)
+		var header struct {
+			Format string `json:"format"`
+		}
+		if json.Unmarshal(data, &header) != nil {
+			continue // Bundle archives are validated by PrepareWith below.
+		}
+		switch header.Format {
+		case Format:
+			if packName != "" {
+				return nil, errors.New("BASELINE_REVISION_CONFLICT")
+			}
+			packName = name
+		case ProfileFormat:
+			if profileName != "" {
+				return nil, errors.New("BASELINE_REVISION_CONFLICT")
+			}
+			profileName = name
+		}
+	}
+	if packName == "" || profileName == "" {
+		return nil, errors.New("BASELINE_REVISION_CONFLICT")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+	reader := NewReader(ctx, "")
+	reader.frozenInputs = r.Inputs
+	p, err := PrepareWith(reader, packName, profileName)
+	if err != nil || p.Pack.ID != r.PackID || p.Pack.Revision != r.Revision || p.Pack.ReviewIndependence != r.ReviewIndependence || !Equal(p.Profile, r.Profile) || len(reader.Inputs) != len(r.Inputs) {
+		return nil, errors.New("BASELINE_REVISION_CONFLICT")
+	}
+	return &r, nil
+}
+
 // Register freezes full raw inputs in a user-selected local registry. Exact
 // duplicate registration is idempotent; a changed definition under the same
 // id/revision fails. No hash catalog or signature/provenance claim is created.
@@ -107,7 +159,7 @@ func Register(ctx context.Context, root, pack, profile, registry string) (*Revis
 }
 
 func ValidateRevisionEvent(e RevisionEvent) error {
-	if e.Format != "statetwin.dev/baseline-pack-event/v1alpha1" || (e.State != "deprecated" && e.State != "revoked") || e.Reason == "" || len(e.Reason) > 1024 {
+	if e.Format != "statetwin.dev/baseline-pack-event/v1alpha1" || (e.State != "deprecated" && e.State != "revoked") || e.Reason == "" || len(e.Reason) > 1024 || e.PreviewVersions == nil {
 		return errors.New("BASELINE_REVISION_EVENT_INVALID")
 	}
 	if _, err := time.Parse(time.RFC3339Nano, e.At); err != nil {
@@ -135,13 +187,8 @@ func Transition(root, registry, packID, revisionID string, event RevisionEvent) 
 		return errors.New("BASELINE_REVISION_EVENT_INVALID")
 	}
 	dir := path.Join(registry, packID, revisionID)
-	raw, err := task.ReadFile(root, path.Join(dir, "revision.json"), InputLimit)
-	if err != nil {
+	if _, err := readRevision(root, path.Join(dir, "revision.json"), packID, revisionID); err != nil {
 		return err
-	}
-	var r Revision
-	if Decode(raw, InputLimit, &r) != nil || r.PackID != packID || r.Revision != revisionID {
-		return errors.New("BASELINE_REVISION_CONFLICT")
 	}
 	fs, err := os.OpenRoot(root)
 	if err != nil {
@@ -153,7 +200,7 @@ func Transition(root, registry, packID, revisionID string, event RevisionEvent) 
 			return errors.New("BASELINE_REVISION_REVOKED")
 		}
 	}
-	raw, err = json.MarshalIndent(event, "", "  ")
+	raw, err := json.MarshalIndent(event, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -180,7 +227,7 @@ func RevisionState(root, registry, packID, revisionID string) (string, error) {
 		return "", errors.New("BASELINE_REGISTRY_INVALID")
 	}
 	dir := path.Join(registry, packID, revisionID)
-	if _, e := task.ReadFile(root, path.Join(dir, "revision.json"), InputLimit); e != nil {
+	if _, e := readRevision(root, path.Join(dir, "revision.json"), packID, revisionID); e != nil {
 		return "", e
 	}
 	fs, err := os.OpenRoot(root)

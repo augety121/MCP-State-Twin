@@ -45,6 +45,15 @@ func inspectLiveTrial(ctx context.Context, root string, p *Prepared, t Trial) (O
 		return o, errors.New("BASELINE_EVIDENCE_INVALID")
 	}
 	o.Verified = true
+	// Preserve what the verified receipts report without turning a requested
+	// alias into a snapshot claim. Different reported models remain explicit.
+	o.ObservedModel = evidence.Receipts[0].ReportedModel
+	for _, receipt := range evidence.Receipts[1:] {
+		if receipt.ReportedModel != o.ObservedModel {
+			o.ObservedModel = "mixed"
+			break
+		}
+	}
 	o.Success = grade.Outcome == expected.Task.ExpectedOutcome
 	o.IllegalAttempts = grade.PolicyAttempts
 	o.IllegalEffects = grade.CommittedViolations
@@ -68,7 +77,7 @@ func inspectLiveTrial(ctx context.Context, root string, p *Prepared, t Trial) (O
 		o.Usage.InputTokens = &input
 		o.Usage.OutputTokens = &output
 	}
-	// Receipts do not authenticate provider origin or establish a model snapshot.
+	// The reported model does not authenticate provider origin or establish a snapshot.
 	// No price source is bound, so cost remains unknown even with reported usage.
 	return o, nil
 }
