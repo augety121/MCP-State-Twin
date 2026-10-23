@@ -11,7 +11,6 @@ import (
 	"github.com/augety121/mcp-state-twin/internal/engine"
 	"github.com/augety121/mcp-state-twin/internal/evaluator"
 	"github.com/augety121/mcp-state-twin/internal/server"
-	"github.com/augety121/mcp-state-twin/internal/spec"
 	"github.com/augety121/mcp-state-twin/internal/store"
 	"github.com/augety121/mcp-state-twin/internal/task"
 	"github.com/augety121/mcp-state-twin/internal/world"
@@ -32,10 +31,17 @@ type environment struct {
 }
 
 func provision(ctx context.Context, t *task.Task, b *bundle.Artifact) (env *environment, err error) {
-	if err = Admit(t, b); err != nil {
+	admitted, err := prepareTask(t, b)
+	if err != nil {
 		return nil, err
 	}
-	twin, _ := spec.Decode(b.Files[b.Manifest.Spec])
+	return provisionAdmitted(ctx, admitted, b)
+}
+
+// Each admitted definition is consumed by one fresh environment. Reusing its
+// parsed schema does not reuse any store, runtime, session or mutable state.
+func provisionAdmitted(ctx context.Context, admitted *admittedTask, b *bundle.Artifact) (env *environment, err error) {
+	t, twin := admitted.task, admitted.twin
 	initial, err := world.DecodeStrict(b.Files[b.Manifest.Fixture])
 	if err != nil {
 		return nil, err

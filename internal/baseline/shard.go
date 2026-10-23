@@ -299,11 +299,13 @@ func Assess(ctx context.Context, root, name string) (*Report, error) {
 		if logged, ok := recorded[t.ID]; ok {
 			latency := logged.LatencySeconds
 			logged.LatencySeconds = nil
-			if baselinepack.Equal(logged, o) && latency != nil && *latency >= 0 {
-				o.LatencySeconds = latency
-			} else if !baselinepack.Equal(logged, o) {
+			// Omitted timing is unavailable; an impossible recorded duration is
+			// corrupt evidence and cannot be silently treated as omission.
+			if !baselinepack.Equal(logged, o) || (latency != nil && *latency < 0) {
 				valid = false
 				shards[fmt.Sprintf("shard-%02d", t.Shard)] = "invalid"
+			} else {
+				o.LatencySeconds = latency
 			}
 		}
 		if o.State != "missing" {

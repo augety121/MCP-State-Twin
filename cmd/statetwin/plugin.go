@@ -31,6 +31,7 @@ func runPluginTo(parent context.Context, args []string, out io.Writer) error {
 	pack := flags.String("pack", "", "pack manifest")
 	profile := flags.String("profile", "", "plugin profile")
 	plan := flags.String("session-plan", "", "session plan")
+	performance := flags.String("performance-report", "", "raw performance measurements")
 	destination := flags.String("out", "", "new recovery directory")
 	kind := flags.String("type", "", "schema type")
 	format := flags.String("format", "json", "json or markdown")
@@ -47,7 +48,15 @@ func runPluginTo(parent context.Context, args []string, out io.Writer) error {
 	if command != "schema" && *kind != "" {
 		return errors.New("PLUGIN_FLAGS_INVALID")
 	}
+	if command != "assess-performance" && *performance != "" {
+		return errors.New("PLUGIN_FLAGS_INVALID")
+	}
 	switch command {
+	case "assess-performance":
+		if *performance == "" || *plan != "" || *pack != "" || *profile != "" {
+			return errors.New("PLUGIN_FLAGS_INVALID")
+		}
+		result, err = plugin.ReadPerformanceAssessment(ctx, *root, *performance)
 	case "schema":
 		if *plan != "" || *pack != "" || *profile != "" {
 			return errors.New("PLUGIN_FLAGS_INVALID")
@@ -61,6 +70,10 @@ func runPluginTo(parent context.Context, args []string, out io.Writer) error {
 			result = baselinepack.Schema(plugin.Plan{})
 		case "report":
 			result = baselinepack.Schema(plugin.Report{})
+		case "performance":
+			result = baselinepack.Schema(plugin.PerformanceRun{})
+		case "performance-assessment":
+			result = baselinepack.Schema(plugin.PerformanceAssessment{})
 		case "baseline-plan":
 			result = baselinepack.Schema(baseline.Plan{})
 		case "baseline-report":
