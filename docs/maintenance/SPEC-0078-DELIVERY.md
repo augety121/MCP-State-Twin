@@ -2,7 +2,7 @@
 
 2026-10-02 用户明确授权整批实施。基线 main `5ad90baa691a8df8ece1942aa74e2d99bcc3502e`；分支 `codex/agent-baseline-plugin`。本表随真实实现和验证更新，不把 proposed 测试名当执行证据。
 
-后续基线已推进至 [PR #21](https://github.com/augety121/MCP-State-Twin/pull/21) 合并提交 `19c380bc6730dad2876eba8ada68c9a85713d5ac`。其最终候选 `8c965c0d30cdda28e6eac651b518b0e9221a264c` 的 [18 项 CI 通过](https://github.com/augety121/MCP-State-Twin/actions/runs/37803823451)，Code/Security review 无剩余问题。以下阶段实现已有该候选检查记录；性能与外部证据缺项保持未完成。
+后续基线已推进至 [PR #22](https://github.com/augety121/MCP-State-Twin/pull/22) 合并提交 `283d39ba0cd336fd9e9adcc72308dfa8df959934`。其最终候选 `cc99544c219522cb378376f392f43e0ab5e68214` 的 [18 项 CI 通过](https://github.com/augety121/MCP-State-Twin/actions/runs/39809316633)，Code/Security review 无剩余问题。以下阶段表保留首次相关候选的检查记录；本轮新候选仍须单独检查，性能与外部证据缺项保持未完成。
 
 | 范围 | 状态 | 实现/验证 | 剩余 |
 |---|---|---|---|
@@ -17,6 +17,15 @@
 | N5 / W18 | external evidence blocked | 独立 reference/reset/三操作差分合同已写明 | 缺获准且可复位的独立服务；无实际差分，不宣称 L2 |
 
 本机 Windows 无可用 CGO，race 将由 Linux CI 验证；没有结果之前不记通过。任何失败先查根因，保留原业务 deadline 和失败分母。只清理本轮自己的临时文件与进程。
+
+## 2026-10-23 运行效率与性能证据迭代
+
+- world 的 TwinSpec/oracle 单次准入后复用，RunWitness 同步优化；独立重放仍完整核对 raw bundle、全部事件、终态和原评分。新增调用者变更、双 world 的状态/故障/定义隔离、大整数 authority 类型、等价 ZIP 和 oracle 篡改反例。
+- Pack 的相同 Task bytes 免去重复解码，case 先按 ID 筛选再完整比较，已复用的同一 artifact 省去重复内容遍历。独立路径读取、硬链接拒绝、跨 root、完整 oracle 和 N/N−1 累计预算回归保留。
+- 新增有界 `plugin assess-performance`、两类 schema 和 v1alpha2 原始配对采样。旧报告 incomplete；有效数据由固定原门槛得出 passed/failed，非通过退出非零；不会升级来源或发布资格。100 次新会话/30 对采样已完成，倍率 36.4993 仍失败，详见[性能记录](SPEC-0078-PERFORMANCE.md)。
+- 真实 shard 封套出现负 latency 时视为无效证据，保留固定分母、禁用置信区间；缺 latency 才表示 unavailable。负数、null、非有限数和缺字段边界分别测试。
+
+以上新增定向回归已通过；最终候选的全仓 Go 验证、CI 和自动审核记录以本轮 PR 为准，不能引用 PR #22 冒充新代码通过。
 
 ## 实现入口与已执行的测试
 

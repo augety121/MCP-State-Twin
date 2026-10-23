@@ -156,13 +156,32 @@ func TestBaselineRealShardAndFixedDenominators(t *testing.T) {
 	// A lost final shard index invalidates the experiment even when individual
 	// terminals still replay. Complete trial evidence cannot invent a seal.
 	seal := filepath.Join(frozen, "inputs/runs/shard-02/shard-report.json")
+	validSeal, e := os.ReadFile(seal)
+	if e != nil {
+		t.Fatal(e)
+	}
 	if e = os.Rename(seal, filepath.Join(frozen, "preserved-shard-report.json")); e != nil {
 		t.Fatal(e)
 	}
-	for _, condition := range []string{"missing", "malformed"} {
+	for _, condition := range []string{"missing", "malformed", "negative-latency"} {
 		t.Run(condition+"-shard-seal", func(t *testing.T) {
 			if condition == "malformed" {
 				if err := os.WriteFile(seal, []byte(`{}`), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if condition == "negative-latency" {
+				var changed baseline.ShardReport
+				if err := json.Unmarshal(validSeal, &changed); err != nil {
+					t.Fatal(err)
+				}
+				negative := -1.0
+				changed.Rows[0].LatencySeconds = &negative
+				raw, err := json.Marshal(changed)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err = os.WriteFile(seal, raw, 0600); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -172,6 +191,9 @@ func TestBaselineRealShardAndFixedDenominators(t *testing.T) {
 			}
 			if assessed.Interval.Status != "invalid" || assessed.Interval.Samples != 0 || assessed.Interval.Lower != nil || assessed.Interval.Upper != nil {
 				t.Fatalf("invalid shard seal retained confidence inference: %+v", assessed.Interval)
+			}
+			if condition == "negative-latency" && assessed.Shards["shard-02"] != "invalid" {
+				t.Fatalf("corrupt timing accepted as unavailable: %+v", assessed.Shards)
 			}
 		})
 	}

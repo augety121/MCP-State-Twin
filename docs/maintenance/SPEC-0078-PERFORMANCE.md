@@ -1,5 +1,27 @@
 # SPEC-0078 插件性能与 soak 记录
 
+## 2026-10-23 运行期准入复用与可重算判定
+
+基线为已合并 PR #22（`283d39b`），本轮仅复用一次操作内的已验证定义：world 持有独立的已解码 TwinSpec 和编译 oracle，结束评分复用该 oracle；Verify 使用刚完整解包并比对的 expected bundle 创建全新世界。RunWitness 同步优化，不能用旧版 RunWitness 数值当新倍率的分母。每个 world 的 store/runtime/session、Task、TwinSpec、故障状态均独立；真实输入读取、authority、资源和原始证据重放没有省略。
+
+Pack 准入另外复用完全相同 raw bytes 的 reviewed Task 解码，以 Task ID 筛选候选后仍完整比较定义，对同一非空 artifact 指针省去重复内容遍历。物理输入仍分别读取、排除硬链接并扣预算；格式重排仍按语义比对。没有跨 session 缓存、文件 hash 清单或扩大原资源门槛。
+
+同机 Windows/amd64、AMD Ryzen 7 5700X3D、Go 1.26.5、GOMAXPROCS=1、GOMEMLIMIT=512MiB，顺序运行 `go test -p 1 ./internal/baselinepack -run '^$' -bench '^BenchmarkPackPreparation$' -benchmem -count=3`：
+
+| 指标 | PR #22 基线三轮 | 本轮三轮 |
+|---|---|---|
+| 单项 ns/op | 152887543 / 149484043 / 147444450 | 142558812 / 136200562 / 141721512 |
+| 24 项目录 ns/op | 612790900 / 609915250 / 606000150 | 570168950 / 619688600 / 570271850 |
+| 24 项目录 B/op | 57504320 / 57504540 / 57501076 | 50725308 / 50723872 / 50726132 |
+
+目录中位约 609.915→570.272ms（约 6.5%），分配约 57.50→50.73MB/op（约 11.8%）；耗时范围重叠，不宣称统计显著性或任意硬件 SLA。新增 `BenchmarkPluginPreparation` 以三次迭代建立后续回归入口：read/close/after-commit 的 lifecycle 为 38.333/45.013/45.293ms，replay 为 52.915/51.949/52.715ms，当前 RunWitness 为 17.181/17.787/21.885ms。这组没有旧版本同名测量，不宣称对应提升百分比。
+
+新增 `plugin assess-performance` 和 `plugin-performance/v1alpha2`。采样保存顺序 pair ID、两侧原始秒数、阶段数据、CPU/Go/build/workload 及 race 状态，严格检查字段、数量、时长和阶段总量；报告使用 nearest rank。沿用启动 p95≤2 秒、两组 p95 比≤1.5、两组 p95 差≤2 秒的原解释；逐对差的 p95 仅是诊断字段。历史 Go/Inspect v1alpha1 报告不可独立重算，判为 incomplete，保留原文件而不补造数据。范围限 Go stdio 合成 contract、本地操作员声明来源，不能外推为 Inspect、模型或发布资格。
+
+本轮 100 次独立会话通过（测试主体 75.23 秒），前 30 次配对；原始记录为 [SPEC-0078-PERFORMANCE-RUNTIME.json](SPEC-0078-PERFORMANCE-RUNTIME.json)，buildLabel 如实为 `283d39b+working-tree-runtime-efficiency`、runtimeRevision 仍为 unknown。完整链路 p50=0.697740s、p95=0.753283s、max=1.461288s；当前 RunWitness p50=0.017332s、p95=0.020638s、max=0.022418s。启动 p95=0.291899s，p95 差=0.732644s，这两条通过；p95 比=36.4993，仍大于 1.5，命令判定 failed。逐对开销 p95=0.737232s，不用于替换门槛。子进程观测峰值 working set 最大 33,382,400 bytes，父 goroutine 2→3。
+
+复核：`go run ./cmd/statetwin plugin assess-performance --root docs/maintenance --performance-report SPEC-0078-PERFORMANCE-RUNTIME.json` 输出上述失败，返回非零属于符合预期的验收结果。新的进程内基线更快，因此即使完整链路耗时减少，倍率也可能升高；不得冻结旧分母或以 soak PASS 冒充 AB31 通过。该结果不升级原先 Inspect 的历史数据；完整性能与外部证据门槛仍未完成。
+
 ## 同日优化复测
 
 在原始候选 `4dc0c6e` 基础上，单次 Prepare 内复用字节完全相同的 bundle 解码及敏感数据扫描，仍逐物理输入扣除资源预算；去除已由 case 准入完成的重复 Task 编译。case 缓存按 root 和引用共同隔离，新增不同根引用和无效 oracle 反例。没有跨会话缓存或省略独立进程核验。

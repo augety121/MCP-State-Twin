@@ -6,8 +6,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"maps"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"time"
 
 	"github.com/augety121/mcp-state-twin/internal/bundle"
@@ -78,30 +80,61 @@ func Load(root, name string) (*task.Task, *bundle.Artifact, error) {
 }
 
 func Admit(t *task.Task, b *bundle.Artifact) error {
+	_, err := admitTask(t, b)
+	return err
+}
+
+// admittedTask belongs to one operation. Runtime callers first detach the Task;
+// neither this definition nor its decoded TwinSpec is shared between worlds.
+type admittedTask struct {
+	task   *task.Task
+	twin   *spec.TwinSpec
+	oracle *evaluator.Evaluator
+}
+
+func prepareTask(t *task.Task, b *bundle.Artifact) (*admittedTask, error) {
+	if t == nil {
+		return nil, errors.New("TASK_INVALID: task is required")
+	}
+	// Permission matching distinguishes large floats from integers. A JSON
+	// round trip could change that authority, so preserve each scalar's type.
+	// AdmitSurface below rejects any non-scalar authority value.
+	detached := *t
+	detached.Tools = slices.Clone(t.Tools)
+	detached.Oracle = slices.Clone(t.Oracle)
+	detached.Authority = slices.Clone(t.Authority)
+	for i := range detached.Authority {
+		detached.Authority[i].Equals = maps.Clone(t.Authority[i].Equals)
+	}
+	return admitTask(&detached, b)
+}
+
+func admitTask(t *task.Task, b *bundle.Artifact) (*admittedTask, error) {
 	if b == nil {
-		return errors.New("TASK_INVALID: bundle required")
+		return nil, errors.New("TASK_INVALID: bundle required")
 	}
 	twin, err := spec.Decode(b.Files[b.Manifest.Spec])
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if err = t.AdmitSurface(twin); err != nil {
-		return err
+		return nil, err
 	}
-	if _, err = evaluator.Compile(t); err != nil {
-		return err
+	oracle, err := evaluator.Compile(t)
+	if err != nil {
+		return nil, err
 	}
 	if err = safe(t, task.MaxBytes); err != nil {
-		return err
+		return nil, err
 	}
 	// Entire fixture/tool text must be synthetic and pass the same bounded
 	// sensitive-pattern refusal used for the offline report.
 	for _, member := range []string{b.Manifest.Spec, b.Manifest.Fixture} {
 		if logging.ContainsSensitive(string(b.Files[member])) {
-			return errors.New("DATA_POLICY_REJECTED")
+			return nil, errors.New("DATA_POLICY_REJECTED")
 		}
 	}
-	return nil
+	return &admittedTask{task: t, twin: twin, oracle: oracle}, nil
 }
 
 // localTransport runs actual MCP HTTP/JSON-RPC through the official SDK and
@@ -121,9 +154,11 @@ func (t localTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 
 func RunWitness(ctx context.Context, t *task.Task, b *bundle.Artifact, w *Witness) (report *Report, err error) {
-	if err = Admit(t, b); err != nil {
+	admitted, err := prepareTask(t, b)
+	if err != nil {
 		return nil, err
 	}
+	t = admitted.task
 	if w == nil || w.Kind != "TaskWitness" || !w.SyntheticOnly || w.TaskID != t.ID || len(w.Calls) > t.Budgets.ToolAttempts {
 		return nil, errors.New("TASK_INVALID: witness identity or budget")
 	}
@@ -132,7 +167,7 @@ func RunWitness(ctx context.Context, t *task.Task, b *bundle.Artifact, w *Witnes
 	}
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(t.Budgets.EpisodeSeconds)*time.Second)
 	defer cancel()
-	env, err := provision(ctx, t, b)
+	env, err := provisionAdmitted(ctx, admitted, b)
 	if err != nil {
 		return nil, err
 	}
@@ -159,11 +194,7 @@ func RunWitness(ctx context.Context, t *task.Task, b *bundle.Artifact, w *Witnes
 	if err != nil {
 		return nil, err
 	}
-	grade, err := evaluator.Compile(t)
-	if err != nil {
-		return nil, err
-	}
-	report.Evaluation, err = grade.Evaluate(ctx, report.View)
+	report.Evaluation, err = admitted.oracle.Evaluate(ctx, report.View)
 	if err != nil {
 		return nil, err
 	}

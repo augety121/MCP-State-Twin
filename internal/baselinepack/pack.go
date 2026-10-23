@@ -172,7 +172,13 @@ func Equal(a, b any) bool {
 	return e == nil && f == nil && bytes.Equal(x, y)
 }
 func SameWorld(a, b *bundle.Artifact) bool {
-	if a == nil || b == nil || !Equal(a.Manifest, b.Manifest) || len(a.Files) != len(b.Files) {
+	if a == nil || b == nil {
+		return false
+	}
+	if a == b {
+		return true
+	}
+	if !Equal(a.Manifest, b.Manifest) || len(a.Files) != len(b.Files) {
 		return false
 	}
 	for n, v := range a.Files {
@@ -306,13 +312,22 @@ func PrepareWith(r *Reader, packName, profileName string) (*Prepared, error) {
 		if err != nil {
 			return nil, errors.New("PLUGIN_PLAN_INVALID")
 		}
+		actualRaw := data
 		data, err = r.Read(rn, task.MaxBytes)
 		if err != nil {
 			return nil, err
 		}
-		review, err := task.Decode(data)
-		if err != nil || !Equal(t, review) || !r.Separate(tn, rn) {
+		if !r.Separate(tn, rn) {
 			return nil, errors.New("PLUGIN_REFERENCE_MISMATCH")
+		}
+		// Both paths were independently admitted and charged. Exact bytes
+		// already passed Task decoding above; otherwise retain semantic equality
+		// so equivalent formatting and field order remain accepted.
+		if !bytes.Equal(actualRaw, data) {
+			review, err := task.Decode(data)
+			if err != nil || !Equal(t, review) {
+				return nil, errors.New("PLUGIN_REFERENCE_MISMATCH")
+			}
 		}
 		if taskPaths[tn] {
 			return nil, errors.New("PLUGIN_PLAN_INVALID")
@@ -340,8 +355,10 @@ func PrepareWith(r *Reader, packName, profileName string) (*Prepared, error) {
 		}
 		matched := false
 		for _, candidate := range caseTasks[caseName] {
-			if Equal(candidate, t) {
-				matched = true
+			// Case admission guarantees unique Task IDs. Use identity only to
+			// select the candidate; the full definition must still match.
+			if candidate.ID == t.ID {
+				matched = Equal(candidate, t)
 				break
 			}
 		}

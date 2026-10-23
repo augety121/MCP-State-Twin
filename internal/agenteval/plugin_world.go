@@ -84,6 +84,7 @@ type PluginWorld struct {
 	accepting atomic.Bool
 	slots     chan struct{}
 	env       *environment
+	oracle    *evaluator.Evaluator
 	terminal  *PluginTerminal
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -95,26 +96,39 @@ func NewPluginWorld(parent context.Context, t *task.Task, raw []byte) (*PluginWo
 	if err != nil {
 		return nil, errors.New("PLUGIN_PLAN_INVALID")
 	}
+	return newPluginWorldFromBundle(parent, t, raw, b)
+}
+
+// The artifact is opened by this package's strict public entry points. Reuse
+// only that immutable parse within the operation, never an existing world.
+func newPluginWorldFromBundle(parent context.Context, t *task.Task, raw []byte, b *bundle.Artifact) (*PluginWorld, error) {
+	// Preserve this wire-facing constructor's existing strict JSON/Task
+	// normalization while detaching all caller-owned fields.
 	encoded, err := json.Marshal(t)
 	if err != nil {
 		return nil, errors.New("PLUGIN_PLAN_INVALID")
 	}
 	t, err = task.Decode(encoded)
-	if err != nil || Admit(t, b) != nil {
+	if err != nil {
 		return nil, errors.New("PLUGIN_PLAN_INVALID")
 	}
+	admitted, err := admitTask(t, b)
+	if err != nil {
+		return nil, errors.New("PLUGIN_PLAN_INVALID")
+	}
+	t = admitted.task
 	for _, member := range b.Files {
 		if err := safe(string(member), limits.MaxBundleExtracted); err != nil {
 			return nil, errors.New("PLUGIN_PLAN_INVALID")
 		}
 	}
 	ctx, cancel := context.WithTimeout(parent, time.Duration(t.Budgets.EpisodeSeconds)*time.Second)
-	env, err := provision(ctx, t, b)
+	env, err := provisionAdmitted(ctx, admitted, b)
 	if err != nil {
 		cancel()
 		return nil, errors.New("PLUGIN_STARTUP_FAILED")
 	}
-	w := &PluginWorld{env: env, ctx: ctx, cancel: cancel, slots: make(chan struct{}, 4), terminal: &PluginTerminal{
+	w := &PluginWorld{env: env, oracle: admitted.oracle, ctx: ctx, cancel: cancel, slots: make(chan struct{}, 4), terminal: &PluginTerminal{
 		Format: PluginEvidenceFormat, RuntimeVersion: server.Version, RuntimeRevision: server.Revision,
 		Task: t, Bundle: base64.StdEncoding.EncodeToString(raw), Source: "external-harness",
 		Execution: "running", Cleanup: "pending", View: evaluator.View{Before: env.before, Events: []evaluator.Event{}},
@@ -222,11 +236,7 @@ func (w *PluginWorld) Finish(outcome string, answer any) (*PluginTerminal, error
 	var err error
 	t.View.After, err = w.env.state(finish)
 	if err == nil {
-		var grade *evaluator.Evaluator
-		grade, err = evaluator.Compile(t.Task)
-		if err == nil {
-			t.Evaluation, err = grade.Evaluate(finish, t.View)
-		}
+		t.Evaluation, err = w.oracle.Evaluate(finish, t.View)
 	}
 	if err != nil {
 		t.Execution, t.FailureCode = "failed", "PLUGIN_EVIDENCE_INVALID"
@@ -285,7 +295,7 @@ func VerifyPluginTerminal(ctx context.Context, t *PluginTerminal, expected *task
 	if err != nil || len(worldDifferences(a, b)) != 0 {
 		return errors.New("PLUGIN_EVIDENCE_INVALID")
 	}
-	w, err := NewPluginWorld(ctx, expected, raw)
+	w, err := newPluginWorldFromBundle(ctx, expected, raw, b)
 	if err != nil {
 		return err
 	}

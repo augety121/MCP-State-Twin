@@ -127,6 +127,22 @@ claim-check 分别绑定 runtime/head、Host/版本、adapter、MCP、pack/revis
 
 ## 6. 维护与发布
 
+性能采样和判定分开执行。`plugin-performance/v1alpha2` 保存同次运行的环境、工作负载、至少 30 对顺序原始样本和每次子进程阶段数据；不接受调用者填写的门槛或汇总分数。Go stdio 的采样命令如下（PowerShell）：
+
+```powershell
+$env:STATETWIN_PLUGIN_SOAK='1'
+$env:STATETWIN_PERFORMANCE_CPU='<实际参考 CPU>'
+$env:STATETWIN_PERFORMANCE_BUILD='<实际候选提交，未提交改动须注明 working-tree>'
+$env:STATETWIN_PLUGIN_PERFORMANCE_OUT=Join-Path $PWD 'performance.json'
+go test -p 1 ./cmd/statetwin -run '^TestPluginReleaseSoakAndPerformance$' -count=1 -timeout=8m -v
+go run ./cmd/statetwin plugin assess-performance --root . --performance-report performance.json
+go run ./cmd/statetwin plugin schema --type performance
+```
+
+采样仍执行 100 个独立短会话和资源回收检查，前 30 个各配一次当时版本的预加载 `RunWitness`。禁止 race 构建参与性能采样。判定命令从原始数据重算 nearest-rank p50/p95/max：启动 p95≤2 秒、插件 p95 / 进程内 p95≤1.5、两者 p95 差≤2 秒，三条均通过才返回成功；失败、无效或旧报告缺数据均返回非零。逐对开销的 p95 另外展示，不能替代原门槛。采样测试通过只表示采样/soak 完成。
+
+输入上限为 4 MiB、30–1000 对样本、最多 10000 次声明会话；每对 ID 连续，阶段耗时须有限非负并受总耗时约束。CPU/build label 等来源仍为 `local-operator-asserted`。该命令只判断所声明参考环境的 Go stdio 性能，不认证构建来源，不代表 Inspect、真实模型或完整发布资格。旧 v1alpha1 报告保留历史用途，输出 `incomplete`，不从摘要补造原始样本。
+
 Runtime owner 维护协议/权限/cleanup；Evaluation owner 维护 Task/quality/统计；Adapter owner 维护固定 Inspect 版本；Maintainer 负责 review、撤销和发布；具体个人由仓库维护者分配，不虚构参与者。
 
 当前仅 development preview 候选，原 alpha 发行物不因此被替换。最终 head 必须完成 Go fmt/vet/race、三平台 plugin/Inspect、旧回归、秘密策略与候选安装。性能门槛的实测及未解决项见实施台账。推送 PR 不等于发布 tag、包或 stable。
