@@ -1,13 +1,13 @@
 module github.com/augety121/mcp-state-twin
 
-go 1.26
+go 1.26.0
 
 require (
 	cel.dev/cel-go v0.32.0
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
-	golang.org/x/sys v0.47.0
+	golang.org/x/sys v0.49.0
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.59.0
