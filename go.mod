@@ -3,7 +3,7 @@ module github.com/augety121/mcp-state-twin
 go 1.26
 
 require (
-	cel.dev/cel-go v0.32.0
+	cel.dev/cel-go v0.33.1
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
